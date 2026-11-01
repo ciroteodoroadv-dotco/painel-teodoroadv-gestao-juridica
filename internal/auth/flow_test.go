@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pquerna/otp/totp"
 
@@ -48,7 +49,9 @@ func newEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	_ = migrate.Down(ctx, pool)
+	if err := migrate.Reset(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
 	if err := migrate.Up(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
@@ -58,9 +61,17 @@ func newEnv(t *testing.T) *env {
 		FieldKey: []byte("0123456789abcdef0123456789abcdef"), SessionKey: []byte("fedcba9876543210fedcba9876543210"),
 		Limiter: ratelimit.New(1000, time.Minute), Now: func() time.Time { return time.Now().Add(e.offset) },
 	}
+	wa, err := webauthn.New(&webauthn.Config{RPID: "localhost", RPDisplayName: "Teste", RPOrigins: []string{"http://localhost"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.a.WA = wa
 	mux := http.NewServeMux()
 	rt := NewRouter(e.a, mux)
 	e.a.Register(rt)
+	e.a.RegisterWebAuthn(rt)
+	e.a.RegisterAccount(rt)
+	e.a.RegisterAdmin(rt)
 	e.a.RegisterPages(rt)
 	e.srv = httptest.NewServer(mux)
 	t.Cleanup(e.srv.Close)
@@ -71,7 +82,8 @@ func (e *env) user(email string, role Role, pw string) string {
 	e.t.Helper()
 	h, _ := HashPassword(pw)
 	tx, _ := e.pool.Begin(context.Background())
-	id, err := e.a.Store.CreateUser(context.Background(), tx, email, role, h)
+	defer func() { _ = tx.Rollback(context.Background()) }()
+	id, err := e.a.Store.CreateUser(context.Background(), tx, email, role, h, false)
 	if err != nil {
 		e.t.Fatal(err)
 	}

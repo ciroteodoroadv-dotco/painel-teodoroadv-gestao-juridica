@@ -4,15 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<meta name="csrf-token" content="{{.CSRF}}">
 <title>{{.Title}} · Painel Teodoro</title>
 <link rel="stylesheet" href="/static/app.css">
+<script src="/static/webauthn.js" defer></script>
+<script src="/static/app.js" defer></script>
 </head>
 <body>
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
 {{if .Role}}
 <header class="topo">
   <a class="marca" href="/">Painel Teodoro</a>
   <nav aria-label="Principal">
     <a href="/">Hoje</a>
+    {{template "menu" .}}
+    <a href="/conta">Minha conta</a>
+    {{if .CanUsers}}<a href="/admin/usuarios">Usuários</a>{{end}}
     {{if .CanAudit}}<a href="/admin/auditoria">Auditoria</a>{{end}}
   </nav>
   <form method="post" action="/logout" class="sair">
@@ -27,3 +34,5 @@
 </main>
 </body>
 </html>{{end}}
+
+{{define "menu"}}{{end}}

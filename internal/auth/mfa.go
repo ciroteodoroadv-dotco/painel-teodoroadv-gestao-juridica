@@ -19,28 +19,38 @@ func (a *Auth) mfaGet(w http.ResponseWriter, r *http.Request, s *Session) {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return
 	}
-	if !u.TOTPConfirmed {
+	keys, _ := a.Store.Keys(r.Context(), u.ID)
+	if !u.TOTPConfirmed && len(keys) == 0 {
 		http.Redirect(w, r, "/2fa/setup", http.StatusSeeOther)
 		return
 	}
-	a.render(w, r, http.StatusOK, "mfa.html", pageData{Title: "Segundo fator", Email: s.Email})
+	a.render(w, r, http.StatusOK, "mfa.html", pageData{Title: "Segundo fator", Email: s.Email,
+		HasTOTP: u.TOTPConfirmed, HasKey: len(keys) > 0 && a.WA != nil})
 }
 
 // mfaPost aceita o código do aplicativo (6 dígitos) ou um código de recuperação (xxxxx-xxxxx).
 func (a *Auth) mfaPost(w http.ResponseWriter, r *http.Request, s *Session) {
 	ctx := r.Context()
 	code := strings.TrimSpace(r.PostFormValue("codigo"))
+	var hasTOTP, hasKey bool
 	bad := func(motivo string, status int) {
 		_ = a.audit(r, w, nil, audit.Event{Actor: s.UserID, Action: "mfa.falha", Result: audit.Falha,
 			Meta: map[string]string{"motivo": motivo, "etapa": "2fa"}})
-		a.render(w, r, status, "mfa.html", pageData{Title: "Segundo fator", Email: s.Email, Error: msgCodigoInvalido})
+		a.render(w, r, status, "mfa.html", pageData{Title: "Segundo fator", Email: s.Email, Error: msgCodigoInvalido,
+			HasTOTP: hasTOTP, HasKey: hasKey})
 	}
 	if !a.Limiter.Allow("mfa|" + clientIP(r)) {
 		bad("limite_ip", http.StatusTooManyRequests)
 		return
 	}
 	u, err := a.Store.UserByID(ctx, s.UserID)
-	if err != nil || !u.TOTPConfirmed {
+	if err != nil {
+		http.Error(w, "Erro interno.", http.StatusInternalServerError)
+		return
+	}
+	keys, _ := a.Store.Keys(ctx, u.ID)
+	hasTOTP, hasKey = u.TOTPConfirmed, len(keys) > 0 && a.WA != nil
+	if !u.TOTPConfirmed && len(keys) == 0 {
 		http.Redirect(w, r, "/2fa/setup", http.StatusSeeOther)
 		return
 	}
@@ -60,7 +70,7 @@ func (a *Auth) mfaPost(w http.ResponseWriter, r *http.Request, s *Session) {
 	if strings.Contains(code, "-") {
 		via = "recuperacao"
 		ok, err = a.Store.UseRecoveryCode(ctx, tx, u.ID, code)
-	} else if secret, e := TOTPSecret(a.FieldKey, u); e == nil {
+	} else if secret, e := TOTPSecret(a.FieldKey, u); e == nil && u.TOTPConfirmed {
 		var step int64
 		if step, ok = CheckTOTP(secret, code, u.TOTPLastStep, now); ok {
 			err = a.Store.UseTOTPStep(ctx, tx, u.ID, step)
@@ -100,16 +110,17 @@ func (a *Auth) setupGet(w http.ResponseWriter, r *http.Request, s *Session) {
 	if !ok {
 		return
 	}
-	if u.TOTPConfirmed {
+	if a.hasFactor(r, u) {
 		http.Redirect(w, r, "/2fa", http.StatusSeeOther)
 		return
 	}
-	a.render(w, r, http.StatusOK, "setup.html", pageData{Title: "Ativar segundo fator", Email: s.Email, Secret: groups4(secret)})
+	a.render(w, r, http.StatusOK, "setup.html", pageData{Title: "Ativar segundo fator", Email: s.Email,
+		Secret: groups4(secret), HasKey: a.WA != nil})
 }
 
 func (a *Auth) setupQR(w http.ResponseWriter, r *http.Request, s *Session) {
 	u, secret, ok := a.pendingSecret(w, r, s)
-	if !ok || u.TOTPConfirmed {
+	if !ok || a.hasFactor(r, u) {
 		http.NotFound(w, r)
 		return
 	}
@@ -136,7 +147,7 @@ func (a *Auth) pendingSecret(w http.ResponseWriter, r *http.Request, s *Session)
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return nil, "", false
 	}
-	if u.TOTPConfirmed {
+	if a.hasFactor(r, u) {
 		return u, "", true
 	}
 	if secret, err := TOTPSecret(a.FieldKey, u); err == nil {
@@ -159,7 +170,7 @@ func (a *Auth) setupPost(w http.ResponseWriter, r *http.Request, s *Session) {
 	if !ok {
 		return
 	}
-	if u.TOTPConfirmed {
+	if a.hasFactor(r, u) {
 		http.Redirect(w, r, "/2fa", http.StatusSeeOther)
 		return
 	}
@@ -168,7 +179,7 @@ func (a *Auth) setupPost(w http.ResponseWriter, r *http.Request, s *Session) {
 		_ = a.audit(r, w, nil, audit.Event{Actor: u.ID, Action: "mfa.cadastro_falha", Result: audit.Falha,
 			Meta: map[string]string{"etapa": "cadastro"}})
 		a.render(w, r, http.StatusUnauthorized, "setup.html", pageData{Title: "Ativar segundo fator",
-			Email: s.Email, Secret: groups4(secret), Error: msgCodigoInvalido})
+			Email: s.Email, Secret: groups4(secret), Error: msgCodigoInvalido, HasKey: a.WA != nil})
 		return
 	}
 	tx, err := a.Pool.Begin(ctx)
@@ -201,6 +212,15 @@ func (a *Auth) setupPost(w http.ResponseWriter, r *http.Request, s *Session) {
 	// O token CSRF desta resposta deve acompanhar a NOVA sessão.
 	r = withValue(r, sidKey{}, tok)
 	a.render(w, r, http.StatusOK, "recovery.html", pageData{Title: "Códigos de recuperação", Email: s.Email, Codes: codes})
+}
+
+// hasFactor diz se o usuário já tem algum segundo fator (TOTP confirmado ou chave física).
+func (a *Auth) hasFactor(r *http.Request, u *User) bool {
+	if u.TOTPConfirmed {
+		return true
+	}
+	keys, _ := a.Store.Keys(r.Context(), u.ID)
+	return len(keys) > 0
 }
 
 func groups4(s string) string {

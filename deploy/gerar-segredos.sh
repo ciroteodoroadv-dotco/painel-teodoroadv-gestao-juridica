@@ -14,6 +14,7 @@ gerar() { # nome, comando
   fi
 }
 gerar db_password "openssl rand -hex 24"
+gerar db_app_password "openssl rand -hex 24"
 gerar session_key "openssl rand -base64 32"
 gerar field_key "openssl rand -base64 32"
-echo "Pronto. Guarde cópia destes 3 arquivos em local seguro: sem field_key os dados cifrados não abrem."
+echo "Pronto. Guarde cópia destes 4 arquivos em local seguro: sem field_key os dados cifrados não abrem."

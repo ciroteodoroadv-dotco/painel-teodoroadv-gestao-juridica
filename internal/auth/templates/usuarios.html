@@ -1,0 +1,65 @@
+{{define "content"}}
+<h1>Usuários</h1>
+{{if .Notice}}<p class="ok" role="status">{{.Notice}}</p>{{end}}
+{{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
+
+<section aria-labelledby="u-novo">
+  <h2 id="u-novo">Novo usuário</h2>
+  <p class="apoio">A senha é provisória: a pessoa será obrigada a trocá-la no primeiro acesso. Entregue-a por canal seguro.</p>
+  <form method="post" action="/admin/usuarios" class="linha">
+    <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+    <div><label for="n-email">E-mail</label><input id="n-email" name="email" type="email" required></div>
+    <div><label for="n-papel">Papel</label>
+      <select id="n-papel" name="papel" required>
+        <option value="assistente">Assistente</option><option value="advogado">Advogado</option><option value="administrador">Administrador</option>
+      </select></div>
+    <div><label for="n-senha">Senha provisória</label><input id="n-senha" name="senha" type="password" required minlength="12" autocomplete="new-password"></div>
+    <button type="submit">Criar</button>
+  </form>
+</section>
+
+<section aria-labelledby="u-lista">
+  <h2 id="u-lista">Usuários cadastrados</h2>
+  <div class="tabela">
+  <table>
+    <thead><tr><th scope="col">E-mail</th><th scope="col">Papel</th><th scope="col">Situação</th><th scope="col">Ações</th></tr></thead>
+    <tbody>
+    {{range .Users}}
+    <tr>
+      <td>{{.Email}}</td>
+      <td>{{.Role}}</td>
+      <td>{{if not .Active}}desativado{{else if .Locked}}bloqueado{{else}}ativo{{end}}{{if .Temporary}} · senha provisória{{end}}{{if not .HasMFA}} · sem 2º fator{{end}}</td>
+      <td class="acoes">
+        <form method="post" action="/admin/usuarios/{{.ID}}/papel">
+          <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+          <select name="papel" aria-label="Papel de {{.Email}}">
+            <option value="assistente" {{if eq (printf "%s" .Role) "assistente"}}selected{{end}}>assistente</option>
+            <option value="advogado" {{if eq (printf "%s" .Role) "advogado"}}selected{{end}}>advogado</option>
+            <option value="administrador" {{if eq (printf "%s" .Role) "administrador"}}selected{{end}}>administrador</option>
+          </select>
+          <button type="submit" class="secundario">Mudar papel</button>
+        </form>
+        <form method="post" action="/admin/usuarios/{{.ID}}/ativo">
+          <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+          <input type="hidden" name="ativo" value="{{if .Active}}0{{else}}1{{end}}">
+          <button type="submit" class="secundario">{{if .Active}}Desativar{{else}}Reativar{{end}}</button>
+        </form>
+        {{if .Locked}}
+        <form method="post" action="/admin/usuarios/{{.ID}}/desbloquear">
+          <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+          <button type="submit" class="secundario">Desbloquear</button>
+        </form>
+        {{end}}
+        <form method="post" action="/admin/usuarios/{{.ID}}/senha">
+          <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+          <input name="senha" type="password" minlength="12" placeholder="nova senha provisória" aria-label="Nova senha provisória de {{.Email}}" required autocomplete="new-password">
+          <button type="submit" class="secundario">Redefinir senha</button>
+        </form>
+      </td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+  </div>
+</section>
+{{end}}

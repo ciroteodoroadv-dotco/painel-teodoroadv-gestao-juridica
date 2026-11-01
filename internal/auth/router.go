@@ -54,11 +54,15 @@ func (rt *Router) Handle(pattern string, perm Perm, h HandlerFunc) {
 		case perm == MFAPending && s.MFAVerified:
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
-		case perm != MFAPending && !s.MFAVerified:
+		case perm != MFAPending && perm != AnySession && !s.MFAVerified:
 			redirectOrDeny(w, r, "/2fa")
 			return
-		case perm != MFAPending && perm != AnyLoggedIn && !Can(s.Role, perm):
+		case perm != MFAPending && perm != AnyLoggedIn && perm != AnySession && !Can(s.Role, perm):
 			rt.a.deny(w, r, s, string(perm), http.StatusForbidden)
+			return
+		}
+		if s.MustChange && perm != AnyLoggedIn && perm != AnySession && perm != MFAPending {
+			redirectOrDeny(w, r, "/conta/senha")
 			return
 		}
 		h(w, r, s)

@@ -23,6 +23,7 @@ type Session struct {
 	UserID, Email string
 	Role          Role
 	MFAVerified   bool
+	MustChange    bool // senha provisória: só pode trocar a senha
 }
 
 // NewToken gera um identificador de 256 bits.
@@ -59,8 +60,8 @@ func (s *Store) LookupSession(ctx context.Context, token string, now time.Time) 
 		active            bool
 	)
 	err := s.Pool.QueryRow(ctx, `SELECT s.user_id, u.email, u.role, s.mfa_verified, s.last_seen_at,
-		s.expires_at, u.active FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id_hash=$1`,
-		hashToken(token)).Scan(&ss.UserID, &ss.Email, &role, &ss.MFAVerified, &lastSeen, &expires, &active)
+		s.expires_at, u.active, u.must_change_password FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id_hash=$1`,
+		hashToken(token)).Scan(&ss.UserID, &ss.Email, &role, &ss.MFAVerified, &lastSeen, &expires, &active, &ss.MustChange)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}

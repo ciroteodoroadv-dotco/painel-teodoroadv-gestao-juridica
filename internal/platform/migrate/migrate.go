@@ -30,6 +30,16 @@ func Up(ctx context.Context, pool *pgxpool.Pool) error {
 	return goose.UpContext(ctx, db, ".")
 }
 
+// Reset reverte TODAS as migrações (uso exclusivo de testes: apaga o esquema inteiro).
+func Reset(ctx context.Context, pool *pgxpool.Pool) error {
+	db, err := open(pool)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return goose.DownToContext(ctx, db, ".", 0)
+}
+
 // Down reverte a última migração.
 func Down(ctx context.Context, pool *pgxpool.Pool) error {
 	db, err := open(pool)

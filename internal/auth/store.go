@@ -53,18 +53,18 @@ func (s *Store) UserByID(ctx context.Context, id string) (*User, error) {
 	return scanUser(s.Pool.QueryRow(ctx, `SELECT `+userCols+` FROM users WHERE id=$1`, id))
 }
 
-// CreateUser insere um usuário e devolve o id.
-func (s *Store) CreateUser(ctx context.Context, tx pgx.Tx, email string, role Role, hash string) (string, error) {
+// CreateUser insere um usuário e devolve o id. mustChange marca a senha como provisória.
+func (s *Store) CreateUser(ctx context.Context, tx pgx.Tx, email string, role Role, hash string, mustChange bool) (string, error) {
 	var id string
-	err := tx.QueryRow(ctx, `INSERT INTO users (email, role, password_hash) VALUES ($1,$2,$3) RETURNING id`,
-		strings.TrimSpace(email), string(role), hash).Scan(&id)
+	err := tx.QueryRow(ctx, `INSERT INTO users (email, role, password_hash, must_change_password) VALUES ($1,$2,$3,$4) RETURNING id`,
+		strings.TrimSpace(email), string(role), hash, mustChange).Scan(&id)
 	return id, err
 }
 
 // SetPassword troca a senha, zera bloqueios e revoga todas as sessões do usuário.
-func (s *Store) SetPassword(ctx context.Context, tx pgx.Tx, userID, hash string) error {
+func (s *Store) SetPassword(ctx context.Context, tx pgx.Tx, userID, hash string, mustChange bool) error {
 	if _, err := tx.Exec(ctx, `UPDATE users SET password_hash=$2, failed_attempts=0, locked_until=NULL,
-		updated_at=now(), version=version+1 WHERE id=$1`, userID, hash); err != nil {
+		must_change_password=$3, updated_at=now(), version=version+1 WHERE id=$1`, userID, hash, mustChange); err != nil {
 		return err
 	}
 	_, err := tx.Exec(ctx, `DELETE FROM sessions WHERE user_id=$1`, userID)

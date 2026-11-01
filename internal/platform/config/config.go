@@ -22,9 +22,14 @@ type Config struct {
 	Dev              bool
 	AccessTeamDomain string
 	AccessAUD        string
-	DatabaseURL      string // contém a senha do banco
-	SessionKey       []byte
-	FieldKey         []byte
+	// PublicURL é o endereço pelo qual o navegador acessa o painel (define o domínio da chave de segurança).
+	PublicURL   string
+	DatabaseURL string // conexão do DONO do banco (migrações); contém a senha
+	// AppDatabaseURL é a conexão do papel restrito usado em tempo de execução; contém a senha.
+	AppDatabaseURL string
+	AppDBPassword  string
+	SessionKey     []byte
+	FieldKey       []byte
 }
 
 // String é seguro para log: não revela nenhum segredo.
@@ -53,6 +58,7 @@ func Load(e Env) (Config, error) {
 	}
 
 	dbPass := get("PAINEL_DB_PASSWORD")
+	appPass := get("PAINEL_DB_APP_PASSWORD")
 	sessionKey := decodeKey(get("PAINEL_SESSION_KEY"), "PAINEL_SESSION_KEY", &errs)
 	fieldKey := decodeKey(get("PAINEL_FIELD_KEY"), "PAINEL_FIELD_KEY", &errs)
 
@@ -74,6 +80,14 @@ func Load(e Env) (Config, error) {
 		errs = append(errs, errors.New("em produção é obrigatório definir PAINEL_ACCESS_TEAM_DOMAIN e PAINEL_ACCESS_AUD (Cloudflare Access)"))
 	}
 
+	public := strings.TrimSpace(e.Getenv("PAINEL_PUBLIC_URL"))
+	if public == "" && dev {
+		public = "http://localhost:8080"
+	}
+	if u, err := url.Parse(public); err != nil || u.Hostname() == "" || (u.Scheme != "https" && !(dev && u.Scheme == "http")) {
+		errs = append(errs, errors.New("PAINEL_PUBLIC_URL inválida: use https://seu-dominio (http só em dev, com localhost)"))
+	}
+
 	if len(errs) > 0 {
 		return Config{}, errors.Join(errs...)
 	}
@@ -84,7 +98,10 @@ func Load(e Env) (Config, error) {
 		Dev:              dev,
 		AccessTeamDomain: team,
 		AccessAUD:        aud,
+		PublicURL:        strings.TrimRight(public, "/"),
 		DatabaseURL:      dbURL(e, dbHost, dbName, dbUser, dbPass),
+		AppDBPassword:    appPass,
+		AppDatabaseURL:   dbURL(e, dbHost, dbName, "painel_app", appPass),
 		SessionKey:       sessionKey,
 		FieldKey:         fieldKey,
 	}, nil

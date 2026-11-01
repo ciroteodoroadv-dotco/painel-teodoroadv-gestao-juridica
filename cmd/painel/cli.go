@@ -13,7 +13,6 @@ import (
 	"painelteodoro/internal/audit"
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/platform/config"
-	"painelteodoro/internal/platform/db"
 	"painelteodoro/internal/platform/migrate"
 )
 
@@ -30,18 +29,19 @@ func runCLI(args []string) error {
 		return fmt.Errorf("configuração incompleta:\n%w", err)
 	}
 	ctx := context.Background()
-	pool, err := db.Open(ctx, cfg.DatabaseURL)
+	owner, pool, err := openDBs(ctx, cfg)
 	if err != nil {
 		return err
 	}
+	defer owner.Close()
 	defer pool.Close()
 	st := &auth.Store{Pool: pool}
 
 	switch {
 	case len(args) == 2 && args[0] == "migrate" && args[1] == "up":
-		return migrate.Up(ctx, pool)
+		return migrate.Up(ctx, owner)
 	case len(args) == 2 && args[0] == "migrate" && args[1] == "down":
-		return migrate.Down(ctx, pool)
+		return migrate.Down(ctx, owner)
 	case len(args) == 2 && args[0] == "audit" && args[1] == "verify":
 		n, err := audit.Verify(ctx, pool)
 		if err != nil {
@@ -93,7 +93,7 @@ func userCreate(ctx context.Context, st *auth.Store, email string, role auth.Rol
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	id, err := st.CreateUser(ctx, tx, email, role, hash)
+	id, err := st.CreateUser(ctx, tx, email, role, hash, true)
 	if err != nil {
 		return fmt.Errorf("não consegui criar (e-mail já existe?): %w", err)
 	}
@@ -103,7 +103,7 @@ func userCreate(ctx context.Context, st *auth.Store, email string, role auth.Rol
 	if err := tx.Commit(ctx); err != nil {
 		return err
 	}
-	fmt.Println("Usuário criado. No primeiro acesso ele cadastrará o segundo fator.")
+	fmt.Println("Usuário criado com senha PROVISÓRIA: no primeiro acesso ele troca a senha e cadastra o segundo fator.")
 	return nil
 }
 
@@ -128,7 +128,7 @@ func userReset(ctx context.Context, st *auth.Store, email string) error {
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	if err := st.SetPassword(ctx, tx, u.ID, hash); err != nil {
+	if err := st.SetPassword(ctx, tx, u.ID, hash, true); err != nil {
 		return err
 	}
 	if err := cliAudit(ctx, tx, "usuario.senha_redefinida", u.ID, nil); err != nil {

@@ -16,7 +16,7 @@ cd ~/projetos/painel-teodoro-v2/deploy
 ./gerar-segredos.sh
 ```
 
-Isso cria 3 arquivos em `deploy/secrets/`. Eles **nunca** vão para o Git. **Faça cópia** dos três em local
+Isso cria 4 arquivos em `deploy/secrets/`. Eles **nunca** vão para o Git. **Faça cópia** dos três em local
 seguro (fora do computador). Sem `field_key`, dados cifrados no futuro não poderão ser abertos.
 
 ## 2. Ligar no seu computador

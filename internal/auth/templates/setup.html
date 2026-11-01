@@ -1,15 +1,29 @@
 {{define "content"}}
 <h1>Ativar o segundo fator</h1>
-<p class="apoio">1. Instale um aplicativo autenticador (ou use uma chave de segurança compatível com TOTP).<br>
-2. Leia o QR code ou digite a chave abaixo.<br>
-3. Digite o código de 6 dígitos que o aplicativo mostrar.</p>
-<img class="qr" src="/2fa/setup/qr.png" width="220" height="220" alt="QR code para o aplicativo autenticador">
-<p>Chave manual: <code class="chave">{{.Secret}}</code></p>
+<p class="apoio">Escolha <strong>uma</strong> opção. Depois você pode cadastrar a outra em “Minha conta”.</p>
 {{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
-<form method="post" action="/2fa/setup">
-  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
-  <label for="codigo">Código de 6 dígitos</label>
-  <input id="codigo" name="codigo" inputmode="numeric" required autofocus autocomplete="one-time-code">
-  <button type="submit">Ativar</button>
-</form>
+<p id="wa-msg" class="erro" role="status" aria-live="polite"></p>
+
+{{if .HasKey}}
+<section aria-labelledby="t-chave">
+  <h2 id="t-chave">Opção A — Chave de segurança</h2>
+  <p class="apoio">Chave física (USB/NFC), biometria ou passkey do aparelho. É a opção mais segura.</p>
+  <label for="wa-nome">Nome para reconhecer esta chave</label>
+  <input id="wa-nome" maxlength="60" placeholder="Ex.: Chave azul do escritório">
+  <button type="button" data-wa="registrar">Cadastrar chave de segurança</button>
+</section>
+{{end}}
+
+<section aria-labelledby="t-app">
+  <h2 id="t-app">{{if .HasKey}}Opção B — {{end}}Aplicativo autenticador</h2>
+  <p class="apoio">1. Instale um aplicativo autenticador no celular.<br>2. Leia o QR code ou digite a chave.<br>3. Digite o código de 6 dígitos que o aplicativo mostrar.</p>
+  <img class="qr" src="/2fa/setup/qr.png" width="220" height="220" alt="QR code para o aplicativo autenticador">
+  <p>Chave manual: <code class="chave">{{.Secret}}</code></p>
+  <form method="post" action="/2fa/setup">
+    <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+    <label for="codigo">Código de 6 dígitos</label>
+    <input id="codigo" name="codigo" inputmode="numeric" required autocomplete="one-time-code">
+    <button type="submit">Ativar aplicativo</button>
+  </form>
+</section>
 {{end}}

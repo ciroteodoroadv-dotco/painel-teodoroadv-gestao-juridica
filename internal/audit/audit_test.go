@@ -25,7 +25,9 @@ func testPool(t *testing.T) *pgxpool.Pool {
 	}
 	t.Cleanup(pool.Close)
 	// Recomeça do zero: reverte (se houver) e aplica de novo — também prova up→down→up.
-	_ = migrate.Down(ctx, pool)
+	if err := migrate.Reset(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
 	if err := migrate.Up(ctx, pool); err != nil {
 		t.Fatal(err)
 	}

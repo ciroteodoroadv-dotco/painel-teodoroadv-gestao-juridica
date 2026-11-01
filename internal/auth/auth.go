@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -40,6 +41,10 @@ type Auth struct {
 	// RequireAccessEmail exige que o e-mail do login seja o mesmo do JWT do Cloudflare Access.
 	RequireAccessEmail bool
 	Now                func() time.Time
+	// WA é nil quando a chave física está desligada (sem PAINEL_PUBLIC_URL válido).
+	WA  *webauthn.WebAuthn
+	cer ceremonies
+	fl  flash
 }
 
 func (a *Auth) now() time.Time {
@@ -58,6 +63,12 @@ type pageData struct {
 	ChainOK                         bool
 	ChainMsg                        string
 	CanAudit                        bool
+	Next                            string
+	HasTOTP, HasKey, MustChange     bool
+	Keys                            []KeyInfo
+	Users                           []UserRow
+	Notice                          string
+	CanUsers                        bool
 }
 
 func (a *Auth) render(w http.ResponseWriter, r *http.Request, status int, page string, d pageData) {
@@ -68,6 +79,8 @@ func (a *Auth) render(w http.ResponseWriter, r *http.Request, status int, page s
 		return
 	}
 	d.CSRF = csrf.Token(a.SessionKey, csrfID(r))
+	d.CanAudit = Can(Role(d.Role), PermAuditRead)
+	d.CanUsers = Can(Role(d.Role), PermUsersManage)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
 	if err := t.ExecuteTemplate(w, "base", d); err != nil {

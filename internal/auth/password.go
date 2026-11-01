@@ -61,7 +61,7 @@ func CheckPolicy(pw, email string) error {
 		return fmt.Errorf("a senha precisa ter pelo menos %d caracteres", minPwLen)
 	}
 	low := strings.ToLower(pw)
-	if commonPasswords[low] {
+	if isCommonPassword(low) {
 		return errors.New("essa senha é muito comum; escolha outra")
 	}
 	if local, _, ok := strings.Cut(strings.ToLower(email), "@"); ok && len(local) >= 4 && strings.Contains(low, local) {

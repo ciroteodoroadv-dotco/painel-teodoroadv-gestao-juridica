@@ -17,6 +17,7 @@ const (
 	Public      Perm = "publico"         // sem sessão (login, estáticos)
 	MFAPending  Perm = "mfa:pendente"    // sessão com senha ok, 2FA ainda não
 	AnyLoggedIn Perm = "sessao:qualquer" // sessão completa, qualquer papel
+	AnySession  Perm = "sessao:etapa"    // sessão em qualquer etapa (o handler decide o que pode)
 
 	PermHome         Perm = "home:ler"
 	PermAuditRead    Perm = "auditoria:ler"

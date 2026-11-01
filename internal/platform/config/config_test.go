@@ -24,8 +24,9 @@ func envOf(vars map[string]string, files map[string]string) Env {
 func baseVars() map[string]string {
 	return map[string]string{
 		"PAINEL_DB_HOST": "db", "PAINEL_DB_NAME": "painel", "PAINEL_DB_USER": "painel",
-		"PAINEL_DB_PASSWORD": "s3nha/com:especiais", "PAINEL_SESSION_KEY": goodKey, "PAINEL_FIELD_KEY": goodKey,
+		"PAINEL_DB_PASSWORD": "s3nha/com:especiais", "PAINEL_DB_APP_PASSWORD": "app-senha-x", "PAINEL_SESSION_KEY": goodKey, "PAINEL_FIELD_KEY": goodKey,
 		"PAINEL_ACCESS_TEAM_DOMAIN": "t.cloudflareaccess.com", "PAINEL_ACCESS_AUD": "aud",
+		"PAINEL_PUBLIC_URL": "https://painel.exemplo.test",
 	}
 }
 
@@ -64,7 +65,7 @@ func TestLoadFalhaSemSegredos(t *testing.T) {
 	if err == nil {
 		t.Fatal("deveria falhar sem segredos")
 	}
-	for _, n := range []string{"PAINEL_DB_PASSWORD", "PAINEL_SESSION_KEY", "PAINEL_FIELD_KEY"} {
+	for _, n := range []string{"PAINEL_DB_PASSWORD", "PAINEL_DB_APP_PASSWORD", "PAINEL_SESSION_KEY", "PAINEL_FIELD_KEY"} {
 		if !strings.Contains(err.Error(), n) {
 			t.Errorf("erro deveria citar %s: %v", n, err)
 		}
@@ -98,5 +99,23 @@ func TestStringNaoVazaSegredo(t *testing.T) {
 	c, _ := Load(envOf(baseVars(), nil))
 	if s := c.String(); strings.Contains(s, "especiais") || strings.Contains(s, goodKey) {
 		t.Fatalf("String vazou segredo: %s", s)
+	}
+}
+
+func TestPublicURL(t *testing.T) {
+	v := baseVars()
+	v["PAINEL_PUBLIC_URL"] = "http://painel.exemplo.test"
+	if _, err := Load(envOf(v, nil)); err == nil {
+		t.Error("http em produção deveria ser recusado")
+	}
+	v["PAINEL_ENV"] = "dev"
+	delete(v, "PAINEL_PUBLIC_URL")
+	c, err := Load(envOf(v, nil))
+	if err != nil || c.PublicURL != "http://localhost:8080" {
+		t.Errorf("dev sem URL deveria usar localhost: %v %q", err, c.PublicURL)
+	}
+	delete(v, "PAINEL_ENV")
+	if _, err := Load(envOf(v, nil)); err == nil {
+		t.Error("produção sem PAINEL_PUBLIC_URL deveria falhar")
 	}
 }

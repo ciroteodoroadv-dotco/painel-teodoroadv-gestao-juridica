@@ -7,19 +7,20 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/go-webauthn/webauthn/webauthn"
+
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/platform/cfaccess"
 	"painelteodoro/internal/platform/config"
-	"painelteodoro/internal/platform/db"
 	"painelteodoro/internal/platform/health"
 	"painelteodoro/internal/platform/httpx"
 	"painelteodoro/internal/platform/logs"
-	"painelteodoro/internal/platform/migrate"
 	"painelteodoro/internal/platform/ratelimit"
 	"painelteodoro/web"
 )
@@ -53,14 +54,12 @@ func serve() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	pool, err := db.Open(ctx, cfg.DatabaseURL)
+	owner, pool, err := openDBs(ctx, cfg)
 	if err != nil {
 		return err
 	}
+	owner.Close() // o app roda só com o papel restrito
 	defer pool.Close()
-	if err := migrate.Up(ctx, pool); err != nil {
-		return fmt.Errorf("migração do banco falhou: %w", err)
-	}
 
 	mux := http.NewServeMux()
 	health.Register(mux, pool, log) // internas: o middleware do Access só as libera sem Cf-Ray
@@ -73,7 +72,13 @@ func serve() error {
 	rt.Handle("GET /static/", auth.Public, func(w http.ResponseWriter, r *http.Request, _ *auth.Session) {
 		http.StripPrefix("/static/", http.FileServerFS(web.Static())).ServeHTTP(w, r)
 	})
+	if a.WA, err = newWebAuthn(cfg.PublicURL); err != nil {
+		return fmt.Errorf("chave de segurança (WebAuthn): %w", err)
+	}
 	a.Register(rt)
+	a.RegisterWebAuthn(rt)
+	a.RegisterAccount(rt)
+	a.RegisterAdmin(rt)
 	a.RegisterPages(rt)
 
 	srv := httpx.NewServer(cfg.Addr, httpx.Chain(cfaccess.Middleware(verifier(cfg, log), log, mux), log))
@@ -93,6 +98,19 @@ func serve() error {
 	}
 	log.Info("servidor encerrado")
 	return nil
+}
+
+// newWebAuthn configura a chave de segurança: o domínio (RP ID) vem da URL pública.
+func newWebAuthn(publicURL string) (*webauthn.WebAuthn, error) {
+	u, err := url.Parse(publicURL)
+	if err != nil {
+		return nil, err
+	}
+	return webauthn.New(&webauthn.Config{
+		RPDisplayName: "Painel Teodoro",
+		RPID:          u.Hostname(),
+		RPOrigins:     []string{u.Scheme + "://" + u.Host},
+	})
 }
 
 // verifier devolve nil no modo dev (sem Cloudflare), avisando em voz alta.

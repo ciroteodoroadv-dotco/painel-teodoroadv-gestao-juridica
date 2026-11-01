@@ -1,18 +1,30 @@
 package auth
 
-// commonPasswords é uma lista MÍNIMA de senhas notoriamente vazadas com 12+ caracteres.
-// Limite conhecido: substituir por lista maior (ex.: top 100 mil) antes de produção — ver plano M2.
-var commonPasswords = func() map[string]bool {
-	m := map[string]bool{}
-	for _, p := range []string{
-		"123456789012", "1234567890123", "123456789abc", "qwertyuiopas", "qwertyuiop12",
-		"password1234", "password12345", "passw0rd1234", "senha1234567", "senha12345678",
-		"mudar1234567", "mudar@123456", "admin1234567", "administrator", "abcdefghijkl",
-		"abc123456789", "iloveyou1234", "letmein12345", "welcome12345", "changeme1234",
-		"qazwsxedcrfv", "1q2w3e4r5t6y", "1qaz2wsx3edc", "000000000000", "111111111111",
-		"brasil123456", "flamengo1234", "corinthians1", "123mudar12345", "trocar123456",
-	} {
-		m[p] = true
-	}
-	return m
-}()
+import (
+	_ "embed"
+	"strings"
+	"sync"
+)
+
+// senhasComuns é a lista de senhas notoriamente vazadas com 12+ caracteres (procedência em
+// senhas_comuns.LEIAME.txt). A política já exige 12+, então só essas importam.
+//
+//go:embed senhas_comuns.txt
+var senhasComuns string
+
+var (
+	commonOnce sync.Once
+	commonSet  map[string]struct{}
+)
+
+func isCommonPassword(pw string) bool {
+	commonOnce.Do(func() {
+		lines := strings.Split(senhasComuns, "\n")
+		commonSet = make(map[string]struct{}, len(lines))
+		for _, l := range lines {
+			commonSet[l] = struct{}{}
+		}
+	})
+	_, ok := commonSet[strings.ToLower(pw)]
+	return ok
+}

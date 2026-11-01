@@ -35,6 +35,10 @@ func TestPolitica(t *testing.T) {
 			t.Errorf("senha %q deveria ser recusada", p)
 		}
 	}
+	primeira, _, _ := strings.Cut(senhasComuns, "\n")
+	if len(primeira) < 12 || CheckPolicy(primeira, "x@exemplo.test") == nil {
+		t.Errorf("entrada da lista de senhas vazadas (%q) deveria ser recusada", primeira)
+	}
 	if err := CheckPolicy("cavalo-bateria-grampo-7", "maria.silva@exemplo.test"); err != nil {
 		t.Errorf("senha boa recusada: %v", err)
 	}

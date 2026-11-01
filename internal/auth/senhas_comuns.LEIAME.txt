@@ -1,0 +1,2 @@
+Fonte: SecLists (danielmiessler/SecLists, licença MIT), Passwords/Common-Credentials/Pwdb_top-1000000.txt,
+baixado em 2026-11-01; filtrado para 12-64 caracteres, minúsculas, ASCII imprimível, sem duplicatas.

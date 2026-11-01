@@ -1,0 +1,44 @@
+{{define "content"}}
+<h1>Minha conta</h1>
+{{if .Notice}}<p class="ok" role="status">{{.Notice}}</p>{{end}}
+<p id="wa-msg" class="erro" role="status" aria-live="polite"></p>
+
+<section aria-labelledby="c-senha">
+  <h2 id="c-senha">Senha</h2>
+  <p><a class="botao" href="/conta/senha">Trocar senha</a></p>
+</section>
+
+<section aria-labelledby="c-2fa">
+  <h2 id="c-2fa">Segundo fator</h2>
+  <p>Aplicativo autenticador: <strong>{{if .HasTOTP}}ativo{{else}}não cadastrado{{end}}</strong></p>
+  <h3>Chaves de segurança</h3>
+  {{if .Keys}}
+  <ul class="lista">
+    {{range .Keys}}
+    <li>
+      <span>{{.Name}} <small class="apoio">· cadastrada em {{.CreatedAt.Format "02/01/2006"}}{{if .LastUsed}} · último uso {{.LastUsed.Format "02/01/2006"}}{{end}}</small></span>
+      <form method="post" action="/conta/chave/remover">
+        <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+        <input type="hidden" name="id" value="{{.IDHex}}">
+        <button type="submit" class="secundario">Remover</button>
+      </form>
+    </li>
+    {{end}}
+  </ul>
+  {{else}}<p class="apoio">Nenhuma chave cadastrada.</p>{{end}}
+  {{if .HasKey}}
+  <label for="wa-nome">Nome da nova chave</label>
+  <input id="wa-nome" maxlength="60" placeholder="Ex.: Chave azul do escritório">
+  <button type="button" data-wa="registrar">Cadastrar nova chave</button>
+  {{end}}
+</section>
+
+<section aria-labelledby="c-rec">
+  <h2 id="c-rec">Códigos de recuperação</h2>
+  <p class="apoio">Gerar novos códigos invalida os anteriores.</p>
+  <form method="post" action="/conta/recuperacao">
+    <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+    <button type="submit" class="secundario">Gerar novos códigos</button>
+  </form>
+</section>
+{{end}}

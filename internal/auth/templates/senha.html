@@ -1,0 +1,16 @@
+{{define "content"}}
+<h1>Trocar senha</h1>
+{{if .MustChange}}<p class="erro" role="status">Sua senha é provisória. Defina uma nova para continuar.</p>{{end}}
+{{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
+<p class="apoio">Mínimo de 12 caracteres, que não seja comum nem contenha o seu e-mail. Frases longas funcionam bem.</p>
+<form method="post" action="/conta/senha">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <label for="atual">Senha atual</label>
+  <input id="atual" name="atual" type="password" required autocomplete="current-password" autofocus>
+  <label for="nova">Nova senha</label>
+  <input id="nova" name="nova" type="password" required minlength="12" autocomplete="new-password">
+  <label for="confirmar">Repita a nova senha</label>
+  <input id="confirmar" name="confirmar" type="password" required minlength="12" autocomplete="new-password">
+  <button type="submit">Trocar senha</button>
+</form>
+{{end}}

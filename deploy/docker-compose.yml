@@ -32,13 +32,15 @@ services:
       # Produção exige o Cloudflare Access (preenchidos no M5). Vazio = o app recusa iniciar.
       PAINEL_ACCESS_TEAM_DOMAIN: ${PAINEL_ACCESS_TEAM_DOMAIN:-}
       PAINEL_ACCESS_AUD: ${PAINEL_ACCESS_AUD:-}
+      PAINEL_PUBLIC_URL: ${PAINEL_PUBLIC_URL:-} # ex.: https://painel.seudominio.com.br
       PAINEL_DB_HOST: db
       PAINEL_DB_NAME: painel
       PAINEL_DB_USER: painel
       PAINEL_DB_PASSWORD_FILE: /run/secrets/db_password
+      PAINEL_DB_APP_PASSWORD_FILE: /run/secrets/db_app_password
       PAINEL_SESSION_KEY_FILE: /run/secrets/session_key
       PAINEL_FIELD_KEY_FILE: /run/secrets/field_key
-    secrets: [db_password, session_key, field_key]
+    secrets: [db_password, db_app_password, session_key, field_key]
     networks: [banco, borda]
     read_only: true
     cap_drop: [ALL]
@@ -59,5 +61,6 @@ volumes:
 
 secrets:
   db_password: { file: ./secrets/db_password }
+  db_app_password: { file: ./secrets/db_app_password }
   session_key: { file: ./secrets/session_key }
   field_key: { file: ./secrets/field_key }
