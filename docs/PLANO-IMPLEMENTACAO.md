@@ -38,26 +38,39 @@ Parte 1 (implementada em 01/11/2026):
 - [x] Auditoria encadeada (SHA-256), gatilho contra UPDATE/DELETE/TRUNCATE e `painel audit verify`.
 - [x] Migrações goose com `down` (up→down→up exercitado nos testes de integração).
 
-Parte 2 (pendente):
+Parte 2 (implementada em 01/11/2026):
 
-- [ ] **WebAuthn / chave física.** Hoje só TOTP. A especificação pede os dois.
-- [ ] Papel de banco do app só com INSERT/SELECT em `audit_events` (hoje só o gatilho protege; superusuário pode contornar).
-- [ ] Lista de senhas vazadas maior (hoje ~30 entradas) e tela de troca de senha pelo próprio usuário.
-- [ ] Tela de administração de usuários (hoje: `painel user create|reset-password|unlock` por linha de comando).
-- [ ] Auditar também leitura de documento, exportação e exclusão (entram com M3/M4).
+- [x] **WebAuthn / chave física** (passkey): cadastro como primeiro fator, login, remoção, contador anti-clonagem.
+  Testado de ponta a ponta com um autenticador de software nos testes; **NÃO testado com chave física real**.
+- [x] Papel de banco `painel_app` sem poder de dono: na auditoria só INSERT/SELECT (prova no teste `papel_test.go`).
+- [x] Lista de ~30 mil senhas vazadas (SecLists, 12+ caracteres) e troca de senha pelo próprio usuário.
+- [x] Senha provisória: criada/redefinida por administrador obriga a troca no primeiro acesso.
+- [x] Tela de administração de usuários (criar, papel, ativar/desativar, desbloquear, redefinir senha).
+- [x] Auditados: revelar documento de pessoa, relatório do titular, exclusões (M3). Leitura de arquivo e exportação entram no M4.
 
 **Aceite:** sem papel → 403; POST sem CSRF → 403; toda escrita identifica o ator; `audit verify` ok.
 **Verificado:** testes de integração cobrem os quatro (`internal/auth/flow_test.go`); `audit verify` rodado na pilha real.
 
 ## M3 — Núcleo funcional (dados fictícios)
 
-- [ ] Pessoas, Processos e Tarefas, um por vez, com importação reversível.
-- [ ] Cifra de campos sensíveis e índice cego.
-- [ ] Concorrência otimista; transações nas operações multi-entidade.
-- [ ] UX: busca sem perder foco, aviso de formulário alterado, teclado, mensagens claras.
+- [x] Pessoas, Processos (com partes) e Tarefas, cada um com handler, serviço e repositório próprios.
+- [x] CPF/CNPJ cifrado (AES-256-GCM, subchave própria) + índice cego HMAC; mostrado mascarado; revelar é auditado.
+- [x] Número CNJ validado pelo dígito; CPF/CNPJ validados; vencimento sempre informado pelo advogado.
+- [x] Concorrência otimista (`version`) e transação única (escrita + auditoria) em toda operação.
+- [x] Exclusão por marcação (nada é apagado); pessoa vinculada a processo não pode ser excluída.
+- [x] Relatório "dados desta pessoa" (pedido do titular, LGPD art. 18) auditado.
+- [x] UX: busca ao vivo (htmx local) que mantém o foco, confirmação em dois cliques, aviso de formulário
+  alterado, navegação por teclado, link "pular para o conteúdo".
+- [x] Fronteiras: teste de importação e de SQL impedem um domínio de tocar outro (`fronteiras_test.go`).
+- [x] `painel seed-demo` (só em modo dev) cria dados fictícios.
+- [ ] **Importação reversível** de cadastros existentes: não implementada (não há dado real a migrar ainda).
+- [ ] **Expurgo definitivo** após janela de confirmação: não implementado (hoje só marcação).
+- [ ] **E2E em navegador automatizado** (Playwright): não feito. Os "E2E" são testes HTTP completos
+  (sessão, CSRF, banco real). Uma verificação manual em navegador real foi feita na busca e nas telas principais.
 
-**Aceite:** por domínio, testes unitários, integração e E2E; falha simulada no meio da operação não deixa
-duplicata nem estado parcial.
+**Aceite:** por domínio, testes unitários, integração e HTTP ponta a ponta; falha simulada no meio da operação
+não deixa duplicata nem estado parcial. **Verificado:** `internal/app/*_test.go` (inclui falha simulada trocando
+o nome da tabela de auditoria no meio da operação: nenhuma parte fica gravada).
 
 ## M4 — Agenda, audiências e documentos
 

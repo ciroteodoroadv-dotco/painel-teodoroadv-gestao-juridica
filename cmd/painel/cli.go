@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
+	"painelteodoro/internal/app"
 	"painelteodoro/internal/audit"
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/platform/config"
@@ -21,7 +23,8 @@ const uso = `Uso:
   painel audit verify             confere a cadeia de auditoria
   painel user create EMAIL PAPEL  cria usuário (administrador|advogado|assistente); senha lida da entrada padrão
   painel user reset-password EMAIL  nova senha lida da entrada padrão; revoga as sessões
-  painel user unlock EMAIL        libera conta bloqueada por tentativas`
+  painel user unlock EMAIL        libera conta bloqueada por tentativas
+  painel seed-demo EMAIL          (só em modo dev) cria dados fictícios de demonstração, em nome desse usuário`
 
 func runCLI(args []string) error {
 	cfg, err := config.Load(config.OSEnv())
@@ -53,6 +56,8 @@ func runCLI(args []string) error {
 		return userCreate(ctx, st, args[2], auth.Role(args[3]))
 	case len(args) == 3 && args[0] == "user" && args[1] == "reset-password":
 		return userReset(ctx, st, args[2])
+	case len(args) == 2 && args[0] == "seed-demo":
+		return seedDemo(ctx, cfg, st, pool, args[1])
 	case len(args) == 3 && args[0] == "user" && args[1] == "unlock":
 		return userUnlock(ctx, st, args[2])
 	}
@@ -154,4 +159,19 @@ func userUnlock(ctx context.Context, st *auth.Store, email string) error {
 		return err
 	}
 	return tx.Commit(ctx)
+}
+
+func seedDemo(ctx context.Context, cfg config.Config, st *auth.Store, pool *pgxpool.Pool, email string) error {
+	if !cfg.Dev {
+		return errors.New("seed-demo só roda com PAINEL_ENV=dev: nunca coloque dados de demonstração em produção")
+	}
+	u, err := st.UserByEmail(ctx, email)
+	if err != nil {
+		return fmt.Errorf("usuário não encontrado")
+	}
+	if err := app.SeedDemo(ctx, pool, cfg.FieldKey, st, u.ID); err != nil {
+		return err
+	}
+	fmt.Println("Dados fictícios criados: 4 pessoas, 2 processos e 4 tarefas (todos marcados como exemplo).")
+	return nil
 }

@@ -106,7 +106,26 @@ docker rm -f painel-teste-db
 
 Sem `PAINEL_TEST_DB`, os testes de integração são pulados (aparecem como "skipped").
 
+## Conhecer o sistema com dados de mentirinha (só no seu computador)
+
+```bash
+cd ~/projetos/painel-teodoro-v2/deploy
+C="docker compose -f docker-compose.yml -f docker-compose.dev.yml"
+$C run --rm -T app seed-demo EMAIL_DE_UM_USUARIO   # cria 4 pessoas, 2 processos e 4 tarefas "Exemplo"
+```
+
+O comando **recusa rodar em produção**. Só funciona em banco sem pessoas cadastradas.
+
+**Chave de segurança (passkey) no seu computador:** o navegador só aceita chave física em endereço de domínio
+ou `localhost` — por isso, para testar a chave, abra `http://localhost:18080` (e não `http://127.0.0.1:18080`).
+
+## Telas
+
+Hoje (suas tarefas) · Pessoas · Processos · Tarefas · Minha conta (senha, chaves, códigos) · Usuários e
+Auditoria (administrador). Pessoas e processos só são **ocultados** ao excluir; nada é apagado.
+
 ## O que ainda NÃO existe (marcos seguintes)
 
-Chave física/WebAuthn e tela de gestão de usuários (resto do M2); cadastros (M3); documentos (M4); túnel
-Cloudflare, backup e servidor Oracle (M5). O backup ainda não existe: **não coloque dado real** até o M5.
+Agenda, audiências e upload de documentos (M4); túnel Cloudflare, backup e servidor Oracle (M5); jobs e
+integrações (M6). Faltam também a importação reversível de cadastros e o expurgo definitivo (ver plano).
+O backup ainda não existe: **não coloque dado real** até o M5.
