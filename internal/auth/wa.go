@@ -210,7 +210,7 @@ func (a *Auth) recoveryGet(w http.ResponseWriter, r *http.Request, s *Session) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	a.render(w, r, http.StatusOK, "recovery.html", pageData{Title: "Códigos de recuperação", Email: s.Email,
+	a.render(w, r, http.StatusOK, "recovery.html", PageData{Title: "Códigos de recuperação", Email: s.Email,
 		Role: string(s.Role), Codes: codes, Next: "/"})
 }
 

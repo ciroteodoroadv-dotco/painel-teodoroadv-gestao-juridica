@@ -1,4 +1,9 @@
 {{define "content"}}
 <h1>Hoje</h1>
-<p class="apoio">Você entrou como <strong>{{.Role}}</strong>. Os módulos de pessoas, processos, tarefas e agenda chegam nos próximos marcos.</p>
+<p class="apoio">Você entrou como <strong>{{.Role}}</strong>.</p>
+{{range .Widgets}}
+<section class="bloco"><h2>{{.Title}}</h2>{{.Body}}</section>
+{{else}}
+<p class="apoio">Nada pendente por aqui.</p>
+{{end}}
 {{end}}

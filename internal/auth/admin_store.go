@@ -69,3 +69,45 @@ func (s *Store) SetActive(ctx context.Context, tx pgx.Tx, id string, active bool
 	}
 	return err
 }
+
+// UserOptions lista usuários ativos para seletores de responsável (id → e-mail).
+func (s *Store) UserOptions(ctx context.Context) ([]UserOption, error) {
+	rows, err := s.Pool.Query(ctx, `SELECT id, email FROM users WHERE active ORDER BY lower(email)`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []UserOption
+	for rows.Next() {
+		var o UserOption
+		if err := rows.Scan(&o.ID, &o.Email); err != nil {
+			return nil, err
+		}
+		out = append(out, o)
+	}
+	return out, rows.Err()
+}
+
+// UserEmails devolve id → e-mail.
+func (s *Store) UserEmails(ctx context.Context, ids []string) (map[string]string, error) {
+	out := map[string]string{}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := s.Pool.Query(ctx, `SELECT id, email FROM users WHERE id = ANY($1::uuid[])`, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id, email string
+		if err := rows.Scan(&id, &email); err != nil {
+			return nil, err
+		}
+		out[id] = email
+	}
+	return out, rows.Err()
+}
+
+// UserOption é um usuário ativo para seleção.
+type UserOption struct{ ID, Email string }

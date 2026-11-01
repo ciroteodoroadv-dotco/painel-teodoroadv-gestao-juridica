@@ -13,8 +13,15 @@ func (a *Auth) RegisterPages(rt *Router) {
 }
 
 func (a *Auth) home(w http.ResponseWriter, r *http.Request, s *Session) {
-	a.render(w, r, http.StatusOK, "home.html", pageData{Title: "Hoje", Email: s.Email, Role: string(s.Role),
-		CanAudit: Can(s.Role, PermAuditRead)})
+	d := PageData{Title: "Hoje", Email: s.Email, Role: string(s.Role)}
+	for _, f := range a.widgets {
+		if wd, err := f(r.Context(), s); err == nil && wd.Body != "" {
+			d.Widgets = append(d.Widgets, wd)
+		} else if err != nil {
+			a.Log.Error("widget da tela inicial falhou")
+		}
+	}
+	a.render(w, r, http.StatusOK, "home.html", d)
 }
 
 func (a *Auth) auditPage(w http.ResponseWriter, r *http.Request, s *Session) {
@@ -23,7 +30,7 @@ func (a *Auth) auditPage(w http.ResponseWriter, r *http.Request, s *Session) {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return
 	}
-	d := pageData{Title: "Auditoria", Email: s.Email, Role: string(s.Role), Events: rows, CanAudit: true}
+	d := PageData{Title: "Auditoria", Email: s.Email, Role: string(s.Role), Events: rows, CanAudit: true}
 	if n, err := audit.Verify(r.Context(), a.Pool); err != nil {
 		d.ChainMsg = err.Error()
 	} else {

@@ -12,9 +12,11 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	_ "time/tzdata" // fuso America/Sao_Paulo embutido (a imagem distroless não tem tzdata)
 
 	"github.com/go-webauthn/webauthn/webauthn"
 
+	"painelteodoro/internal/app"
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/platform/cfaccess"
 	"painelteodoro/internal/platform/config"
@@ -80,6 +82,7 @@ func serve() error {
 	a.RegisterAccount(rt)
 	a.RegisterAdmin(rt)
 	a.RegisterPages(rt)
+	app.RegisterDomains(a, rt, pool, cfg.FieldKey)
 
 	srv := httpx.NewServer(cfg.Addr, httpx.Chain(cfaccess.Middleware(verifier(cfg, log), log, mux), log))
 	errc := make(chan error, 1)

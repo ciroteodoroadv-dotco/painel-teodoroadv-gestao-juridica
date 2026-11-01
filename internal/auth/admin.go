@@ -28,7 +28,7 @@ func (a *Auth) usuariosPage(w http.ResponseWriter, r *http.Request, s *Session, 
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return
 	}
-	a.render(w, r, status, "usuarios.html", pageData{Title: "Usuários", Email: s.Email, Role: string(s.Role),
+	a.render(w, r, status, "usuarios.html", PageData{Title: "Usuários", Email: s.Email, Role: string(s.Role),
 		Users: users, Notice: notice, Error: errMsg})
 }
 

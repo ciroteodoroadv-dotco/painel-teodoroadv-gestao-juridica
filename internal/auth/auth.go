@@ -42,9 +42,11 @@ type Auth struct {
 	RequireAccessEmail bool
 	Now                func() time.Time
 	// WA é nil quando a chave física está desligada (sem PAINEL_PUBLIC_URL válido).
-	WA  *webauthn.WebAuthn
-	cer ceremonies
-	fl  flash
+	WA      *webauthn.WebAuthn
+	cer     ceremonies
+	fl      flash
+	nav     []navItem
+	widgets []WidgetFunc
 }
 
 func (a *Auth) now() time.Time {
@@ -54,8 +56,8 @@ func (a *Auth) now() time.Time {
 	return time.Now()
 }
 
-// pageData alimenta todos os templates.
-type pageData struct {
+// PageData alimenta todos os templates.
+type PageData struct {
 	Title, CSRF, Error, Email, Role string
 	Secret, Message                 string
 	Codes                           []string
@@ -69,23 +71,70 @@ type pageData struct {
 	Users                           []UserRow
 	Notice                          string
 	CanUsers                        bool
+	Nav                             []NavLink
+	Widgets                         []Widget
+	Data                            any // dados específicos da página de um domínio
 }
 
-func (a *Auth) render(w http.ResponseWriter, r *http.Request, status int, page string, d pageData) {
+// NavLink é um item do menu superior já filtrado pelo papel.
+type NavLink struct{ Label, Href string }
+
+// Widget é um bloco da tela "Hoje" fornecido por um domínio (HTML já escapado pelo próprio domínio).
+type Widget struct {
+	Title string
+	Body  template.HTML
+}
+
+type navItem struct {
+	label, href string
+	perm        Perm
+}
+
+// WidgetFunc produz o bloco de um domínio para a tela "Hoje".
+type WidgetFunc func(ctx context.Context, s *Session) (Widget, error)
+
+// AddNav registra um item de menu visível para quem tem a permissão.
+func (a *Auth) AddNav(label, href string, perm Perm) {
+	a.nav = append(a.nav, navItem{label, href, perm})
+}
+
+// AddWidget registra um bloco da tela "Hoje".
+func (a *Auth) AddWidget(f WidgetFunc) { a.widgets = append(a.widgets, f) }
+
+var baseTpl = template.Must(template.ParseFS(tplFS, "templates/base.html"))
+
+// CSRFFor devolve o token CSRF da requisição (para fragmentos htmx que contêm formulários).
+func (a *Auth) CSRFFor(r *http.Request) string { return csrf.Token(a.SessionKey, csrfID(r)) }
+
+// BaseTemplate devolve uma cópia do layout para um domínio acrescentar o seu "content".
+func BaseTemplate() *template.Template { return template.Must(baseTpl.Clone()) }
+
+// Render desenha uma página de domínio dentro do layout comum.
+func (a *Auth) Render(w http.ResponseWriter, r *http.Request, status int, t *template.Template, d PageData) {
+	d.CSRF = csrf.Token(a.SessionKey, csrfID(r))
+	d.CanAudit = Can(Role(d.Role), PermAuditRead)
+	d.CanUsers = Can(Role(d.Role), PermUsersManage)
+	d.Nav = nil
+	for _, n := range a.nav {
+		if Can(Role(d.Role), n.perm) {
+			d.Nav = append(d.Nav, NavLink{n.label, n.href})
+		}
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	if err := t.ExecuteTemplate(w, "base", d); err != nil {
+		a.Log.Error("falha ao renderizar página de domínio")
+	}
+}
+
+func (a *Auth) render(w http.ResponseWriter, r *http.Request, status int, page string, d PageData) {
 	t, err := template.ParseFS(tplFS, "templates/base.html", "templates/"+page)
 	if err != nil {
 		a.Log.Error("template inválido", "pagina", page)
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return
 	}
-	d.CSRF = csrf.Token(a.SessionKey, csrfID(r))
-	d.CanAudit = Can(Role(d.Role), PermAuditRead)
-	d.CanUsers = Can(Role(d.Role), PermUsersManage)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(status)
-	if err := t.ExecuteTemplate(w, "base", d); err != nil {
-		a.Log.Error("falha ao renderizar", "pagina", page)
-	}
+	a.Render(w, r, status, t, d)
 }
 
 // audit grava um evento com o ator e o request_id da requisição; falha de auditoria é registrada em log.

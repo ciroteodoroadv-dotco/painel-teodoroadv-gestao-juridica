@@ -1,0 +1,24 @@
+{{define "content"}}
+{{with .Data}}<h1>{{if .IsNew}}Novo processo{{else}}Editar processo{{end}}</h1>{{end}}
+{{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
+{{with .Data}}
+<form method="post" action="{{if .IsNew}}/processos{{else}}/processos/{{.ID}}{{end}}" data-protege class="grade">
+  <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+  {{if not .IsNew}}<input type="hidden" name="version" value="{{.Version}}">{{end}}
+  <div class="larga"><label for="numero">Número do processo <small class="apoio">(20 dígitos, com ou sem pontuação)</small></label>
+    <input id="numero" name="numero" value="{{.In.Numero}}" required inputmode="numeric" autocomplete="off" autofocus placeholder="0000000-00.0000.0.00.0000"></div>
+  <div class="larga"><label for="orgao">Órgão / vara</label>
+    <input id="orgao" name="orgao" value="{{.In.Orgao}}" maxlength="200"></div>
+  <div><label for="situacao">Situação</label>
+    <select id="situacao" name="situacao" required>
+      {{$s := .In.Situacao}}{{range .Situacoes}}<option value="{{.Valor}}" {{if eq .Valor $s}}selected{{end}}>{{.Rotulo}}</option>{{end}}
+    </select></div>
+  <div><label for="responsavel_id">Responsável</label>
+    <select id="responsavel_id" name="responsavel_id">
+      <option value="">— sem responsável —</option>
+      {{$r := .In.ResponsavelID}}{{range .Responsaveis}}<option value="{{.Valor}}" {{if eq .Valor $r}}selected{{end}}>{{.Rotulo}}</option>{{end}}
+    </select></div>
+  <div class="larga"><button type="submit">Salvar</button>
+    <a class="botao secundario" href="{{if .IsNew}}/processos{{else}}/processos/{{.ID}}{{end}}">Cancelar</a></div>
+</form>
+{{end}}{{end}}

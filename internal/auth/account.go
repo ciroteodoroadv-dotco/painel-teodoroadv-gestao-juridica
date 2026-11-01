@@ -27,19 +27,19 @@ func (a *Auth) contaGet(w http.ResponseWriter, r *http.Request, s *Session) {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return
 	}
-	a.render(w, r, http.StatusOK, "conta.html", pageData{Title: "Minha conta", Email: s.Email, Role: string(s.Role),
+	a.render(w, r, http.StatusOK, "conta.html", PageData{Title: "Minha conta", Email: s.Email, Role: string(s.Role),
 		HasTOTP: u.TOTPConfirmed, HasKey: a.WA != nil, Keys: keys, Notice: avisos[r.URL.Query().Get("aviso")]})
 }
 
 func (a *Auth) senhaGet(w http.ResponseWriter, r *http.Request, s *Session) {
-	a.render(w, r, http.StatusOK, "senha.html", pageData{Title: "Trocar senha", Email: s.Email,
+	a.render(w, r, http.StatusOK, "senha.html", PageData{Title: "Trocar senha", Email: s.Email,
 		Role: string(s.Role), MustChange: s.MustChange})
 }
 
 func (a *Auth) senhaPost(w http.ResponseWriter, r *http.Request, s *Session) {
 	ctx := r.Context()
 	fail := func(msg string, status int) {
-		a.render(w, r, status, "senha.html", pageData{Title: "Trocar senha", Email: s.Email,
+		a.render(w, r, status, "senha.html", PageData{Title: "Trocar senha", Email: s.Email,
 			Role: string(s.Role), MustChange: s.MustChange, Error: msg})
 	}
 	u, err := a.Store.UserByID(ctx, s.UserID)
@@ -155,7 +155,7 @@ func (a *Auth) recuperacaoNova(w http.ResponseWriter, r *http.Request, s *Sessio
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return
 	}
-	a.render(w, r, http.StatusOK, "recovery.html", pageData{Title: "Códigos de recuperação", Email: s.Email,
+	a.render(w, r, http.StatusOK, "recovery.html", PageData{Title: "Códigos de recuperação", Email: s.Email,
 		Role: string(s.Role), Codes: codes, Next: "/conta"})
 }
 

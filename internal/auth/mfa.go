@@ -24,7 +24,7 @@ func (a *Auth) mfaGet(w http.ResponseWriter, r *http.Request, s *Session) {
 		http.Redirect(w, r, "/2fa/setup", http.StatusSeeOther)
 		return
 	}
-	a.render(w, r, http.StatusOK, "mfa.html", pageData{Title: "Segundo fator", Email: s.Email,
+	a.render(w, r, http.StatusOK, "mfa.html", PageData{Title: "Segundo fator", Email: s.Email,
 		HasTOTP: u.TOTPConfirmed, HasKey: len(keys) > 0 && a.WA != nil})
 }
 
@@ -36,7 +36,7 @@ func (a *Auth) mfaPost(w http.ResponseWriter, r *http.Request, s *Session) {
 	bad := func(motivo string, status int) {
 		_ = a.audit(r, w, nil, audit.Event{Actor: s.UserID, Action: "mfa.falha", Result: audit.Falha,
 			Meta: map[string]string{"motivo": motivo, "etapa": "2fa"}})
-		a.render(w, r, status, "mfa.html", pageData{Title: "Segundo fator", Email: s.Email, Error: msgCodigoInvalido,
+		a.render(w, r, status, "mfa.html", PageData{Title: "Segundo fator", Email: s.Email, Error: msgCodigoInvalido,
 			HasTOTP: hasTOTP, HasKey: hasKey})
 	}
 	if !a.Limiter.Allow("mfa|" + clientIP(r)) {
@@ -114,7 +114,7 @@ func (a *Auth) setupGet(w http.ResponseWriter, r *http.Request, s *Session) {
 		http.Redirect(w, r, "/2fa", http.StatusSeeOther)
 		return
 	}
-	a.render(w, r, http.StatusOK, "setup.html", pageData{Title: "Ativar segundo fator", Email: s.Email,
+	a.render(w, r, http.StatusOK, "setup.html", PageData{Title: "Ativar segundo fator", Email: s.Email,
 		Secret: groups4(secret), HasKey: a.WA != nil})
 }
 
@@ -178,7 +178,7 @@ func (a *Auth) setupPost(w http.ResponseWriter, r *http.Request, s *Session) {
 	if !valid {
 		_ = a.audit(r, w, nil, audit.Event{Actor: u.ID, Action: "mfa.cadastro_falha", Result: audit.Falha,
 			Meta: map[string]string{"etapa": "cadastro"}})
-		a.render(w, r, http.StatusUnauthorized, "setup.html", pageData{Title: "Ativar segundo fator",
+		a.render(w, r, http.StatusUnauthorized, "setup.html", PageData{Title: "Ativar segundo fator",
 			Email: s.Email, Secret: groups4(secret), Error: msgCodigoInvalido, HasKey: a.WA != nil})
 		return
 	}
@@ -211,7 +211,7 @@ func (a *Auth) setupPost(w http.ResponseWriter, r *http.Request, s *Session) {
 	setCookie(w, sidCookie, tok, int(AbsoluteTimeout.Seconds()))
 	// O token CSRF desta resposta deve acompanhar a NOVA sessão.
 	r = withValue(r, sidKey{}, tok)
-	a.render(w, r, http.StatusOK, "recovery.html", pageData{Title: "Códigos de recuperação", Email: s.Email, Codes: codes})
+	a.render(w, r, http.StatusOK, "recovery.html", PageData{Title: "Códigos de recuperação", Email: s.Email, Codes: codes})
 }
 
 // hasFactor diz se o usuário já tem algum segundo fator (TOTP confirmado ou chave física).

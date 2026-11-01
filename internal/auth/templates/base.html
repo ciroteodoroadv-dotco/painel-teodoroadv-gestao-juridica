@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta name="csrf-token" content="{{.CSRF}}">
+<meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false}'>
 <title>{{.Title}} · Painel Teodoro</title>
 <link rel="stylesheet" href="/static/app.css">
+<script src="/static/htmx.min.js" defer></script>
 <script src="/static/webauthn.js" defer></script>
 <script src="/static/app.js" defer></script>
 </head>
@@ -17,7 +19,7 @@
   <a class="marca" href="/">Painel Teodoro</a>
   <nav aria-label="Principal">
     <a href="/">Hoje</a>
-    {{template "menu" .}}
+    {{range .Nav}}<a href="{{.Href}}">{{.Label}}</a>{{end}}
     <a href="/conta">Minha conta</a>
     {{if .CanUsers}}<a href="/admin/usuarios">Usuários</a>{{end}}
     {{if .CanAudit}}<a href="/admin/auditoria">Auditoria</a>{{end}}
@@ -35,4 +37,3 @@
 </body>
 </html>{{end}}
 
-{{define "menu"}}{{end}}

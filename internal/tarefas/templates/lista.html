@@ -1,0 +1,57 @@
+{{define "content"}}{{with .Data}}
+<div class="cabeca">
+  <h1>Tarefas</h1>
+  {{if .CanWrite}}<a class="botao" href="/tarefas/nova">Nova tarefa</a>{{end}}
+</div>
+<form method="get" action="/tarefas" role="search" class="busca linha"
+      hx-get="/tarefas" hx-trigger="input changed delay:300ms from:#q, change from:#status, change from:#quem, search from:#q"
+      hx-target="#resultado" hx-push-url="true" hx-sync="this:replace">
+  <div><label for="q">Buscar no título</label>
+    <input id="q" name="q" type="search" value="{{.F.Q}}" autocomplete="off"></div>
+  <div><label for="status">Situação</label>
+    <select id="status" name="status">
+      <option value="" {{if eq .F.Status ""}}selected{{end}}>Em aberto</option>
+      <option value="todas" {{if eq .F.Status "todas"}}selected{{end}}>Todas</option>
+      {{$s := .F.Status}}{{range .Statuses}}<option value="{{.Valor}}" {{if eq .Valor $s}}selected{{end}}>{{.Rotulo}}</option>{{end}}
+    </select></div>
+  <div><label for="quem">De quem</label>
+    <select id="quem" name="quem">
+      <option value="" {{if not .SoMinhas}}selected{{end}}>Todos</option>
+      <option value="minhas" {{if .SoMinhas}}selected{{end}}>Só as minhas</option>
+    </select></div>
+</form>
+<div id="resultado" aria-live="polite">{{template "resultado" .}}</div>
+{{end}}{{end}}
+
+{{define "resultado"}}
+{{if .Tarefas}}
+<div class="tabela">
+<table>
+  <caption>{{len .Tarefas}} tarefa(s) nesta página. O vencimento é o informado pelo advogado.</caption>
+  <thead><tr><th scope="col">Vencimento</th><th scope="col">Tarefa</th><th scope="col">Processo</th><th scope="col">Responsável</th><th scope="col">Situação</th>{{if .CanWrite}}<th scope="col">Ações</th>{{end}}</tr></thead>
+  <tbody>
+  {{$w := .CanWrite}}{{range .Tarefas}}
+  <tr>
+    <td>{{if .Vencimento}}{{.Vencimento.Format "02/01/2006"}}{{else}}—{{end}}{{if .Atrasada}} <strong class="erro">atrasada</strong>{{end}}</td>
+    <td>{{.Titulo}}{{if .AConferir}} <span class="selo">a conferir pelo advogado</span>{{end}}</td>
+    <td>{{if .ProcessoNumero}}<a href="/processos/{{.ProcessoID}}"><code>{{.ProcessoNumero}}</code></a>{{else}}—{{end}}</td>
+    <td>{{.Responsavel}}</td>
+    <td>{{.StatusRotulo}}</td>
+    {{if $w}}<td class="acoes">
+      <a href="/tarefas/{{.ID}}/editar">Editar</a>
+      {{if .Aberta}}<form method="post" action="/tarefas/{{.ID}}/status">
+        <input type="hidden" name="csrf_token" value="{{$.CSRF}}"><input type="hidden" name="version" value="{{.Version}}">
+        <input type="hidden" name="status" value="concluida"><button type="submit" class="secundario">Concluir</button></form>{{end}}
+    </td>{{end}}
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+<nav class="paginas" aria-label="Páginas">
+  {{if .Anterior}}<a href="/tarefas?q={{.F.Q}}&amp;status={{.F.Status}}&amp;pag={{.Anterior}}">← Anterior</a>{{end}}
+  <span>Página {{.Pag}}</span>
+  {{if .Proxima}}<a href="/tarefas?q={{.F.Q}}&amp;status={{.F.Status}}&amp;pag={{.Proxima}}">Próxima →</a>{{end}}
+</nav>
+{{else}}<p class="apoio">Nenhuma tarefa encontrada.</p>{{end}}
+{{end}}

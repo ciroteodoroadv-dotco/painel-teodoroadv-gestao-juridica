@@ -27,7 +27,7 @@ func (a *Auth) loginGet(w http.ResponseWriter, r *http.Request, _ *Session) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	a.render(w, r, http.StatusOK, "login.html", pageData{Title: "Entrar"})
+	a.render(w, r, http.StatusOK, "login.html", PageData{Title: "Entrar"})
 }
 
 func (a *Auth) loginPost(w http.ResponseWriter, r *http.Request, _ *Session) {
@@ -37,7 +37,7 @@ func (a *Auth) loginPost(w http.ResponseWriter, r *http.Request, _ *Session) {
 	fail := func(actor, motivo string, status int) {
 		_ = a.audit(r, w, nil, audit.Event{Actor: actor, Action: "login.falha", Result: audit.Falha,
 			Meta: map[string]string{"motivo": motivo, "email_hash": emailHash(email)}})
-		a.render(w, r, status, "login.html", pageData{Title: "Entrar", Error: msgLoginFalhou, Email: email})
+		a.render(w, r, status, "login.html", PageData{Title: "Entrar", Error: msgLoginFalhou, Email: email})
 	}
 	if !a.Limiter.Allow("login|" + clientIP(r)) {
 		fail("anonimo", "limite_ip", http.StatusTooManyRequests)

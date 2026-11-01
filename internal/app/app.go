@@ -1,0 +1,47 @@
+// Package app monta os domínios (pessoas, processos, tarefas) sobre a autenticação.
+// É o único lugar que conhece todos: os domínios só se falam por interfaces.
+package app
+
+import (
+	"context"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"painelteodoro/internal/auth"
+	"painelteodoro/internal/pessoas"
+	"painelteodoro/internal/platform/webx"
+	"painelteodoro/internal/processos"
+	"painelteodoro/internal/tarefas"
+)
+
+// userLookup adapta o cadastro de usuários às interfaces que os domínios exigem.
+type userLookup struct{ s *auth.Store }
+
+func (u userLookup) Options(ctx context.Context) ([]webx.Opcao, error) {
+	list, err := u.s.UserOptions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]webx.Opcao, len(list))
+	for i, o := range list {
+		out[i] = webx.Opcao{Valor: o.ID, Rotulo: o.Email}
+	}
+	return out, nil
+}
+
+func (u userLookup) Emails(ctx context.Context, ids []string) (map[string]string, error) {
+	return u.s.UserEmails(ctx, ids)
+}
+
+// RegisterDomains liga todos os domínios ao roteador. fieldKey é a chave mestra de cifra de campos.
+func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey []byte) {
+	users := userLookup{s: a.Store}
+	pes := &pessoas.Service{Pool: pool, FieldKey: fieldKey}
+	proc := &processos.Service{Pool: pool, Pessoas: pes, Users: users}
+	pes.Processos = proc
+	tar := &tarefas.Service{Pool: pool, Processos: proc, Users: users}
+
+	(&pessoas.Handler{A: a, S: pes}).Register(rt)
+	(&processos.Handler{A: a, S: proc}).Register(rt)
+	(&tarefas.Handler{A: a, S: tar}).Register(rt)
+}

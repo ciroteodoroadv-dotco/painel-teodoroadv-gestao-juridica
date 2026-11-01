@@ -1,0 +1,36 @@
+{{define "content"}}{{with .Data}}
+<div class="cabeca">
+  <h1>Pessoas</h1>
+  {{if .CanWrite}}<a class="botao" href="/pessoas/nova">Nova pessoa</a>{{end}}
+</div>
+<form method="get" action="/pessoas" role="search" class="busca">
+  <label for="q">Buscar por nome ou por CPF/CNPJ completo</label>
+  <input id="q" name="q" type="search" value="{{.Q}}" autocomplete="off"
+         hx-get="/pessoas" hx-trigger="input changed delay:300ms, search" hx-target="#resultado"
+         hx-push-url="true" hx-sync="this:replace">
+</form>
+<div id="resultado" aria-live="polite">{{template "resultado" .}}</div>
+{{end}}{{end}}
+
+{{define "resultado"}}
+{{if .Pessoas}}
+<div class="tabela">
+<table>
+  <caption>{{len .Pessoas}} resultado(s) nesta página</caption>
+  <thead><tr><th scope="col">Nome</th><th scope="col">Tipo</th><th scope="col">Papel</th><th scope="col">Documento</th></tr></thead>
+  <tbody>
+  {{range .Pessoas}}
+  <tr><td><a href="/pessoas/{{.ID}}">{{.Nome}}</a></td><td>{{.Tipo}}</td><td>{{.PapelRotulo}}</td><td><code>{{if .DocMask}}{{.DocMask}}{{else}}—{{end}}</code></td></tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+<nav class="paginas" aria-label="Páginas">
+  {{if .Anterior}}<a href="/pessoas?q={{.Q}}&amp;pag={{.Anterior}}">← Anterior</a>{{end}}
+  <span>Página {{.Pag}}</span>
+  {{if .Proxima}}<a href="/pessoas?q={{.Q}}&amp;pag={{.Proxima}}">Próxima →</a>{{end}}
+</nav>
+{{else}}
+<p class="apoio">Nenhuma pessoa encontrada.</p>
+{{end}}
+{{end}}

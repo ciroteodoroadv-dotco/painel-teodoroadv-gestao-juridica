@@ -1,0 +1,39 @@
+{{define "content"}}{{with .Data}}
+<div class="cabeca">
+  <h1>Processos</h1>
+  {{if .CanWrite}}<a class="botao" href="/processos/novo">Novo processo</a>{{end}}
+</div>
+<form method="get" action="/processos" role="search" class="busca linha"
+      hx-get="/processos" hx-trigger="input changed delay:300ms from:#q, change from:#situacao, search from:#q"
+      hx-target="#resultado" hx-push-url="true" hx-sync="this:replace">
+  <div><label for="q">Buscar por número ou órgão</label>
+    <input id="q" name="q" type="search" value="{{.Q}}" autocomplete="off"></div>
+  <div><label for="situacao">Situação</label>
+    <select id="situacao" name="situacao">
+      <option value="">Todas</option>
+      {{$s := .Situacao}}{{range .Situacoes}}<option value="{{.Valor}}" {{if eq .Valor $s}}selected{{end}}>{{.Rotulo}}</option>{{end}}
+    </select></div>
+</form>
+<div id="resultado" aria-live="polite">{{template "resultado" .}}</div>
+{{end}}{{end}}
+
+{{define "resultado"}}
+{{if .Rows}}
+<div class="tabela">
+<table>
+  <caption>{{len .Rows}} resultado(s) nesta página</caption>
+  <thead><tr><th scope="col">Número</th><th scope="col">Órgão</th><th scope="col">Situação</th><th scope="col">Responsável</th></tr></thead>
+  <tbody>
+  {{range .Rows}}
+  <tr><td><a href="/processos/{{.ID}}"><code>{{.Numero}}</code></a></td><td>{{.Orgao}}</td><td>{{.SituacaoRotulo}}</td><td>{{.Responsavel}}</td></tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+<nav class="paginas" aria-label="Páginas">
+  {{if .Anterior}}<a href="/processos?q={{.Q}}&amp;situacao={{.Situacao}}&amp;pag={{.Anterior}}">← Anterior</a>{{end}}
+  <span>Página {{.Pag}}</span>
+  {{if .Proxima}}<a href="/processos?q={{.Q}}&amp;situacao={{.Situacao}}&amp;pag={{.Proxima}}">Próxima →</a>{{end}}
+</nav>
+{{else}}<p class="apoio">Nenhum processo encontrado.</p>{{end}}
+{{end}}
