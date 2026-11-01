@@ -55,7 +55,8 @@ docker compose down -v     # desliga E APAGA o banco (só em teste!)
 |---|---|
 | `app` não sobe e o log diz "segredo ausente" | Rode o passo 1. O painel recusa iniciar sem segredos, de propósito. |
 | `/readyz` responde `indisponível` | O banco não está pronto. Espere 30 s; veja `docker compose logs db`. |
-| Porta 8080 ocupada | Feche o outro programa que usa a 8080. |
+| Porta 8080 ocupada (`port is already allocated`) | Use outra porta: `export PAINEL_DEV_PORT=18080` antes do passo 2 e troque `8080` por `18080` nos `curl` do passo 3. |
+| `stat ...ubuntu.sock: no such file` | Docker Desktop → Settings → Resources → WSL integration → ligar "Ubuntu". |
 
 ## Rodar os testes (para quem desenvolve)
 
