@@ -1,6 +1,9 @@
-# Só para desenvolvimento no seu computador: publica a porta APENAS em 127.0.0.1 (loopback).
-# Nunca use em servidor. Uso: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Só para desenvolvimento no seu computador: publica a porta APENAS em 127.0.0.1 (loopback)
+# e liga o modo dev (sem Cloudflare Access). Nunca use em servidor.
+# Uso: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 services:
   app:
+    environment:
+      PAINEL_ENV: dev
     ports:
       - "127.0.0.1:${PAINEL_DEV_PORT:-8080}:8080"

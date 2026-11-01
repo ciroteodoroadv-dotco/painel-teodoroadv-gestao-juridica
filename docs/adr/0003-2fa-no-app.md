@@ -8,5 +8,8 @@
 aplicativo autenticador (TOTP). Códigos de recuperação de uso único, guardados com hash. Administrador
 recomenda-se com chave física.
 
+**Estado (01/11/2026):** TOTP implementado, com anti-reuso do código e códigos de recuperação. **WebAuthn
+(chave física) ainda não** — fica para a parte 2 do M2; até lá, o administrador usa TOTP.
+
 **Consequências:** identidade do app independente do provedor de perímetro; cadastro de fator no primeiro
 login; procedimento de recuperação deve estar no runbook.

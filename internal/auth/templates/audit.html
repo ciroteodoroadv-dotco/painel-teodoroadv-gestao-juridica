@@ -1,0 +1,14 @@
+{{define "content"}}
+<h1>Auditoria</h1>
+<p class="{{if .ChainOK}}ok{{else}}erro{{end}}" role="status">{{.ChainMsg}}</p>
+<div class="tabela">
+<table>
+  <caption>Últimos 50 eventos</caption>
+  <thead><tr><th scope="col">Nº</th><th scope="col">Quando (UTC)</th><th scope="col">Ator</th><th scope="col">Ação</th><th scope="col">Resultado</th><th scope="col">Requisição</th></tr></thead>
+  <tbody>
+  {{range .Events}}<tr><td>{{.Seq}}</td><td>{{.At.UTC.Format "02/01/2006 15:04:05"}}</td><td><code>{{.Actor}}</code></td><td>{{.Action}}</td><td>{{.Result}}</td><td><code>{{.RequestID}}</code></td></tr>
+  {{else}}<tr><td colspan="6">Nenhum evento.</td></tr>{{end}}
+  </tbody>
+</table>
+</div>
+{{end}}

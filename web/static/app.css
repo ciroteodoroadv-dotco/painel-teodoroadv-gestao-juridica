@@ -1,0 +1,43 @@
+:root {
+  --bg: #f6f7f9; --card: #fff; --txt: #1b2430; --mut: #5b6675; --brd: #d9dee5;
+  --acc: #1f4e79; --acc-txt: #fff; --err: #a4262c; --ok: #1e7a45;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161c; --card: #19212a; --txt: #e6eaef; --mut: #9aa6b4; --brd: #2b3642;
+    --acc: #6ea8de; --acc-txt: #0b1218; --err: #ff8a8f; --ok: #6fd39a; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--txt); font: 16px/1.5 system-ui, sans-serif; }
+a { color: var(--acc); }
+:focus-visible { outline: 3px solid var(--acc); outline-offset: 2px; }
+h1 { font-size: 1.5rem; margin: 0 0 .5rem; }
+.apoio { color: var(--mut); }
+.cartao { max-width: 28rem; margin: 8vh auto; padding: 1.5rem; background: var(--card);
+  border: 1px solid var(--brd); border-radius: .75rem; }
+.pagina { max-width: 64rem; margin: 1.5rem auto; padding: 0 1rem; }
+.topo { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; padding: .75rem 1rem;
+  background: var(--card); border-bottom: 1px solid var(--brd); }
+.topo nav { display: flex; gap: 1rem; flex: 1; }
+.marca { font-weight: 700; text-decoration: none; }
+.sair { display: flex; gap: .75rem; align-items: center; margin: 0; }
+.quem { color: var(--mut); font-size: .875rem; }
+label { display: block; margin: 1rem 0 .25rem; font-weight: 600; }
+input { width: 100%; padding: .65rem .75rem; border: 1px solid var(--brd); border-radius: .5rem;
+  background: var(--bg); color: var(--txt); font: inherit; }
+button, .botao { display: inline-block; margin-top: 1.25rem; padding: .65rem 1.1rem; border: 0;
+  border-radius: .5rem; background: var(--acc); color: var(--acc-txt); font: inherit; font-weight: 600;
+  cursor: pointer; text-decoration: none; }
+button.secundario { margin: 0; background: transparent; color: var(--acc); border: 1px solid var(--acc); }
+.erro { color: var(--err); font-weight: 600; }
+.ok { color: var(--ok); font-weight: 600; }
+code { font-family: ui-monospace, monospace; }
+.chave { letter-spacing: .08em; word-break: break-all; }
+.qr { display: block; margin: 1rem 0; background: #fff; padding: .5rem; border-radius: .5rem; }
+.codigos { columns: 2; list-style: none; padding: 0; font-size: 1.1rem; }
+.tabela { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--brd); white-space: nowrap; }
+caption { text-align: left; color: var(--mut); padding-bottom: .5rem; }

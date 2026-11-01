@@ -8,6 +8,17 @@ permissions:
 jobs:
   go:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: teste
+          POSTGRES_DB: teste
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PAINEL_TEST_DB: postgres://postgres:teste@127.0.0.1:5432/teste?sslmode=disable
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -18,7 +29,7 @@ jobs:
       - name: Análise estática
         run: go vet ./...
       - name: Testes
-        run: go test -race -count=1 ./...
+        run: go test -race -count=1 -p 1 ./... # -p 1: os testes de integração recriam o banco
       - name: Limite de 300 linhas
         run: ./scripts/check-lines.sh
       - name: Vulnerabilidades

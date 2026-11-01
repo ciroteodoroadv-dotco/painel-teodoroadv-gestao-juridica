@@ -68,7 +68,45 @@ go test ./...
 ./scripts/check-lines.sh
 ```
 
+## Usuários e acesso (M2)
+
+Não existe cadastro de usuário pela tela ainda: o administrador cria pelo terminal. A senha é lida da
+entrada, nunca vai para o histórico nem para o log. Papéis: `administrador`, `advogado`, `assistente`.
+Senha: 12+ caracteres, sem ser comum, sem conter o e-mail.
+
+```bash
+cd ~/projetos/painel-teodoro-v2/deploy
+C="docker compose -f docker-compose.yml -f docker-compose.dev.yml"
+read -rs SENHA; echo "$SENHA" | $C run --rm -T app user create fulano@exemplo.com advogado; unset SENHA
+```
+
+No primeiro acesso a pessoa entra com e-mail e senha e cadastra o aplicativo autenticador (QR code).
+**Guarde os 8 códigos de recuperação** que aparecem uma única vez.
+
+| Situação | Comando |
+|---|---|
+| Esqueceu a senha | `read -rs S; echo "$S" \| $C run --rm -T app user reset-password EMAIL; unset S` |
+| Conta bloqueada por tentativas | `$C run --rm app user unlock EMAIL` |
+| Conferir se a auditoria foi adulterada | `$C run --rm app audit verify` (deve dizer "Cadeia íntegra") |
+
+Bloqueio por senha ou código errado: 5 erros = 1 min, 10 = 5 min, 15 = 30 min, 20 = só o administrador libera.
+O administrador vê os últimos eventos em **Auditoria** (menu superior).
+
+**Modo dev:** o `docker-compose.dev.yml` liga `PAINEL_ENV=dev` e dispensa o Cloudflare Access. Em servidor
+(`PAINEL_ENV=prod`, o padrão) o app **recusa iniciar** sem `PAINEL_ACCESS_TEAM_DOMAIN` e `PAINEL_ACCESS_AUD`.
+
+## Rodar os testes de integração (banco de teste descartável)
+
+```bash
+docker run -d --name painel-teste-db -e POSTGRES_PASSWORD=teste -e POSTGRES_DB=teste -p 127.0.0.1:15432:5432 postgres:17-alpine
+export PAINEL_TEST_DB="postgres://postgres:teste@127.0.0.1:15432/teste?sslmode=disable"
+go test -count=1 -p 1 ./...      # -p 1 é obrigatório: os testes recriam o banco
+docker rm -f painel-teste-db
+```
+
+Sem `PAINEL_TEST_DB`, os testes de integração são pulados (aparecem como "skipped").
+
 ## O que ainda NÃO existe (marcos seguintes)
 
-Login, 2FA, papéis, auditoria (M2); cadastros (M3); documentos (M4); túnel Cloudflare, backup e servidor
-Oracle (M5). O backup ainda não existe: **não coloque dado real** até o M5.
+Chave física/WebAuthn e tela de gestão de usuários (resto do M2); cadastros (M3); documentos (M4); túnel
+Cloudflare, backup e servidor Oracle (M5). O backup ainda não existe: **não coloque dado real** até o M5.

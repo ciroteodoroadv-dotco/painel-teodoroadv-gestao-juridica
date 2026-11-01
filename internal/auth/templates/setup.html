@@ -1,0 +1,15 @@
+{{define "content"}}
+<h1>Ativar o segundo fator</h1>
+<p class="apoio">1. Instale um aplicativo autenticador (ou use uma chave de segurança compatível com TOTP).<br>
+2. Leia o QR code ou digite a chave abaixo.<br>
+3. Digite o código de 6 dígitos que o aplicativo mostrar.</p>
+<img class="qr" src="/2fa/setup/qr.png" width="220" height="220" alt="QR code para o aplicativo autenticador">
+<p>Chave manual: <code class="chave">{{.Secret}}</code></p>
+{{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
+<form method="post" action="/2fa/setup">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <label for="codigo">Código de 6 dígitos</label>
+  <input id="codigo" name="codigo" inputmode="numeric" required autofocus autocomplete="one-time-code">
+  <button type="submit">Ativar</button>
+</form>
+{{end}}

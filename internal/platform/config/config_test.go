@@ -25,6 +25,24 @@ func baseVars() map[string]string {
 	return map[string]string{
 		"PAINEL_DB_HOST": "db", "PAINEL_DB_NAME": "painel", "PAINEL_DB_USER": "painel",
 		"PAINEL_DB_PASSWORD": "s3nha/com:especiais", "PAINEL_SESSION_KEY": goodKey, "PAINEL_FIELD_KEY": goodKey,
+		"PAINEL_ACCESS_TEAM_DOMAIN": "t.cloudflareaccess.com", "PAINEL_ACCESS_AUD": "aud",
+	}
+}
+
+func TestProducaoExigeAccess(t *testing.T) {
+	v := baseVars()
+	delete(v, "PAINEL_ACCESS_AUD")
+	if _, err := Load(envOf(v, nil)); err == nil {
+		t.Fatal("produção sem AUD deveria falhar")
+	}
+	v["PAINEL_ENV"] = "dev"
+	c, err := Load(envOf(v, nil))
+	if err != nil || !c.Dev {
+		t.Fatalf("dev sem AUD deveria passar: %v", err)
+	}
+	v["PAINEL_ENV"] = "staging"
+	if _, err := Load(envOf(v, nil)); err == nil {
+		t.Fatal("PAINEL_ENV desconhecida deveria falhar")
 	}
 }
 

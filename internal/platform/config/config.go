@@ -16,11 +16,15 @@ const minKeyBytes = 32
 
 // Config reúne o que o app precisa para subir. Nunca imprima seus campos de segredo.
 type Config struct {
-	Addr        string
-	LogLevel    string
-	DatabaseURL string // contém a senha do banco
-	SessionKey  []byte
-	FieldKey    []byte
+	Addr     string
+	LogLevel string
+	// Dev desliga a exigência do JWT do Cloudflare Access. Só vale com PAINEL_ENV=dev.
+	Dev              bool
+	AccessTeamDomain string
+	AccessAUD        string
+	DatabaseURL      string // contém a senha do banco
+	SessionKey       []byte
+	FieldKey         []byte
 }
 
 // String é seguro para log: não revela nenhum segredo.
@@ -56,16 +60,33 @@ func Load(e Env) (Config, error) {
 	dbName := required(e, "PAINEL_DB_NAME", &errs)
 	dbUser := required(e, "PAINEL_DB_USER", &errs)
 
+	dev := false
+	switch env := orDefault(e.Getenv("PAINEL_ENV"), "prod"); env {
+	case "dev":
+		dev = true
+	case "prod":
+	default:
+		errs = append(errs, fmt.Errorf("PAINEL_ENV inválida: use dev ou prod"))
+	}
+	team := strings.TrimSpace(e.Getenv("PAINEL_ACCESS_TEAM_DOMAIN"))
+	aud := strings.TrimSpace(e.Getenv("PAINEL_ACCESS_AUD"))
+	if !dev && (team == "" || aud == "") {
+		errs = append(errs, errors.New("em produção é obrigatório definir PAINEL_ACCESS_TEAM_DOMAIN e PAINEL_ACCESS_AUD (Cloudflare Access)"))
+	}
+
 	if len(errs) > 0 {
 		return Config{}, errors.Join(errs...)
 	}
 
 	return Config{
-		Addr:        orDefault(e.Getenv("PAINEL_ADDR"), ":8080"),
-		LogLevel:    orDefault(e.Getenv("PAINEL_LOG_LEVEL"), "info"),
-		DatabaseURL: dbURL(e, dbHost, dbName, dbUser, dbPass),
-		SessionKey:  sessionKey,
-		FieldKey:    fieldKey,
+		Addr:             orDefault(e.Getenv("PAINEL_ADDR"), ":8080"),
+		LogLevel:         orDefault(e.Getenv("PAINEL_LOG_LEVEL"), "info"),
+		Dev:              dev,
+		AccessTeamDomain: team,
+		AccessAUD:        aud,
+		DatabaseURL:      dbURL(e, dbHost, dbName, dbUser, dbPass),
+		SessionKey:       sessionKey,
+		FieldKey:         fieldKey,
 	}, nil
 }
 

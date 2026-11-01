@@ -1,0 +1,11 @@
+{{define "content"}}
+<h1>Segundo fator</h1>
+<p class="apoio">Digite o código de 6 dígitos do aplicativo autenticador. Sem o aparelho, use um código de recuperação (formato <code>abcde-fghij</code>).</p>
+{{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
+<form method="post" action="/2fa">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <label for="codigo">Código</label>
+  <input id="codigo" name="codigo" inputmode="numeric" required autofocus autocomplete="one-time-code">
+  <button type="submit">Entrar</button>
+</form>
+{{end}}

@@ -29,6 +29,9 @@ services:
     environment:
       PAINEL_ADDR: ":8080"
       PAINEL_LOG_LEVEL: info
+      # Produção exige o Cloudflare Access (preenchidos no M5). Vazio = o app recusa iniciar.
+      PAINEL_ACCESS_TEAM_DOMAIN: ${PAINEL_ACCESS_TEAM_DOMAIN:-}
+      PAINEL_ACCESS_AUD: ${PAINEL_ACCESS_AUD:-}
       PAINEL_DB_HOST: db
       PAINEL_DB_NAME: painel
       PAINEL_DB_USER: painel
