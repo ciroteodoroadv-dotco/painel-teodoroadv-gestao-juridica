@@ -14,13 +14,17 @@ Cada marco só começa quando o anterior cumpriu o aceite. Todo recurso nasce co
 
 ## M1 — Fundação
 
-- [ ] Esqueleto Go, `internal/platform`, config que falha sem segredo.
-- [ ] Docker Compose (app, PostgreSQL, cloudflared), contêineres sem root.
-- [ ] `/healthz`, `/readyz`, logs JSON sem conteúdo de cliente.
-- [ ] CI completo e `scripts/check-lines.sh`.
-- [ ] Runbook em linguagem simples, comandos copiáveis.
+- [x] Esqueleto Go, `internal/platform`, config que falha sem segredo.
+- [x] Docker Compose (app, PostgreSQL), contêineres sem root. (`cloudflared` entra no M5.)
+- [x] `/healthz`, `/readyz`, logs JSON sem conteúdo de cliente.
+- [x] CI básico (gofmt, vet, testes, check-lines, govulncheck, gitleaks, build Docker) e `scripts/check-lines.sh`.
+- [ ] CI restante: staticcheck, golangci-lint, SBOM, trivy, migração up→down→up (com M2/M3).
+- [x] Runbook em linguagem simples: `docs/operacao/RUNBOOK.md`.
 
 **Aceite:** `docker compose up` em máquina nova pelo runbook; CI verde.
+
+**Pendente de verificação:** `docker compose up` e o build da imagem não foram executados (Docker Desktop
+desligado); só a sintaxe do Compose foi validada. A primeira execução do CI é a primeira prova do build.
 
 ## M2 — Identidade, autorização e auditoria
 

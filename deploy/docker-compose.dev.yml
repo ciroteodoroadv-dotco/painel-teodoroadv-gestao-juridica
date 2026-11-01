@@ -1,0 +1,6 @@
+# Só para desenvolvimento no seu computador: publica a porta APENAS em 127.0.0.1 (loopback).
+# Nunca use em servidor. Uso: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  app:
+    ports:
+      - "127.0.0.1:8080:8080"

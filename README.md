@@ -2,7 +2,8 @@
 
 Reescrita do painel do escritório para Linux/Oracle Cloud, privado, com LGPD por desenho.
 
-**Estado:** fase de especificação. Não há código ainda.
+**Estado:** Fase 1 (fundação) implementada. Ainda sem login, cadastros nem dados.
+Como ligar: `docs/operacao/RUNBOOK.md`.
 
 ## Onde ler
 

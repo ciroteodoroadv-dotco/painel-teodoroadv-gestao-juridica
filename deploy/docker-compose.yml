@@ -1,0 +1,60 @@
+# Base de produção: NENHUMA porta publicada. O acesso externo virá só pelo túnel (marco M5).
+name: painel
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: painel
+      POSTGRES_DB: painel
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [banco]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U painel -d painel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      PAINEL_ADDR: ":8080"
+      PAINEL_LOG_LEVEL: info
+      PAINEL_DB_HOST: db
+      PAINEL_DB_NAME: painel
+      PAINEL_DB_USER: painel
+      PAINEL_DB_PASSWORD_FILE: /run/secrets/db_password
+      PAINEL_SESSION_KEY_FILE: /run/secrets/session_key
+      PAINEL_FIELD_KEY_FILE: /run/secrets/field_key
+    secrets: [db_password, session_key, field_key]
+    networks: [banco, borda]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "/painel", "healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+networks:
+  banco:
+    internal: true # sem saída para a internet; só app e db conversam aqui
+  borda: {}
+
+volumes:
+  pgdata:
+
+secrets:
+  db_password: { file: ./secrets/db_password }
+  session_key: { file: ./secrets/session_key }
+  field_key: { file: ./secrets/field_key }
