@@ -1,0 +1,24 @@
+# Segredos e dados: nunca versionar
+.env
+.env.*
+*.key
+*.pem
+secrets/
+*.pdf
+*.zip
+*.docx
+*.xlsx
+backups/
+dados/
+documentos-privados/
+*.dump
+*.sql.gz
+*.age
+
+# Build e ambiente
+bin/
+dist/
+node_modules/
+*.log
+.idea/
+.vscode/
