@@ -119,3 +119,54 @@ func TestPublicURL(t *testing.T) {
 		t.Error("produção sem PAINEL_PUBLIC_URL deveria falhar")
 	}
 }
+
+// F9: criptografia da conexão com o banco.
+func TestSSLModeDoBanco(t *testing.T) {
+	urlCom := func(v map[string]string) (string, error) {
+		c, err := Load(envOf(v, nil))
+		return c.DatabaseURL, err
+	}
+	externo := func(mods map[string]string) map[string]string {
+		v := baseVars()
+		v["PAINEL_DB_HOST"] = "bd.exemplo.test"
+		for k, x := range mods {
+			v[k] = x
+		}
+		return v
+	}
+	// Banco fora da rede interna, sem nada informado: padrão seguro.
+	if u, err := urlCom(externo(nil)); err != nil || !strings.Contains(u, "sslmode=verify-full") {
+		t.Errorf("banco externo deveria usar verify-full por padrão: %v %q", err, u)
+	}
+	// Em produção, modo fraco com banco externo é recusado.
+	for _, fraco := range []string{"disable", "allow", "prefer"} {
+		if _, err := urlCom(externo(map[string]string{"PAINEL_DB_SSLMODE": fraco})); err == nil {
+			t.Errorf("sslmode=%s com banco externo em produção deveria ser recusado", fraco)
+		}
+	}
+	for _, forte := range []string{"require", "verify-ca", "verify-full"} {
+		if u, err := urlCom(externo(map[string]string{"PAINEL_DB_SSLMODE": forte})); err != nil || !strings.Contains(u, "sslmode="+forte) {
+			t.Errorf("sslmode=%s deveria ser aceito: %v %q", forte, err, u)
+		}
+	}
+	// Rede interna do Docker ("db") continua com o padrão sem TLS; dev aceita tudo; valor inválido é recusado.
+	if u, err := urlCom(baseVars()); err != nil || !strings.Contains(u, "sslmode=disable") {
+		t.Errorf("host interno deveria usar disable por padrão: %v %q", err, u)
+	}
+	if _, err := urlCom(externo(map[string]string{"PAINEL_ENV": "dev", "PAINEL_DB_SSLMODE": "disable"})); err != nil {
+		t.Errorf("dev deveria aceitar disable: %v", err)
+	}
+	if _, err := urlCom(externo(map[string]string{"PAINEL_DB_SSLMODE": "talvez"})); err == nil {
+		t.Error("valor inválido deveria ser recusado")
+	}
+	for _, h := range []string{"db", "localhost", "127.0.0.1", "::1"} {
+		if !isInternalHost(h) {
+			t.Errorf("%q deveria ser rede interna", h)
+		}
+	}
+	for _, h := range []string{"bd.exemplo.test", "10.0.0.5", "2001:db8::1", ""} {
+		if isInternalHost(h) {
+			t.Errorf("%q NÃO deveria ser rede interna", h)
+		}
+	}
+}

@@ -14,6 +14,11 @@ type ctxKey struct{}
 // Email devolve o e-mail validado pelo Access (vazio no modo dev).
 func Email(ctx context.Context) string { s, _ := ctx.Value(ctxKey{}).(string); return s }
 
+// WithEmail marca o contexto como já validado pelo Access (usado em testes e por quem valida por outro caminho).
+func WithEmail(ctx context.Context, email string) context.Context {
+	return context.WithValue(ctx, ctxKey{}, strings.ToLower(email))
+}
+
 // HTTPFetcher busca o JWKS em https://<time>/cdn-cgi/access/certs.
 func HTTPFetcher(teamDomain string) Fetcher {
 	c := &http.Client{Timeout: 5 * time.Second}

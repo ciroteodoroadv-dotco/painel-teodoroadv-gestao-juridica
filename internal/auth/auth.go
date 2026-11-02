@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"painelteodoro/internal/audit"
+	"painelteodoro/internal/platform/cfaccess"
 	"painelteodoro/internal/platform/csrf"
 	"painelteodoro/internal/platform/ratelimit"
 )
@@ -47,6 +48,7 @@ type Auth struct {
 	fl      flash
 	nav     []navItem
 	widgets []WidgetFunc
+	gate    denyGate
 }
 
 func (a *Auth) now() time.Time {
@@ -160,9 +162,13 @@ func emailHash(email string) string {
 	return hex.EncodeToString(h[:8])
 }
 
+// clientIP só confia em Cf-Connecting-Ip quando o JWT do Cloudflare Access foi validado nesta requisição
+// (então o cabeçalho é do Cloudflare). Sem isso — modo dev, por exemplo — o cabeçalho é forjável e é ignorado.
 func clientIP(r *http.Request) string {
-	if ip := r.Header.Get("Cf-Connecting-Ip"); ip != "" {
-		return ip
+	if cfaccess.Email(r.Context()) != "" {
+		if ip := net.ParseIP(strings.TrimSpace(r.Header.Get("Cf-Connecting-Ip"))); ip != nil {
+			return ip.String()
+		}
 	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -211,4 +217,47 @@ func burnPassword(pw string) {
 
 func withValue(r *http.Request, k, v any) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), k, v))
+}
+
+// denyGate limita a auditoria de negativas (403/CSRF): no máximo 1 evento por origem+rota+motivo por minuto,
+// com contagem das suprimidas no evento seguinte (auditoria F5). A negativa em si NUNCA é suprimida.
+type denyGate struct {
+	mu sync.Mutex
+	m  map[string]*gateEntry
+}
+
+type gateEntry struct {
+	last       time.Time
+	suppressed int
+}
+
+const denyWindow = time.Minute
+
+// allow diz se este evento deve ser gravado e quantos foram suprimidos desde o último gravado.
+func (g *denyGate) allow(key string, now time.Time) (bool, int) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.m == nil {
+		g.m = map[string]*gateEntry{}
+	}
+	if len(g.m) > 10000 {
+		for k, v := range g.m {
+			if now.Sub(v.last) > denyWindow {
+				delete(g.m, k)
+			}
+		}
+	}
+	e := g.m[key]
+	if e == nil || now.Sub(e.last) >= denyWindow {
+		n := 0
+		if e != nil {
+			n = e.suppressed
+		}
+		if e != nil || len(g.m) <= 10000 { // nunca deixa o mapa crescer sem limite
+			g.m[key] = &gateEntry{last: now}
+		}
+		return true, n
+	}
+	e.suppressed++
+	return false, 0
 }

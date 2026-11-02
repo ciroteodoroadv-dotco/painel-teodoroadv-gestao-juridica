@@ -90,6 +90,11 @@ func Load(e Env) (Config, error) {
 		errs = append(errs, errors.New("PAINEL_PUBLIC_URL inválida: use https://seu-dominio (http só em dev, com localhost)"))
 	}
 
+	ssl, err := resolveSSLMode(e, dbHost, dev)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
 	if len(errs) > 0 {
 		return Config{}, errors.Join(errs...)
 	}
@@ -102,23 +107,53 @@ func Load(e Env) (Config, error) {
 		AccessAUD:        aud,
 		PublicURL:        strings.TrimRight(public, "/"),
 		DocsDir:          orDefault(e.Getenv("PAINEL_DOCS_DIR"), "/data/documentos"),
-		DatabaseURL:      dbURL(e, dbHost, dbName, dbUser, dbPass),
+		DatabaseURL:      dbURL(e, dbHost, dbName, dbUser, dbPass, ssl),
 		AppDBPassword:    appPass,
-		AppDatabaseURL:   dbURL(e, dbHost, dbName, "painel_app", appPass),
+		AppDatabaseURL:   dbURL(e, dbHost, dbName, "painel_app", appPass, ssl),
 		SessionKey:       sessionKey,
 		FieldKey:         fieldKey,
 	}, nil
 }
 
-func dbURL(e Env, host, name, user, pass string) string {
+func dbURL(e Env, host, name, user, pass, ssl string) string {
 	u := url.URL{
 		Scheme:   "postgres",
 		User:     url.UserPassword(user, pass),
 		Host:     net.JoinHostPort(host, orDefault(e.Getenv("PAINEL_DB_PORT"), "5432")),
 		Path:     name,
-		RawQuery: "sslmode=" + orDefault(e.Getenv("PAINEL_DB_SSLMODE"), "disable"),
+		RawQuery: "sslmode=" + ssl,
 	}
 	return u.String()
+}
+
+// isInternalHost: nome de um só rótulo (serviço do Docker, ex.: "db") ou loopback = rede interna.
+func isInternalHost(h string) bool {
+	h = strings.ToLower(strings.TrimSpace(h))
+	return h == "localhost" || h == "127.0.0.1" || h == "::1" || (h != "" && !strings.ContainsAny(h, ".:"))
+}
+
+// resolveSSLMode decide a criptografia da conexão com o banco (auditoria F9). Na rede interna do Docker o
+// padrão é "disable"; com o banco FORA dela o padrão é "verify-full" e, em produção, só se aceita
+// require/verify-ca/verify-full.
+func resolveSSLMode(e Env, host string, dev bool) (string, error) {
+	mode := strings.TrimSpace(e.Getenv("PAINEL_DB_SSLMODE"))
+	interno := isInternalHost(host)
+	if mode == "" {
+		if interno {
+			return "disable", nil
+		}
+		return "verify-full", nil
+	}
+	switch mode {
+	case "disable", "allow", "prefer", "require", "verify-ca", "verify-full":
+	default:
+		return "", fmt.Errorf("PAINEL_DB_SSLMODE inválida: %q", mode)
+	}
+	forte := mode == "require" || mode == "verify-ca" || mode == "verify-full"
+	if !dev && !interno && !forte {
+		return "", fmt.Errorf("PAINEL_DB_SSLMODE=%s não é aceito em produção com o banco fora da rede interna do Docker: use verify-full (ou verify-ca/require)", mode)
+	}
+	return mode, nil
 }
 
 func secret(e Env, name string) (string, error) {

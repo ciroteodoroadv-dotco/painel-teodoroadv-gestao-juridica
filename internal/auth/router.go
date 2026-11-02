@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"painelteodoro/internal/audit"
@@ -157,7 +158,17 @@ func (a *Auth) deny(w http.ResponseWriter, r *http.Request, s *Session, motivo s
 	if s != nil {
 		actor = s.UserID
 	}
-	_ = a.audit(r, w, nil, audit.Event{Actor: actor, Action: "acesso.negado", Result: audit.Negado,
-		Meta: map[string]string{"motivo": motivo, "metodo": r.Method, "rota": r.URL.Path}})
+	// A chave usa o PADRÃO da rota (não o caminho): variar o id na URL não cria eventos novos.
+	rota := r.Pattern
+	if rota == "" {
+		rota = r.URL.Path
+	}
+	if ok, suprimidos := a.gate.allow(clientIP(r)+"|"+actor+"|"+rota+"|"+motivo, a.now()); ok {
+		meta := map[string]string{"motivo": motivo, "metodo": r.Method, "rota": r.URL.Path}
+		if suprimidos > 0 {
+			meta["suprimidos"] = strconv.Itoa(suprimidos)
+		}
+		_ = a.audit(r, w, nil, audit.Event{Actor: actor, Action: "acesso.negado", Result: audit.Negado, Meta: meta})
+	}
 	http.Error(w, "Acesso negado.", status)
 }

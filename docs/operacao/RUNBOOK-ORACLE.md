@@ -82,6 +82,9 @@ endpoint = https://NAMESPACE.compat.objectstorage.sa-saopaulo-1.oraclecloud.com
 region = sa-saopaulo-1
 ```
 
+Banco no mesmo servidor (padrão deste guia, serviço `db` do Docker): nada a configurar. Se um dia o banco for **fora** do
+servidor, é obrigatório definir `PAINEL_DB_SSLMODE=verify-full` (o painel recusa iniciar com modo fraco).
+
 Arquivo `oracle/ambiente` (variáveis, **sem segredos**):
 
 ```bash

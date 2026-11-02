@@ -61,9 +61,14 @@ func (a *Auth) waRegisterBegin(w http.ResponseWriter, r *http.Request, s *Sessio
 		a.deny(w, r, s, "cadastro_de_fator_sem_2fa", http.StatusForbidden)
 		return
 	}
-	creation, sd, err := a.WA.BeginRegistration(wu,
-		webauthn.WithExclusions(webauthn.Credentials(wu.creds).CredentialDescriptors()),
-		webauthn.WithResidentKeyRequirement(protocol.ResidentKeyRequirementDiscouraged))
+	ropts := []webauthn.RegistrationOption{webauthn.WithExclusions(webauthn.Credentials(wu.creds).CredentialDescriptors())}
+	if wu.u.Role == Administrador { // PIN/biometria obrigatórios para quem administra (auditoria F10)
+		ropts = append(ropts, webauthn.WithAuthenticatorSelection(protocol.AuthenticatorSelection{
+			ResidentKey: protocol.ResidentKeyRequirementDiscouraged, UserVerification: protocol.VerificationRequired}))
+	} else {
+		ropts = append(ropts, webauthn.WithResidentKeyRequirement(protocol.ResidentKeyRequirementDiscouraged))
+	}
+	creation, sd, err := a.WA.BeginRegistration(wu, ropts...)
 	if err != nil {
 		jsonErr(w, http.StatusInternalServerError, "Erro interno.")
 		return
@@ -136,7 +141,11 @@ func (a *Auth) waLoginBegin(w http.ResponseWriter, r *http.Request, s *Session) 
 		jsonErr(w, http.StatusBadRequest, msgChaveFalhou)
 		return
 	}
-	assertion, sd, err := a.WA.BeginLogin(wu)
+	var lopts []webauthn.LoginOption
+	if wu.u.Role == Administrador {
+		lopts = append(lopts, webauthn.WithUserVerification(protocol.VerificationRequired))
+	}
+	assertion, sd, err := a.WA.BeginLogin(wu, lopts...)
 	if err != nil {
 		jsonErr(w, http.StatusInternalServerError, "Erro interno.")
 		return

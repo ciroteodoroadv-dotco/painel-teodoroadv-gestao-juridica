@@ -24,6 +24,7 @@ type softKey struct {
 	rpID   string
 	origin string
 	userID []byte
+	semUV  bool // autenticador sem PIN/biometria: não liga o bit "user verified"
 }
 
 func newSoftKey(t *testing.T, rpID, origin string) *softKey {
@@ -64,7 +65,11 @@ func (k *softKey) register(options []byte) []byte {
 	})
 	rp := sha256.Sum256([]byte(k.rpID))
 	auth := append([]byte{}, rp[:]...)
-	auth = append(auth, 0x45) // UP | UV | AT
+	flags := byte(0x45) // UP | UV | AT
+	if k.semUV {
+		flags = 0x41 // UP | AT
+	}
+	auth = append(auth, flags)
 	auth = binary.BigEndian.AppendUint32(auth, 0)
 	auth = append(auth, make([]byte, 16)...) // AAGUID
 	auth = binary.BigEndian.AppendUint16(auth, uint16(len(k.credID)))
@@ -92,7 +97,11 @@ func (k *softKey) assert(options []byte, count uint32) []byte {
 	}
 	rp := sha256.Sum256([]byte(k.rpID))
 	auth := append([]byte{}, rp[:]...)
-	auth = append(auth, 0x05) // UP | UV
+	flags := byte(0x05) // UP | UV
+	if k.semUV {
+		flags = 0x01 // só UP
+	}
+	auth = append(auth, flags)
 	auth = binary.BigEndian.AppendUint32(auth, count)
 	cd := k.clientData("webauthn.get", o.PublicKey.Challenge)
 	h := sha256.Sum256(cd)
