@@ -21,6 +21,11 @@ const (
 	argonKeyLen  = 32
 	saltLen      = 16
 	minPwLen     = 12
+
+	// Limites aceitos ao LER um hash gravado (com folga sobre o que usamos, para poder aumentar os parâmetros no futuro).
+	maxArgonMemory  = 256 * 1024 // KiB = 256 MiB
+	maxArgonTime    = 10
+	maxArgonThreads = 16
 )
 
 // HashPassword devolve o hash no formato PHC: $argon2id$v=19$m=..,t=..,p=..$salt$hash.
@@ -45,12 +50,16 @@ func VerifyPassword(pw, encoded string) bool {
 	if _, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &m, &t, &p); err != nil {
 		return false
 	}
-	salt, err1 := base64.RawStdEncoding.DecodeString(parts[4])
-	want, err2 := base64.RawStdEncoding.DecodeString(parts[5])
-	if err1 != nil || err2 != nil || len(want) == 0 {
+	// Tetos: um hash adulterado no banco não pode pedir memória ou tempo absurdos (auditoria F7).
+	if m < 8 || m > maxArgonMemory || t < 1 || t > maxArgonTime || p < 1 || p > maxArgonThreads {
 		return false
 	}
-	got := argon2.IDKey([]byte(pw), salt, t, m, p, uint32(len(want)))
+	salt, err1 := base64.RawStdEncoding.DecodeString(parts[4])
+	want, err2 := base64.RawStdEncoding.DecodeString(parts[5])
+	if err1 != nil || err2 != nil || len(salt) < 8 || len(salt) > 64 || len(want) < 16 || len(want) > 64 {
+		return false
+	}
+	got := argon2.IDKey([]byte(pw), salt, t, m, p, uint32(len(want))) // #nosec G115 -- len(want) já validado entre 16 e 64
 	return subtle.ConstantTimeCompare(got, want) == 1
 }
 

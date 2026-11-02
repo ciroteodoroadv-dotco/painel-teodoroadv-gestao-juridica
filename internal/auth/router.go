@@ -39,39 +39,41 @@ func (rt *Router) Handle(pattern string, perm Perm, h HandlerFunc) {
 	rt.routes = append(rt.routes, Route{pattern, perm})
 	rt.mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
 		r = rt.a.ensureAnon(w, r)
-		if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
-			if err := r.ParseMultipartForm(26 << 20); err != nil {
-				var mbe *http.MaxBytesError
-				if errors.As(err, &mbe) {
-					http.Error(w, "Arquivo grande demais (o limite é 25 MiB).", http.StatusRequestEntityTooLarge)
-				} else {
-					http.Error(w, "Envio inválido.", http.StatusBadRequest)
-				}
+		multipart := strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data")
+		var s *Session
+		if perm == Public {
+			// Rotas públicas nunca recebem arquivo: recusa SEM ler o corpo (auditoria F4).
+			if multipart {
+				http.Error(w, "Tipo de envio não aceito.", http.StatusUnsupportedMediaType)
+				return
+			}
+		} else {
+			// Sessão e permissão ANTES de ler qualquer corpo: quem não está autorizado não consome memória.
+			if s = rt.a.session(r); s == nil {
+				redirectOrDeny(w, r, "/login")
+				return
+			}
+			switch {
+			case perm == MFAPending && s.MFAVerified:
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			case perm != MFAPending && perm != AnySession && !s.MFAVerified:
+				redirectOrDeny(w, r, "/2fa")
+				return
+			case perm != MFAPending && perm != AnyLoggedIn && perm != AnySession && !Can(s.Role, perm):
+				rt.a.deny(w, r, s, string(perm), http.StatusForbidden)
 				return
 			}
 		}
+		if multipart && !rt.a.parseMultipart(w, r) {
+			return
+		}
 		if !rt.a.csrfOK(r) {
-			rt.a.deny(w, r, nil, "csrf", http.StatusForbidden)
+			rt.a.deny(w, r, s, "csrf", http.StatusForbidden)
 			return
 		}
 		if perm == Public {
 			h(w, r, nil)
-			return
-		}
-		s := rt.a.session(r)
-		if s == nil {
-			redirectOrDeny(w, r, "/login")
-			return
-		}
-		switch {
-		case perm == MFAPending && s.MFAVerified:
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-			return
-		case perm != MFAPending && perm != AnySession && !s.MFAVerified:
-			redirectOrDeny(w, r, "/2fa")
-			return
-		case perm != MFAPending && perm != AnyLoggedIn && perm != AnySession && !Can(s.Role, perm):
-			rt.a.deny(w, r, s, string(perm), http.StatusForbidden)
 			return
 		}
 		if s.MustChange && perm != AnyLoggedIn && perm != AnySession && perm != MFAPending {
@@ -80,6 +82,21 @@ func (rt *Router) Handle(pattern string, perm Perm, h HandlerFunc) {
 		}
 		h(w, r, s)
 	})
+}
+
+// parseMultipart lê o corpo multipart (já depois de sessão e permissão). Devolve false se respondeu erro.
+func (a *Auth) parseMultipart(w http.ResponseWriter, r *http.Request) bool {
+	err := r.ParseMultipartForm(26 << 20)
+	if err == nil {
+		return true
+	}
+	var mbe *http.MaxBytesError
+	if errors.As(err, &mbe) {
+		http.Error(w, "Arquivo grande demais (o limite é 25 MiB).", http.StatusRequestEntityTooLarge)
+	} else {
+		http.Error(w, "Envio inválido.", http.StatusBadRequest)
+	}
+	return false
 }
 
 func redirectOrDeny(w http.ResponseWriter, r *http.Request, to string) {

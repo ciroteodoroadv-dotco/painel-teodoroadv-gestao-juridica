@@ -254,7 +254,7 @@ func (h *Handler) widget(ctx context.Context, _ *auth.Session) (auth.Widget, err
 	if err := t.Execute(&b, list); err != nil {
 		return auth.Widget{}, err
 	}
-	return auth.Widget{Title: "Agenda dos próximos 7 dias", Body: template.HTML(b.String())}, nil // saída do html/template
+	return auth.Widget{Title: "Agenda dos próximos 7 dias", Body: template.HTML(b.String())}, nil // #nosec G203 -- saída já escapada pelo html/template
 }
 
 func (h *Handler) fail(w http.ResponseWriter, err error) {

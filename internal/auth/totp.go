@@ -23,6 +23,9 @@ const (
 	recoveryCount = 8
 )
 
+// ErrCodigoUsado indica código TOTP já consumido (reuso): é erro da pessoa, não do sistema.
+var ErrCodigoUsado = errors.New("código já utilizado")
+
 var otpOpts = hotp.ValidateOpts{Digits: otp.DigitsSix, Algorithm: otp.AlgorithmSHA1}
 
 // NewTOTPKey cria um segredo novo para o e-mail.
@@ -39,6 +42,7 @@ func CheckTOTP(secret, code string, lastStep int64, now time.Time) (int64, bool)
 		if step <= lastStep {
 			continue
 		}
+		// #nosec G115 -- step = unix/30, sempre positivo
 		if ok, err := hotp.ValidateCustom(code, uint64(step), secret, otpOpts); err == nil && ok {
 			return step, true
 		}
@@ -75,7 +79,7 @@ func (s *Store) ConfirmTOTP(ctx context.Context, tx pgx.Tx, userID string, step 
 func (s *Store) UseTOTPStep(ctx context.Context, tx pgx.Tx, userID string, step int64) error {
 	tag, err := tx.Exec(ctx, `UPDATE users SET totp_last_step=$2 WHERE id=$1 AND totp_last_step<$2`, userID, step)
 	if err == nil && tag.RowsAffected() == 0 {
-		return errors.New("código já utilizado")
+		return ErrCodigoUsado
 	}
 	return err
 }

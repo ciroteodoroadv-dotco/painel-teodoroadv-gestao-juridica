@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"image/png"
 	"net/http"
 	"net/url"
@@ -76,6 +77,11 @@ func (a *Auth) mfaPost(w http.ResponseWriter, r *http.Request, s *Session) {
 			err = a.Store.UseTOTPStep(ctx, tx, u.ID, step)
 			ok = err == nil
 		}
+	}
+	if err != nil && !errors.Is(err, ErrCodigoUsado) {
+		// Falha do banco não é erro da pessoa: responde 500 e NÃO conta tentativa (auditoria F6).
+		http.Error(w, "Erro interno.", http.StatusInternalServerError)
+		return
 	}
 	if !ok {
 		_ = tx.Rollback(ctx)

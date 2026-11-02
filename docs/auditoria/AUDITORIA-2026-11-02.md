@@ -115,3 +115,18 @@ pessoais; sem corrida de dados na suíte inteira.
 3. **F11** (CI com `gosec` + `staticcheck`; fixar imagens e ações por hash).
 4. **F5** e **F8** (limite de eventos de negação; origem do IP).
 5. Antes de qualquer uso com mais de uma equipe: **F13** (escopo/ACL) como marco próprio.
+
+## Status das correções (aplicadas em 02/11/2026, após o ok do advogado)
+
+| Achado | Estado | Como foi provado |
+|---|---|---|
+| F1 Go 1.26.8 | **corrigido** → `go 1.26.10` em `go.mod`, `Dockerfile` e CI (lê o `go.mod`) | `govulncheck`: 0 vulnerabilidades alcançáveis |
+| F2 pgx | **corrigido** → v5.9.2 | idem |
+| F3 x/text | **corrigido** → v0.41.0; **extra:** `x/crypto` 0.40→0.56 (o `argon2` vem dele; 21 avisos em pacotes não chamados) e `x/sys` 0.47 | idem; resta 1 aviso sem correção publicada (GO-2026-5932, `x/crypto`, pacote não chamado) |
+| F4 multipart antes do login | **corrigido** (`router.go`: sessão e permissão primeiro; rota pública recusa multipart com 415 sem ler o corpo) | teste novo vermelho no código antigo (status 400) e verde no novo; **ao vivo:** POST de 27 MB sem login passou de "recebido inteiro, 403" para **401 após ~0,9 MB** |
+| F6 erro de banco contado como tentativa | **corrigido** (`mfa.go`, `ErrCodigoUsado`) | teste novo: antes 401 e contava; agora 500 e 0 tentativas; código errado de verdade ainda conta |
+| F7 Argon2 sem teto | **corrigido** (`password.go`: m ≤ 256 MiB, t ≤ 10, p ≤ 16, tamanhos de sal e chave) | teste novo: no código antigo o teste **travou** calculando Argon2 com 4 GiB (a vulnerabilidade demonstrada); agora recusa em milissegundos |
+| F12 `gosec` | 3 falsos positivos anotados com `#nosec` + justificativa; 2 conversões protegidas | `gosec`: 0 avisos; `staticcheck`: limpo |
+| F5, F8, F9, F10, F11, F13 | **pendentes** (não faziam parte do que foi aprovado) | — |
+
+Verificação final: `go vet`, `gofmt`, `govulncheck`, `gosec`, `staticcheck` limpos; suíte inteira com `-race` (PostgreSQL real, Go 1.26.10) passa.

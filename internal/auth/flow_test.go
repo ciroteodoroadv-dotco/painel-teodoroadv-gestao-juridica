@@ -34,6 +34,7 @@ type env struct {
 	pool   *pgxpool.Pool
 	a      *Auth
 	srv    *httptest.Server
+	mux    *http.ServeMux
 	offset time.Duration
 }
 
@@ -73,6 +74,7 @@ func newEnv(t *testing.T) *env {
 	e.a.RegisterAccount(rt)
 	e.a.RegisterAdmin(rt)
 	e.a.RegisterPages(rt)
+	e.mux = mux
 	e.srv = httptest.NewServer(mux)
 	t.Cleanup(e.srv.Close)
 	return e

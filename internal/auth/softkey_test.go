@@ -18,13 +18,12 @@ import (
 
 // softKey é um autenticador de software (ES256, atestação "none") para testar a cerimônia WebAuthn de ponta a ponta.
 type softKey struct {
-	t         *testing.T
-	priv      *ecdsa.PrivateKey
-	credID    []byte
-	rpID      string
-	origin    string
-	userID    []byte
-	signCount uint32
+	t      *testing.T
+	priv   *ecdsa.PrivateKey
+	credID []byte
+	rpID   string
+	origin string
+	userID []byte
 }
 
 func newSoftKey(t *testing.T, rpID, origin string) *softKey {

@@ -67,7 +67,7 @@ func runCLI(args []string) error {
 	case len(args) == 3 && args[0] == "user" && args[1] == "unlock":
 		return userUnlock(ctx, st, args[2])
 	}
-	return errors.New(uso)
+	return fmt.Errorf("comando desconhecido ou incompleto.\n%s", uso)
 }
 
 func readPassword() (string, error) {

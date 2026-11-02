@@ -39,7 +39,7 @@ func (s *Store) Put(data []byte) (string, error) {
 		return "", err
 	}
 	tmp := filepath.Join(s.Dir, name+".tmp")
-	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) // #nosec G304 -- Dir + nome aleatório gerado aqui
 	if err != nil {
 		return "", err
 	}
@@ -72,7 +72,7 @@ func (s *Store) Get(name string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	sealed, err := os.ReadFile(p)
+	sealed, err := os.ReadFile(p) // #nosec G304 -- p vem de path(): nome validado por ^[0-9a-f]{64}$
 	if err != nil {
 		return nil, err
 	}
