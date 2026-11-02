@@ -115,7 +115,7 @@ Pendente — **depende das contas do M0 e de uma VM real**:
 - [ ] Criar túnel e política do Access no Cloudflare; testar a validação do JWT contra o Cloudflare real.
 - [ ] Executar `cloud-init`, `bootstrap.sh`, timers e firewall na VM (nunca rodaram numa VM real).
 - [ ] Testar a cópia externa (Object Storage + segunda cópia) e a restauração com a chave offline.
-- [ ] Rodar `release.yml` num repositório remoto; fixar as ações do GitHub por hash.
+- [ ] Rodar `release.yml` e o CI num repositório remoto (ações e imagens já fixadas por hash/digest; Dependabot configurado).
 - [ ] Varredura externa de portas e teste de desligar/religar o túnel.
 
 **Aceite:** restauração fictícia funciona ✔ (local); varredura externa não encontra porta aberta ☐ (precisa da VM); deploy

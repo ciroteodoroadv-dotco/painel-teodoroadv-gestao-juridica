@@ -26,7 +26,7 @@ services:
       PAINEL_ENV: prod # sem JWT do Cloudflare Access, o app RECUSA iniciar
 
   cloudflared:
-    image: cloudflare/cloudflared:2025.8.1
+    image: cloudflare/cloudflared:2025.8.1@sha256:b77d84e8704db38db22c22661cf7e56468c526e3a6a5fe9c8b7c151452fa1472
     restart: always
     logging: *logging
     command: tunnel --no-autoupdate run --token-file /run/secrets/tunnel_token

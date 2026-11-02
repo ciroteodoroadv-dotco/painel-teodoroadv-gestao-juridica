@@ -1,0 +1,18 @@
+# Mantém os fixados por hash/digest em dia: o Dependabot abre pull requests semanais para cada ecossistema.
+# Só funciona com o repositório no GitHub (ainda não existe remoto). Revisar cada PR antes de aceitar.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: gomod
+    directory: /
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: docker
+    directory: /deploy
+    schedule: { interval: weekly }
+  - package-ecosystem: docker
+    directory: /deploy/backup
+    schedule: { interval: weekly }

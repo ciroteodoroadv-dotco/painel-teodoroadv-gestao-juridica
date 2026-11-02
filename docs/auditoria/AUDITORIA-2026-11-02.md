@@ -127,6 +127,7 @@ pessoais; sem corrida de dados na suíte inteira.
 | F6 erro de banco contado como tentativa | **corrigido** (`mfa.go`, `ErrCodigoUsado`) | teste novo: antes 401 e contava; agora 500 e 0 tentativas; código errado de verdade ainda conta |
 | F7 Argon2 sem teto | **corrigido** (`password.go`: m ≤ 256 MiB, t ≤ 10, p ≤ 16, tamanhos de sal e chave) | teste novo: no código antigo o teste **travou** calculando Argon2 com 4 GiB (a vulnerabilidade demonstrada); agora recusa em milissegundos |
 | F12 `gosec` | 3 falsos positivos anotados com `#nosec` + justificativa; 2 conversões protegidas | `gosec`: 0 avisos; `staticcheck`: limpo |
-| F5, F8, F9, F10, F11, F13 | **pendentes** (não faziam parte do que foi aprovado) | — |
+| F11 cadeia de suprimento | **corrigido** (02/11/2026): 5 imagens base fixadas por digest (índice amd64+arm64, serve ao Ampere A1 da Oracle); 9 ações do GitHub fixadas por hash de commit (versão no comentário); `gosec` e `staticcheck` no CI; `.github/dependabot.yml` e `scripts/pinar-imagens.sh` para manter os fixados em dia | `docker compose config` de dev/prod ok; imagens reconstruídas; `teste-backup-local.sh` e `teste-producao-local.sh` passam com os digests; YAML do CI validado. **Achado extra:** `release.yml` apontava para `trivy-action@0.28.0`, tag que **não existe** (as tags têm `v`); a entrega por digest teria falhado — corrigido para v0.36.0 |
+| F5, F8, F9, F10, F13 | **pendentes** (não faziam parte do que foi aprovado) | — |
 
 Verificação final: `go vet`, `gofmt`, `govulncheck`, `gosec`, `staticcheck` limpos; suíte inteira com `-race` (PostgreSQL real, Go 1.26.10) passa.

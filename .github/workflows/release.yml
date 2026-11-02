@@ -1,5 +1,5 @@
 # Entrega: ao criar uma tag vX.Y.Z, constrói a imagem, gera o SBOM, varre vulnerabilidades e publica POR DIGEST.
-# NÃO foi executado ainda (o repositório não tem remoto). As ações estão fixadas por tag; fixe por hash antes de produção.
+# NÃO foi executado ainda (o repositório não tem remoto). Ações fixadas por hash de commit (comentário = versão).
 name: release
 on:
   push:
@@ -14,43 +14,43 @@ jobs:
     outputs:
       digest: ${{ steps.push.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Construir (sem publicar) para varrer antes
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           file: deploy/Dockerfile
           load: true
           tags: painel:varredura
       - name: Varredura de vulnerabilidades (falha em CRÍTICA/ALTA com correção disponível)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
         with:
           image-ref: painel:varredura
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: "1"
       - name: SBOM
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           image: painel:varredura
           format: spdx-json
           output-file: sbom.spdx.json
       - name: Publicar
         id: push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           file: deploy/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}/painel:${{ github.ref_name }}
           provenance: true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with: { name: sbom, path: sbom.spdx.json }
       - name: Resumo (copie o DIGEST para o deploy.sh)
         run: |

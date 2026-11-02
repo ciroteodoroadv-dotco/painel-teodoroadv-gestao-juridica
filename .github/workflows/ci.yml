@@ -20,9 +20,9 @@ jobs:
     env:
       PAINEL_TEST_DB: postgres://postgres:teste@127.0.0.1:5432/teste?sslmode=disable
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { fetch-depth: 0 }
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with: { go-version-file: go.mod }
       - name: Formatação
         run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
@@ -34,15 +34,19 @@ jobs:
         run: ./scripts/check-lines.sh
       - name: Vulnerabilidades
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+      - name: Análise de segurança (gosec)
+        run: go run github.com/securego/gosec/v2/cmd/gosec@v2.22.4 -quiet -exclude-generated ./...
+      - name: Análise estática (staticcheck)
+        run: go run honnef.co/go/tools/cmd/staticcheck@2025.1.1 ./...
       - name: Segredos no Git
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Gerar segredos descartáveis do CI
         run: ./deploy/gerar-segredos.sh
       - name: Validar o Compose
@@ -53,7 +57,7 @@ jobs:
   scripts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Sintaxe dos scripts de operação
         run: for f in deploy/*.sh deploy/backup/*.sh deploy/oracle/*.sh; do bash -n "$f"; done
       - name: Imagem de backup e política de retenção (arquivos fictícios)
