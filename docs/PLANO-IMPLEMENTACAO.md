@@ -74,11 +74,24 @@ o nome da tabela de auditoria no meio da operação: nenhuma parte fica gravada)
 
 ## M4 — Agenda, audiências e documentos
 
-- [ ] Agenda e Audiências.
-- [ ] Upload com limite, tipo por bytes mágicos, nome aleatório, volume privado.
-- [ ] Leitura de documento auditada.
+- [x] Agenda e Audiências (audiência, reunião, diligência): horário digitado em Brasília e gravado em UTC;
+  processo opcional, responsável, participantes (pessoas); tela "Hoje" mostra os próximos 7 dias.
+- [x] Upload: limite de 25 MiB (413 acima), tipo pelo **conteúdo** (PDF, PNG, JPEG, DOCX com estrutura conferida),
+  extensão tem de combinar, nome do arquivo reduzido a nome simples, vínculo obrigatório a processo ou pessoa.
+- [x] Arquivo cifrado em disco (AES-256-GCM, subchave própria), nome aleatório, volume privado (0600, dono sem privilégios),
+  fora de qualquer pasta pública; integridade conferida (SHA-256 + autenticação do GCM) a cada leitura.
+- [x] Leitura de documento auditada **antes** da entrega (sem auditoria, sem arquivo); download sempre como anexo,
+  `nosniff` e CSP `sandbox`. Envio e exclusão auditados. Envio que falha no banco remove o arquivo.
+- [x] Permissões: todos leem; só advogado envia/exclui; assistente escreve na agenda (e em tarefas).
 
-**Aceite:** upload com tipo falso é recusado; arquivo inacessível sem permissão.
+**Limites conhecidos (M4):** sem antivírus (ClamAV é item futuro); PDF pode conter script — por isso é entregue só
+como anexo; exclusão apenas oculta (o arquivo continua no volume até um expurgo decidido pelo escritório);
+arquivo órfão é possível se o processo cair entre gravar o arquivo e o registro (varredura de órfãos: futuro);
+DOCX é conferido só pela estrutura (não é descompactado nem analisado).
+
+**Aceite:** upload com tipo falso é recusado; arquivo inacessível sem permissão. **Verificado:** `internal/app/documentos_test.go`
+e `agenda_test.go` (inclui falha simulada no meio e adulteração do arquivo em disco) e, na pilha Docker real
+(raiz somente leitura, usuário sem root): envio, arquivo cifrado no volume, download e auditoria.
 
 ## M5 — Infraestrutura Oracle
 

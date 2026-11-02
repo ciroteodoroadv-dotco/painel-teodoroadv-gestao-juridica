@@ -119,13 +119,19 @@ O comando **recusa rodar em produção**. Só funciona em banco sem pessoas cada
 **Chave de segurança (passkey) no seu computador:** o navegador só aceita chave física em endereço de domínio
 ou `localhost` — por isso, para testar a chave, abra `http://localhost:18080` (e não `http://127.0.0.1:18080`).
 
+## Documentos enviados
+
+Ficam no volume `painel_docs` do Docker, **cifrados** (quem copiar a pasta não lê nada). A chave de cifra deriva
+do arquivo `deploy/secrets/field_key`: **sem ele, os documentos não abrem**. O backup do volume e da `field_key`
+(juntos, mas em locais separados) é parte obrigatória do M5. Aceitos: PDF, PNG, JPEG, DOCX até 25 MiB.
+
 ## Telas
 
-Hoje (suas tarefas) · Pessoas · Processos · Tarefas · Minha conta (senha, chaves, códigos) · Usuários e
-Auditoria (administrador). Pessoas e processos só são **ocultados** ao excluir; nada é apagado.
+Hoje (suas tarefas e a agenda da semana) · Pessoas · Processos · Tarefas · Agenda · Documentos · Minha conta (senha,
+chaves, códigos) · Usuários e Auditoria (administrador). Pessoas e processos só são **ocultados** ao excluir; nada é apagado.
 
 ## O que ainda NÃO existe (marcos seguintes)
 
-Agenda, audiências e upload de documentos (M4); túnel Cloudflare, backup e servidor Oracle (M5); jobs e
+Túnel Cloudflare, backup e servidor Oracle (M5); jobs e
 integrações (M6). Faltam também a importação reversível de cadastros e o expurgo definitivo (ver plano).
 O backup ainda não existe: **não coloque dado real** até o M5.
