@@ -78,3 +78,9 @@ func ParseLocal(s string) (time.Time, error) {
 
 // FormatLocal devolve "2006-01-02T15:04" no fuso do escritório (para preencher datetime-local).
 func FormatLocal(t time.Time) string { return t.In(SP()).Format("2006-01-02T15:04") }
+
+// Hoje devolve a data de hoje no fuso do escritório, à meia-noite UTC (para comparar com colunas DATE).
+func Hoje(now time.Time) time.Time {
+	n := now.In(SP())
+	return time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, time.UTC)
+}

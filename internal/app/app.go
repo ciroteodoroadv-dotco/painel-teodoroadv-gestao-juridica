@@ -12,6 +12,7 @@ import (
 	"painelteodoro/internal/documentos"
 	"painelteodoro/internal/pessoas"
 	"painelteodoro/internal/platform/webx"
+	"painelteodoro/internal/prazos"
 	"painelteodoro/internal/processos"
 	"painelteodoro/internal/tarefas"
 )
@@ -50,6 +51,7 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	}
 	doc := &documentos.Service{Pool: pool, Store: store, Processos: proc, Pessoas: pes}
 
+	(&prazos.Handler{A: a, S: &prazos.Service{Pool: pool, Processos: proc, Users: users}}).Register(rt) // 1º: widget no topo de "Hoje"
 	(&pessoas.Handler{A: a, S: pes}).Register(rt)
 	(&processos.Handler{A: a, S: proc}).Register(rt)
 	(&tarefas.Handler{A: a, S: tar}).Register(rt)

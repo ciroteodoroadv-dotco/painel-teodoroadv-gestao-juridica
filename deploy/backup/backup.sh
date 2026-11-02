@@ -45,7 +45,7 @@ name="$(backup_name)"
 out="$BACKUP_DIR/$name"
 tar -C "$work" -cf - db.dump docs.tar MANIFEST | age -R "$AGE_RECIPIENTS_FILE" -o "$out.partial"
 mv "$out.partial" "$out"
-chmod 0600 "$out"
+chmod 0600 "$out" 2>/dev/null || log "AVISO: o sistema de arquivos de destino não aceita chmod (ex.: pasta do Windows); a proteção é a cifra"
 ( cd "$BACKUP_DIR" && sha256sum "$name" > "$name.sha256" )
 log "gerado: $name ($(du -h "$out" | cut -f1))"
 

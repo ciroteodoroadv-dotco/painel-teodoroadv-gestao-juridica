@@ -23,7 +23,7 @@ func restoreCheck(ctx context.Context, cfg config.Config, pool *pgxpool.Pool) er
 	}
 	fmt.Printf("auditoria: %d eventos, cadeia %s\n", n, map[bool]string{true: "ÍNTEGRA", false: "QUEBRADA"}[err == nil])
 
-	for _, t := range []string{"users", "pessoas", "processos", "processo_partes", "tarefas", "agenda_eventos", "documentos"} {
+	for _, t := range []string{"users", "pessoas", "processos", "processo_partes", "tarefas", "agenda_eventos", "documentos", "prazos"} {
 		var c int
 		if err := pool.QueryRow(ctx, "SELECT count(*) FROM "+t).Scan(&c); err != nil {
 			falhas = append(falhas, fmt.Sprintf("tabela %s ilegível: %v", t, err))

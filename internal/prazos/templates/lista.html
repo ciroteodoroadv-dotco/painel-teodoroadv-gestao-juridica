@@ -1,0 +1,61 @@
+{{define "content"}}{{with .Data}}
+<div class="cabeca">
+  <h1>Prazos</h1>
+  {{if .CanWrite}}<a class="botao" href="/prazos/novo">Novo prazo</a>{{end}}
+</div>
+<p class="apoio"><strong>Regra de ouro:</strong> o prazo só vale depois de confirmado por advogado. Os dias são <em>corridos</em>; o sistema ainda não calcula dias úteis nem feriados forenses. Confira sempre também no tribunal.</p>
+<form method="get" action="/prazos" role="search" class="busca linha"
+      hx-get="/prazos" hx-trigger="input changed delay:300ms from:#q, change from:#situacao, change from:#quem, search from:#q"
+      hx-target="#resultado" hx-push-url="true" hx-sync="this:replace">
+  <div><label for="q">Buscar na descrição</label>
+    <input id="q" name="q" type="search" value="{{.F.Q}}" autocomplete="off"></div>
+  <div><label for="situacao">Mostrar</label>
+    <select id="situacao" name="situacao">
+      <option value="" {{if eq .F.Situacao ""}}selected{{end}}>Em aberto (a conferir + confirmados)</option>
+      <option value="cumpridos" {{if eq .F.Situacao "cumpridos"}}selected{{end}}>Cumpridos e cancelados</option>
+      <option value="todos" {{if eq .F.Situacao "todos"}}selected{{end}}>Todos</option>
+    </select></div>
+  <div><label for="quem">De quem</label>
+    <select id="quem" name="quem">
+      <option value="">Todos</option>
+      <option value="meus" {{if .F.Responsavel}}selected{{end}}>Só os meus</option>
+    </select></div>
+</form>
+<div id="resultado" aria-live="polite">{{template "resultado" .}}</div>
+{{end}}{{end}}
+
+{{define "resultado"}}
+{{if .Prazos}}
+<div class="tabela">
+<table class="quebra">
+  <caption>{{len .Prazos}} prazo(s) nesta página, do mais urgente ao menos urgente</caption>
+  <thead><tr><th scope="col">Data fatal</th><th scope="col">Situação do prazo</th><th scope="col">Descrição</th><th scope="col">Processo</th><th scope="col">Responsável</th><th scope="col">Ações</th></tr></thead>
+  <tbody>
+  {{$c := .CanConfirm}}{{$w := .CanWrite}}{{range .Prazos}}
+  <tr class="nivel-{{.Nivel}}">
+    <td><strong>{{.DataFatal.Format "02/01/2006"}}</strong><br>{{if .Rotulo}}<span class="selo-nivel">{{.Rotulo}}</span> {{end}}<small>{{.Texto}}</small></td>
+    <td>{{if eq .Situacao "a_conferir"}}<span class="selo">{{.SituacaoRotulo}}</span>{{else}}{{.SituacaoRotulo}}{{end}}
+      {{if and .ConfirmadoEm .ConfirmadoPor}}<br><small class="apoio">por {{.ConfirmadoPor}}, {{.ConfirmadoEm.Format "02/01 15:04"}}</small>{{end}}</td>
+    <td>{{.Descricao}}{{if .Fundamento}}<br><small class="apoio">{{.Fundamento}}</small>{{end}}</td>
+    <td>{{if .ProcessoNumero}}<a href="/processos/{{.ProcessoID}}"><code>{{.ProcessoNumero}}</code></a>{{else}}—{{end}}</td>
+    <td>{{.Responsavel}}</td>
+    <td class="acoes">
+      {{if and $w .Aberto}}<a href="/prazos/{{.ID}}/editar">Editar</a>{{end}}
+      {{if $c}}
+        {{if eq .Situacao "a_conferir"}}<form method="post" action="/prazos/{{.ID}}/confirmar"><input type="hidden" name="csrf_token" value="{{$.CSRF}}"><input type="hidden" name="version" value="{{.Version}}"><button type="submit">Confirmar</button></form>{{end}}
+        {{if eq .Situacao "confirmado"}}<form method="post" action="/prazos/{{.ID}}/cumprir"><input type="hidden" name="csrf_token" value="{{$.CSRF}}"><input type="hidden" name="version" value="{{.Version}}"><button type="submit" class="secundario" data-confirmar="Clique de novo: marcar como CUMPRIDO">Cumprido</button></form>{{end}}
+        {{if .Aberto}}<form method="post" action="/prazos/{{.ID}}/cancelar"><input type="hidden" name="csrf_token" value="{{$.CSRF}}"><input type="hidden" name="version" value="{{.Version}}"><button type="submit" class="secundario" data-confirmar="Clique de novo: CANCELAR o prazo">Cancelar</button></form>{{end}}
+      {{end}}
+    </td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+<nav class="paginas" aria-label="Páginas">
+  {{if .Anterior}}<a href="/prazos?q={{.F.Q}}&amp;situacao={{.F.Situacao}}&amp;pag={{.Anterior}}">← Anterior</a>{{end}}
+  <span>Página {{.Pag}}</span>
+  {{if .Proxima}}<a href="/prazos?q={{.F.Q}}&amp;situacao={{.F.Situacao}}&amp;pag={{.Proxima}}">Próxima →</a>{{end}}
+</nav>
+{{else}}<p class="apoio">Nenhum prazo neste filtro.</p>{{end}}
+{{end}}

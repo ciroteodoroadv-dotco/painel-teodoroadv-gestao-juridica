@@ -1,0 +1,35 @@
+{{define "content"}}
+{{with .Data}}<h1>{{if .IsNew}}Novo prazo{{else}}Editar prazo{{end}}</h1>{{if .Aviso}}<p class="erro" role="status">{{.Aviso}}</p>{{end}}{{end}}
+{{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
+{{with .Data}}
+<p class="apoio">Digite a <strong>data fatal</strong> como você a apurou (dias corridos; o sistema não calcula dia útil nem feriado forense). Indique o fundamento e a fonte para quem for conferir.</p>
+<form method="post" action="{{if .IsNew}}/prazos{{else}}/prazos/{{.ID}}{{end}}" data-protege class="grade">
+  <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+  {{if not .IsNew}}<input type="hidden" name="version" value="{{.Version}}">{{end}}
+  <div class="larga"><label for="descricao">O que precisa ser feito</label>
+    <input id="descricao" name="descricao" value="{{.In.Descricao}}" required minlength="2" maxlength="500" autofocus
+           placeholder="Ex.: contestação; recurso de apelação; manifestação sobre laudo"></div>
+  <div><label for="data_fatal">Data fatal</label>
+    <input id="data_fatal" name="data_fatal" type="date" value="{{.In.DataFatal}}" required></div>
+  <div><label for="fonte">Fonte</label>
+    <select id="fonte" name="fonte" required>
+      {{$f := .In.Fonte}}{{range .Fontes}}<option value="{{.Valor}}" {{if eq .Valor $f}}selected{{end}}>{{.Rotulo}}</option>{{end}}
+    </select></div>
+  <div class="larga"><label for="fundamento">Fundamento / como foi apurado <small class="apoio">(opcional)</small></label>
+    <input id="fundamento" name="fundamento" value="{{.In.Fundamento}}" maxlength="300"
+           placeholder="Ex.: CPC art. 335 — 15 dias úteis a partir da juntada do mandado"></div>
+  <div><label for="responsavel_id">Responsável</label>
+    <select id="responsavel_id" name="responsavel_id">
+      <option value="">— sem responsável —</option>
+      {{$r := .In.ResponsavelID}}{{range .Responsaveis}}<option value="{{.Valor}}" {{if eq .Valor $r}}selected{{end}}>{{.Rotulo}}</option>{{end}}
+    </select></div>
+  <div><label for="busca">Processo</label>
+    <input id="busca" name="busca" type="search" autocomplete="off" placeholder="buscar por número ou órgão"
+           hx-get="/prazos/processos" hx-trigger="input changed delay:300ms, search" hx-target="#processo_id">
+    <select id="processo_id" name="processo_id">
+      {{if .In.ProcessoID}}<option value="{{.In.ProcessoID}}" selected>{{.ProcessoNum}}</option>{{end}}
+      <option value="">— sem processo —</option>
+    </select></div>
+  <div class="larga"><button type="submit">Salvar</button> <a class="botao secundario" href="/prazos">Cancelar</a></div>
+</form>
+{{end}}{{end}}

@@ -32,6 +32,22 @@ responsabilidade civil. **Este roteiro é proposta: nada aqui foi implementado n
 | **E — calculadora de prazo** | regras do CPC (dias úteis, exclusão do dia do começo, termo inicial da intimação, prazo em dobro, recesso) + **calendário forense por tribunal/comarca**; sugestão sempre rotulada | validada em casos reais conferidos por advogado antes de ligar; divergência registrada |
 | **F — notificações** | e-mail interno escalonado (D-5, D-3, D-1, dia); depois outros canais **após revisão própria** (WhatsApp segue vedado) | alerta chega; falha de envio é visível |
 
+## Andamento (atualizado em 02/11/2026, noite)
+
+Decisões do advogado: (1) princípio **detectar → sugerir → confirmar por advogado** VALIDADO; (2) coleta pelas OAB dos advogados
+parceiros (clientes do escritório), com consentimento a registrar; (3) segredo de justiça pelas **duas camadas** (provedor
+comercial autorizado **e** credencial do próprio advogado); (4) dado real em localhost autorizado.
+
+**Fase A — feita:** entidade **Prazo** (migração 0006): situação a conferir/confirmado/cumprido/cancelado; advogado cria
+já confirmado, assistente cria "A CONFERIR"; só advogado confirma, cumpre, cancela e exclui; editar prazo confirmado
+sem ser advogado derruba a confirmação; o banco recusa "confirmado" sem confirmador; tela **Prazos** (ordenada pela data
+fatal, selos ATRASADO/VENCE HOJE/até 3, 5 e 10 dias, sempre com texto além da cor) e bloco **PRAZOS** no topo de
+"Hoje" (vencidos e até 5 dias + contagem de "a conferir"); tudo auditado. Dias **corridos** (sem calendário forense).
+Backup diário local cifrado para o OneDrive, com a `field_key` cifrada ao lado; restauração testada com a chave real.
+**Falta da Fase A (depende de você):** rodar `deploy/comecar-uso-real.sh`, `deploy/agendar-backup-windows.ps1` e guardar a
+chave de recuperação (ver `docs/operacao/COMECAR-USO-REAL.md`). O ambiente bloqueou (por política) o apagamento de volumes
+e a criação da tarefa agendada feitos por mim; por isso são scripts para VOCÊ rodar.
+
 ## Antes de qualquer dado real
 
 O M0 (inventário LGPD, guarda das chaves, DPA) continua pendente. Dado real em `localhost` é decisão do advogado, **sob

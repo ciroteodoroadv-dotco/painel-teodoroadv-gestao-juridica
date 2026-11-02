@@ -14,12 +14,13 @@ const mod = "painelteodoro/internal/"
 // Fronteiras entre domínios (especificação §4): um domínio nunca importa o outro por cima da
 // interface combinada. Só processos pode conhecer os TIPOS de pessoas (contrato pessoas.ProcessosLookup).
 var proibido = map[string][]string{
-	"pessoas":    {"processos", "tarefas", "agenda", "documentos"},
-	"processos":  {"tarefas", "agenda", "documentos"},
-	"tarefas":    {"pessoas", "processos", "agenda", "documentos"},
-	"agenda":     {"pessoas", "processos", "tarefas", "documentos"},
-	"documentos": {"pessoas", "processos", "tarefas", "agenda"},
-	"audit":      {"auth", "pessoas", "processos", "tarefas", "agenda", "documentos", "app"},
+	"pessoas":    {"processos", "tarefas", "agenda", "documentos", "prazos"},
+	"processos":  {"tarefas", "agenda", "documentos", "prazos"},
+	"tarefas":    {"pessoas", "processos", "agenda", "documentos", "prazos"},
+	"agenda":     {"pessoas", "processos", "tarefas", "documentos", "prazos"},
+	"documentos": {"pessoas", "processos", "tarefas", "agenda", "prazos"},
+	"prazos":     {"pessoas", "processos", "tarefas", "agenda", "documentos"},
+	"audit":      {"auth", "pessoas", "processos", "tarefas", "agenda", "documentos", "prazos", "app"},
 }
 
 func TestFronteirasEntreDominios(t *testing.T) {
@@ -60,7 +61,8 @@ func TestSQLNaoCruzaDominios(t *testing.T) {
 		"processos":  {"pessoas", "tarefas", "agenda_eventos", "documentos"},
 		"tarefas":    {"pessoas", "processos", "processo_partes", "agenda_eventos", "documentos"},
 		"agenda":     {"pessoas", "processos", "tarefas", "documentos"},
-		"documentos": {"pessoas", "processos", "tarefas", "agenda_eventos"},
+		"documentos": {"pessoas", "processos", "tarefas", "agenda_eventos", "prazos"},
+		"prazos":     {"pessoas", "processos", "tarefas", "agenda_eventos", "documentos"},
 	}
 	for dom, outras := range tabelas {
 		files, _ := filepath.Glob(filepath.Join("..", dom, "*.go"))

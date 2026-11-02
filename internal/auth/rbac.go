@@ -32,9 +32,12 @@ const (
 	PermAgendaWrite  Perm = "agenda:escrever"
 	PermDocRead      Perm = "documentos:ler"
 	PermDocWrite     Perm = "documentos:escrever"
+	PermPrazoRead    Perm = "prazos:ler"
+	PermPrazoWrite   Perm = "prazos:escrever"  // registrar/editar (o prazo fica "a conferir")
+	PermPrazoConfirm Perm = "prazos:confirmar" // confirmar, cumprir, cancelar, excluir: SÓ advogado
 )
 
-var leitura = []Perm{PermHome, PermPessoasRead, PermProcRead, PermTarefaRead, PermAgendaRead, PermDocRead}
+var leitura = []Perm{PermHome, PermPessoasRead, PermProcRead, PermTarefaRead, PermAgendaRead, PermDocRead, PermPrazoRead}
 
 // matrix: negar por padrão. Administrador gere usuários e vê auditoria (não mexe em processos);
 // advogado lê e escreve nos domínios; assistente lê tudo e escreve só em tarefas e agenda.
@@ -46,10 +49,10 @@ var matrix = func() map[Role]map[Perm]bool {
 	for _, p := range []Perm{PermUsersManage, PermAuditRead} {
 		m[Administrador][p] = true
 	}
-	for _, p := range []Perm{PermPessoasWrite, PermProcWrite, PermTarefaWrite, PermAgendaWrite, PermDocWrite} {
+	for _, p := range []Perm{PermPessoasWrite, PermProcWrite, PermTarefaWrite, PermAgendaWrite, PermDocWrite, PermPrazoWrite, PermPrazoConfirm} {
 		m[Advogado][p] = true
 	}
-	for _, p := range []Perm{PermTarefaWrite, PermAgendaWrite} {
+	for _, p := range []Perm{PermTarefaWrite, PermAgendaWrite, PermPrazoWrite} {
 		m[Assistente][p] = true
 	}
 	return m
