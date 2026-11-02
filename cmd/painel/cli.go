@@ -24,6 +24,7 @@ const uso = `Uso:
   painel user create EMAIL PAPEL  cria usuário (administrador|advogado|assistente); senha lida da entrada padrão
   painel user reset-password EMAIL  nova senha lida da entrada padrão; revoga as sessões
   painel user unlock EMAIL        libera conta bloqueada por tentativas
+  painel user reset-2fa EMAIL     apaga o segundo fator (aparelho perdido); a pessoa cadastra de novo no próximo acesso
   painel seed-demo EMAIL          (só em modo dev) cria dados fictícios de demonstração, em nome desse usuário`
 
 func runCLI(args []string) error {
@@ -58,6 +59,8 @@ func runCLI(args []string) error {
 		return userReset(ctx, st, args[2])
 	case len(args) == 2 && args[0] == "seed-demo":
 		return seedDemo(ctx, cfg, st, pool, args[1])
+	case len(args) == 3 && args[0] == "user" && args[1] == "reset-2fa":
+		return userReset2FA(ctx, st, args[2])
 	case len(args) == 3 && args[0] == "user" && args[1] == "unlock":
 		return userUnlock(ctx, st, args[2])
 	}
@@ -173,5 +176,28 @@ func seedDemo(ctx context.Context, cfg config.Config, st *auth.Store, pool *pgxp
 		return err
 	}
 	fmt.Println("Dados fictícios criados: 4 pessoas, 2 processos e 4 tarefas (todos marcados como exemplo).")
+	return nil
+}
+
+func userReset2FA(ctx context.Context, st *auth.Store, email string) error {
+	u, err := st.UserByEmail(ctx, email)
+	if err != nil {
+		return fmt.Errorf("usuário não encontrado")
+	}
+	tx, err := st.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if err := st.ResetMFA(ctx, tx, u.ID); err != nil {
+		return err
+	}
+	if err := cliAudit(ctx, tx, "usuario.mfa_redefinido", u.ID, nil); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+	fmt.Println("Segundo fator apagado. No próximo acesso a pessoa cadastra de novo (aplicativo ou chave).")
 	return nil
 }

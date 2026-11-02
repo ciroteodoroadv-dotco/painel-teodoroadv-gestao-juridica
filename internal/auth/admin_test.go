@@ -94,3 +94,33 @@ func TestCodigosDeRecuperacaoNovos(t *testing.T) {
 		t.Fatalf("novos códigos = %d, esperado 8", n)
 	}
 }
+
+func TestAdminRedefineSegundoFator(t *testing.T) {
+	e := newEnv(t)
+	e.user("adm@exemplo.test", Administrador, senhaBoa)
+	e.user("perdeu@exemplo.test", Advogado, senhaBoa)
+	adm := e.fullLogin("adm@exemplo.test", senhaBoa)
+	vitima := e.fullLogin("perdeu@exemplo.test", senhaBoa) // tem TOTP e sessão ativa
+	var id string
+	_ = e.pool.QueryRow(context.Background(), "SELECT id FROM users WHERE email='perdeu@exemplo.test'").Scan(&id)
+
+	if r, _ := adm.do("POST", "/admin/usuarios/"+id+"/mfa/redefinir", url.Values{"csrf_token": {adm.csrfFrom("/admin/usuarios")}}); r.StatusCode != 303 {
+		t.Fatalf("redefinir 2º fator = %d", r.StatusCode)
+	}
+	if r, _ := vitima.do("GET", "/", nil); r.StatusCode != 303 {
+		t.Fatalf("a sessão da pessoa deveria cair: %d", r.StatusCode)
+	}
+	// Próximo acesso: senha ok → volta ao CADASTRO (não ao código).
+	b := e.browser()
+	if r := b.password("perdeu@exemplo.test", senhaBoa); r.Header.Get("Location") != "/2fa/setup" {
+		t.Fatalf("depois da redefinição deveria recadastrar: %s", r.Header.Get("Location"))
+	}
+	if e.events("usuario.mfa_redefinido") != 1 {
+		t.Error("a redefinição deveria estar auditada")
+	}
+	var n int
+	_ = e.pool.QueryRow(context.Background(), "SELECT count(*) FROM recovery_codes WHERE user_id=$1", id).Scan(&n)
+	if n != 0 {
+		t.Errorf("códigos de recuperação antigos deveriam ter sido apagados: %d", n)
+	}
+}

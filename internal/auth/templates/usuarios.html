@@ -50,6 +50,10 @@
           <button type="submit" class="secundario">Desbloquear</button>
         </form>
         {{end}}
+        <form method="post" action="/admin/usuarios/{{.ID}}/mfa/redefinir">
+          <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+          <button type="submit" class="secundario" data-confirmar="Clique de novo: apaga o 2º fator desta pessoa">Redefinir 2º fator</button>
+        </form>
         <form method="post" action="/admin/usuarios/{{.ID}}/senha">
           <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
           <input name="senha" type="password" minlength="12" placeholder="nova senha provisória" aria-label="Nova senha provisória de {{.Email}}" required autocomplete="new-password">

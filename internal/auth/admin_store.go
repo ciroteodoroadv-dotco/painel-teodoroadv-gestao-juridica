@@ -55,6 +55,26 @@ func (s *Store) UpdateRole(ctx context.Context, tx pgx.Tx, id string, role Role)
 	return err
 }
 
+// ResetMFA apaga todos os segundos fatores (app, chaves e códigos de recuperação) e as sessões:
+// no próximo acesso a pessoa cadastra o segundo fator de novo. Uso: aparelho perdido sem códigos.
+func (s *Store) ResetMFA(ctx context.Context, tx pgx.Tx, id string) error {
+	tag, err := tx.Exec(ctx, `UPDATE users SET totp_secret_enc=NULL, totp_confirmed_at=NULL, totp_last_step=0,
+		failed_attempts=0, locked_until=NULL, updated_at=now(), version=version+1 WHERE id=$1`, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	for _, q := range []string{`DELETE FROM webauthn_credentials WHERE user_id=$1`,
+		`DELETE FROM recovery_codes WHERE user_id=$1`, `DELETE FROM sessions WHERE user_id=$1`} {
+		if _, err := tx.Exec(ctx, q, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SetActive ativa ou desativa o usuário; desativar encerra as sessões.
 func (s *Store) SetActive(ctx context.Context, tx pgx.Tx, id string, active bool) error {
 	tag, err := tx.Exec(ctx, `UPDATE users SET active=$2, updated_at=now(), version=version+1 WHERE id=$1`, id, active)

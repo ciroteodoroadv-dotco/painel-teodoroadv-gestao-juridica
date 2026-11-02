@@ -20,6 +20,7 @@ func (a *Auth) RegisterAdmin(rt *Router) {
 	rt.Handle("POST /admin/usuarios/{id}/ativo", PermUsersManage, a.usuarioAtivo)
 	rt.Handle("POST /admin/usuarios/{id}/desbloquear", PermUsersManage, a.usuarioDesbloquear)
 	rt.Handle("POST /admin/usuarios/{id}/senha", PermUsersManage, a.usuarioSenha)
+	rt.Handle("POST /admin/usuarios/{id}/mfa/redefinir", PermUsersManage, a.usuarioMFA)
 }
 
 func (a *Auth) usuariosPage(w http.ResponseWriter, r *http.Request, s *Session, status int, notice, errMsg string) {
@@ -148,4 +149,9 @@ func (a *Auth) usuarioSenha(w http.ResponseWriter, r *http.Request, s *Session) 
 	}
 	a.mexer(w, r, s, "usuario.senha_redefinida", nil,
 		func(tx txLike, id string) error { return a.Store.SetPassword(r.Context(), tx, id, hash, true) })
+}
+
+func (a *Auth) usuarioMFA(w http.ResponseWriter, r *http.Request, s *Session) {
+	a.mexer(w, r, s, "usuario.mfa_redefinido", nil,
+		func(tx txLike, id string) error { return a.Store.ResetMFA(r.Context(), tx, id) })
 }
