@@ -21,6 +21,7 @@ import (
 const uso = `Uso:
   painel migrate up|down          aplica ou reverte a última migração
   painel audit verify             confere a cadeia de auditoria
+  painel restore-check            confere uma cópia restaurada (auditoria + todos os documentos decifrados)
   painel user create EMAIL PAPEL  cria usuário (administrador|advogado|assistente); senha lida da entrada padrão
   painel user reset-password EMAIL  nova senha lida da entrada padrão; revoga as sessões
   painel user unlock EMAIL        libera conta bloqueada por tentativas
@@ -57,6 +58,8 @@ func runCLI(args []string) error {
 		return userCreate(ctx, st, args[2], auth.Role(args[3]))
 	case len(args) == 3 && args[0] == "user" && args[1] == "reset-password":
 		return userReset(ctx, st, args[2])
+	case len(args) == 1 && args[0] == "restore-check":
+		return restoreCheck(ctx, cfg, pool)
 	case len(args) == 2 && args[0] == "seed-demo":
 		return seedDemo(ctx, cfg, st, pool, args[1])
 	case len(args) == 3 && args[0] == "user" && args[1] == "reset-2fa":
