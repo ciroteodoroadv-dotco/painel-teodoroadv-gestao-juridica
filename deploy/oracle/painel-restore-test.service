@@ -1,0 +1,17 @@
+[Unit]
+Description=Teste mensal de restauração do Painel Teodoro (banco e pasta temporários, sem internet)
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=painel-admin
+WorkingDirectory=/opt/painel/deploy
+EnvironmentFile=-/opt/painel/deploy/oracle/ambiente
+# A chave de TESTE de restauração fica no servidor; a chave de recuperação de desastre fica FORA (runbook).
+Environment=AGE_IDENTITY=/opt/painel/deploy/secrets/age_restore_identity
+Environment=BACKUP_DIR=/var/backups/painel
+ExecStart=/opt/painel/deploy/restore-test.sh
+ExecStartPost=/bin/sh -c 'date -u +%%FT%%TZ > /var/lib/painel/restore-test.ok'
+ExecStopPost=/bin/sh -c '[ "$$SERVICE_RESULT" = success ] || date -u +%%FT%%TZ > /var/lib/painel/restore-test.falha'
+TimeoutStartSec=45min

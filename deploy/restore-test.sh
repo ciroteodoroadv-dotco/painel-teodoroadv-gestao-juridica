@@ -11,7 +11,7 @@ cd "$(dirname "$0")"
 
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/painel}"
 FIELD_KEY_FILE="${FIELD_KEY_FILE:-./secrets/field_key}"
-IMAGE_APP="${IMAGE_APP:-painel-app:latest}"
+IMAGE_APP="${IMAGE_APP:-$(cat .estado-deploy.atual 2>/dev/null || echo painel-app:latest)}" # em produção: a versão em uso
 IMAGE_BACKUP="${IMAGE_BACKUP:-painel-backup:latest}"
 : "${AGE_IDENTITY:?defina AGE_IDENTITY com o caminho da chave PRIVADA (ela não fica no servidor)}"
 [[ -r "$AGE_IDENTITY" ]] || { echo "chave privada não encontrada: $AGE_IDENTITY"; exit 2; }

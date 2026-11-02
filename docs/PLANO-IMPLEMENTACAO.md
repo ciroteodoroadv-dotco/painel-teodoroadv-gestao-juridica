@@ -95,13 +95,31 @@ e `agenda_test.go` (inclui falha simulada no meio e adulteração do arquivo em 
 
 ## M5 — Infraestrutura Oracle
 
-- [ ] VM, Tunnel, política do Access, firewall (sem porta de entrada), SSH por chave via Bastion.
-- [ ] Backup diário cifrado, retenção 7/4/12, cópia fora da Oracle.
-- [ ] Restauração mensal em ambiente isolado.
-- [ ] Pipeline dev → homologação → produção por digest, com rollback.
+Parte local (feita em 02/11/2026, **testada com dados fictícios**):
 
-**Aceite:** restauração fictícia funciona; varredura externa não encontra porta aberta; deploy de teste
-com rollback demonstrado.
+- [x] Backup cifrado com age (banco + documentos + manifesto), permissão 0600, SHA-256 do arquivo; cópia externa
+  por `rclone` (configurável); aviso quando não há cópia externa. ADR 0007.
+- [x] Retenção 7 diários / 4 semanais / 12 mensais (`prune.sh`, testada com 400 arquivos fictícios).
+- [x] Restauração isolada (rede sem internet) + `painel restore-check` (cadeia de auditoria e **todos** os documentos
+  decifrados e conferidos). Provado: chave errada recusada, backup adulterado recusado, backup com documento ausente reprovado.
+- [x] Compose de produção: nenhuma porta publicada, `cloudflared` só de saída, app e túnel endurecidos, logs com rotação.
+- [x] Modo produção do app: sem JWT do Cloudflare Access recusa iniciar; `/login`, `/static` e demais rotas → 403
+  sem JWT; `/healthz` só interno (403 se vier pelo Cloudflare). Verificado em contêiner real.
+- [x] `deploy.sh`: backup antes, exige imagem por digest, espera saúde, **rollback automático** (provado com imagem quebrada).
+- [x] `RUNBOOK-ORACLE.md`, `cloud-init.yaml`, `bootstrap.sh`, firewall nftables (sintaxe validada), timers systemd,
+  `status.sh`, `release.yml` (imagem por digest, SBOM, trivy) e jobs de CI para os scripts.
+
+Pendente — **depende das contas do M0 e de uma VM real**:
+
+- [ ] Criar VCN privada, NAT, Bastion, VM, bucket e usuário de backup na Oracle.
+- [ ] Criar túnel e política do Access no Cloudflare; testar a validação do JWT contra o Cloudflare real.
+- [ ] Executar `cloud-init`, `bootstrap.sh`, timers e firewall na VM (nunca rodaram numa VM real).
+- [ ] Testar a cópia externa (Object Storage + segunda cópia) e a restauração com a chave offline.
+- [ ] Rodar `release.yml` num repositório remoto; fixar as ações do GitHub por hash.
+- [ ] Varredura externa de portas e teste de desligar/religar o túnel.
+
+**Aceite:** restauração fictícia funciona ✔ (local); varredura externa não encontra porta aberta ☐ (precisa da VM); deploy
+de teste com rollback demonstrado ✔ (local).
 
 ## M6 — Jobs e integrações cadastradas
 

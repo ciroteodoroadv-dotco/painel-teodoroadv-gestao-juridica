@@ -106,6 +106,18 @@ docker rm -f painel-teste-db
 
 Sem `PAINEL_TEST_DB`, os testes de integração são pulados (aparecem como "skipped").
 
+## Backup e restauração (testar no seu computador)
+
+```bash
+cd ~/projetos/painel-teodoro-v2/deploy
+docker build -q -t painel-backup:dev backup
+./teste-backup-local.sh        # backup + restauração + chave errada + backup adulterado + documento ausente
+./teste-producao-local.sh      # modo produção (Cloudflare Access exigido) + deploy com rollback
+```
+
+Ambos usam só os dados fictícios da pilha de desenvolvimento e terminam com "todos os testes ... passaram".
+O guia do servidor real está em `RUNBOOK-ORACLE.md`.
+
 ## Conhecer o sistema com dados de mentirinha (só no seu computador)
 
 ```bash

@@ -1,0 +1,10 @@
+[Unit]
+Description=Backup diário do Painel Teodoro (03:30 em Brasília = 06:30 UTC)
+
+[Timer]
+OnCalendar=*-*-* 06:30:00 UTC
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

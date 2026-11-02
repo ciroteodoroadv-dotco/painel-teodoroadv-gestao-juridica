@@ -1,0 +1,20 @@
+#!/usr/sbin/nft -f
+# Firewall do servidor (nftables). O painel NÃO escuta nenhuma porta pública: o acesso é só pelo túnel
+# (conexão de saída). Aqui só sobra o SSH, e apenas da rede do OCI Bastion/administração.
+# Troque ADMIN_CIDR pela sub-rede do Bastion (ex.: 10.0.1.0/24). Só mexe na própria tabela: não apaga as do Docker.
+define ADMIN_CIDR = 10.0.1.0/24
+
+table inet painel_fw
+delete table inet painel_fw
+
+table inet painel_fw {
+  chain entrada {
+    type filter hook input priority -10; policy drop;
+    iifname "lo" accept
+    ct state established,related accept
+    ct state invalid drop
+    ip protocol icmp icmp type { echo-request, destination-unreachable, time-exceeded } limit rate 10/second accept
+    meta l4proto ipv6-icmp accept
+    ip saddr $ADMIN_CIDR tcp dport 22 ct state new limit rate 10/minute accept
+  }
+}

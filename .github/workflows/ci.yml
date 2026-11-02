@@ -49,3 +49,19 @@ jobs:
         run: docker compose -f deploy/docker-compose.yml config -q
       - name: Construir a imagem (sem publicar)
         run: docker build -f deploy/Dockerfile -t painel:ci .
+
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sintaxe dos scripts de operação
+        run: for f in deploy/*.sh deploy/backup/*.sh deploy/oracle/*.sh; do bash -n "$f"; done
+      - name: Imagem de backup e política de retenção (arquivos fictícios)
+        run: |
+          docker build -t painel-backup:ci deploy/backup
+          docker run --rm --entrypoint bash painel-backup:ci /usr/local/bin/test-prune.sh
+      - name: Compose de produção (segredos de mentira)
+        run: |
+          ./deploy/gerar-segredos.sh
+          touch deploy/secrets/tunnel_token deploy/secrets/rclone.conf deploy/secrets/age_recipients
+          PAINEL_IMAGE=painel-app:ci docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml config -q

@@ -1,0 +1,59 @@
+#cloud-config
+# Prepara a VM Ubuntu 24.04 da Oracle na primeira inicialização. NÃO foi testado numa VM real (ver RUNBOOK-ORACLE.md).
+# Cole este conteúdo em "Opções avançadas > Cloud-init" ao criar a instância e troque SUA_CHAVE_SSH_PUBLICA.
+package_update: true
+package_upgrade: true
+packages:
+  - docker.io
+  - docker-compose-v2
+  - nftables
+  - unattended-upgrades
+  - fail2ban
+  - git
+timezone: UTC
+
+users:
+  - name: painel-admin
+    groups: [docker, sudo]
+    shell: /bin/bash
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]   # acesso só por chave SSH via Bastion; senha desativada abaixo
+    lock_passwd: true
+    ssh_authorized_keys:
+      - SUA_CHAVE_SSH_PUBLICA
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/99-painel.conf
+    permissions: "0644"
+    content: |
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PermitRootLogin no
+      AllowUsers painel-admin
+      MaxAuthTries 3
+      LoginGraceTime 20
+      X11Forwarding no
+  - path: /etc/docker/daemon.json
+    permissions: "0644"
+    content: |
+      {
+        "live-restore": true,
+        "userland-proxy": false,
+        "no-new-privileges": true,
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "10m", "max-file": "5" }
+      }
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    permissions: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      Unattended-Upgrade::Automatic-Reboot "false";
+
+runcmd:
+  - mkdir -p /opt/painel /var/backups/painel /var/lib/painel /var/log/painel
+  - chown painel-admin:painel-admin /opt/painel
+  - chown 65532:65532 /var/backups/painel          # mesmo usuário do contêiner de backup
+  - chmod 700 /var/backups/painel
+  - systemctl enable --now docker nftables fail2ban
+  - systemctl restart ssh
+  - echo "cloud-init do Painel Teodoro concluído em $(date -u +%FT%TZ)" > /var/lib/painel/cloud-init.ok

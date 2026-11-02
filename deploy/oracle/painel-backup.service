@@ -1,0 +1,16 @@
+[Unit]
+Description=Backup cifrado do Painel Teodoro (banco + documentos)
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=painel-admin
+WorkingDirectory=/opt/painel/deploy
+EnvironmentFile=-/opt/painel/deploy/oracle/ambiente
+# PAINEL_IMAGE é exigida pelo arquivo do Compose; usa a versão em produção.
+ExecStart=/bin/sh -c 'PAINEL_IMAGE=$(cat .estado-deploy.atual) exec /usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile backup run --rm backup'
+# Registra o resultado para o painel de saúde (status.sh) e para o runbook.
+ExecStartPost=/bin/sh -c 'date -u +%%FT%%TZ > /var/lib/painel/backup.ok'
+ExecStopPost=/bin/sh -c '[ "$$SERVICE_RESULT" = success ] || date -u +%%FT%%TZ > /var/lib/painel/backup.falha'
+TimeoutStartSec=30min

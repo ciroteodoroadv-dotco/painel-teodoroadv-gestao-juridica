@@ -1,0 +1,71 @@
+# Produção (Oracle). Use junto com o arquivo base:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Nenhuma porta é publicada: o único caminho de entrada é o túnel (cloudflared abre conexão SÓ de saída).
+# A imagem do app vem do registro e é identificada por digest (PAINEL_IMAGE=registro/painel@sha256:...).
+# O servidor de produção nunca compila código.
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "5" }
+
+services:
+  db:
+    restart: always
+    logging: *logging
+    pids_limit: 200
+
+  app:
+    build: !reset null
+    image: ${PAINEL_IMAGE:?defina PAINEL_IMAGE com a imagem por digest}
+    pull_policy: never # quem baixa é o deploy.sh, depois de conferir o digest
+    restart: always
+    logging: *logging
+    pids_limit: 256
+    mem_limit: 768m
+    tmpfs: ["/tmp:size=16m,noexec,nosuid"]
+    environment:
+      PAINEL_ENV: prod # sem JWT do Cloudflare Access, o app RECUSA iniciar
+
+  cloudflared:
+    image: cloudflare/cloudflared:2025.8.1
+    restart: always
+    logging: *logging
+    command: tunnel --no-autoupdate run --token-file /run/secrets/tunnel_token
+    secrets: [tunnel_token]
+    networks: [borda]
+    depends_on:
+      app: { condition: service_healthy }
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 100
+    mem_limit: 256m
+
+  # Backup sob demanda (e pelo timer do systemd): docker compose --profile backup run --rm backup
+  backup:
+    profiles: ["backup"]
+    image: ${PAINEL_BACKUP_IMAGE:-painel-backup:latest}
+    entrypoint: ["/usr/local/bin/backup.sh"]
+    environment:
+      PGHOST: db
+      PGUSER: painel
+      PGDATABASE: painel
+      PGPASSWORD_FILE: /run/secrets/db_password
+      AGE_RECIPIENTS_FILE: /run/age/recipients
+      DOCS_DIR: /data/documentos
+      RCLONE_DEST: ${RCLONE_DEST:-}
+      RCLONE_DEST_2: ${RCLONE_DEST_2:-}
+      RCLONE_CONFIG: /run/secrets/rclone_conf
+    secrets: [db_password, rclone_conf]
+    volumes:
+      - docs:/data/documentos:ro
+      - ${BACKUP_DIR:-/var/backups/painel}:/backups
+      - ./secrets/age_recipients:/run/age/recipients:ro # só a chave PÚBLICA fica no servidor
+    networks: [banco, borda]
+    read_only: true
+    tmpfs: ["/work:size=2g,uid=65532"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+secrets:
+  tunnel_token: { file: ./secrets/tunnel_token }
+  rclone_conf: { file: ./secrets/rclone.conf }
