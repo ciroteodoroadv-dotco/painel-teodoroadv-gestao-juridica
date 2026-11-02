@@ -13,6 +13,8 @@
   {{if $p.RetencaoAte}}<dt>Guardar até</dt><dd>{{$p.RetencaoAte.Format "02/01/2006"}}</dd>{{end}}
 </dl>
 
+<p><a href="/documentos?pessoa={{$p.ID}}">Documentos desta pessoa</a></p>
+
 <section aria-labelledby="d-proc">
   <h2 id="d-proc">Processos em que é parte</h2>
   {{if .Refs}}<ul class="lista">{{range .Refs}}<li><a href="/processos/{{.ID}}">{{.Numero}}</a> <small class="apoio">· {{.Qualidade}}</small></li>{{end}}</ul>

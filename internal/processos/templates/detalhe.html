@@ -10,6 +10,7 @@
   <dt>Situação</dt><dd>{{$p.SituacaoRotulo}}</dd>
   <dt>Responsável</dt><dd>{{if $p.ResponsavelEmail}}{{$p.ResponsavelEmail}}{{else}}—{{end}}</dd>
 </dl>
+<p><a href="/documentos?processo={{$p.ID}}">Documentos deste processo</a> · <a href="/tarefas/nova?processo={{$p.ID}}">Nova tarefa</a> · <a href="/agenda/novo?processo={{$p.ID}}">Novo evento</a></p>
 <p class="apoio">Prazos não são calculados pelo sistema: registre-os como tarefas, com a data informada pelo advogado.</p>
 
 <section aria-labelledby="p-partes">

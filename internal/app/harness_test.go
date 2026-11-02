@@ -16,6 +16,7 @@ import (
 
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/platform/csrf"
+	"painelteodoro/internal/platform/httpx"
 	"painelteodoro/internal/platform/migrate"
 	"painelteodoro/internal/platform/ratelimit"
 )
@@ -30,6 +31,7 @@ type env struct {
 	pool *pgxpool.Pool
 	a    *auth.Auth
 	srv  *httptest.Server
+	docs string // pasta dos documentos desta execução
 }
 
 func newEnv(t *testing.T) *env {
@@ -57,10 +59,13 @@ func newEnv(t *testing.T) *env {
 	a.Register(rt)
 	a.RegisterAccount(rt)
 	a.RegisterPages(rt)
-	RegisterDomains(a, rt, pool, fieldKey)
-	srv := httptest.NewServer(mux)
+	docs := t.TempDir()
+	if err := RegisterDomains(a, rt, pool, fieldKey, docs); err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(httpx.Chain(mux, a.Log)) // cadeia real: limites de corpo, cabeçalhos
 	t.Cleanup(srv.Close)
-	return &env{t: t, pool: pool, a: a, srv: srv}
+	return &env{t: t, pool: pool, a: a, srv: srv, docs: docs}
 }
 
 // user cria um usuário e devolve um navegador JÁ autenticado (sessão com 2FA concluído).

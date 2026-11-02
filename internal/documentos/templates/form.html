@@ -1,0 +1,29 @@
+{{define "content"}}
+<h1>Enviar documento</h1>
+{{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
+{{with .Data}}
+<p class="apoio">Aceitos: PDF, PNG, JPEG e DOCX, até 25 MiB. O tipo é conferido pelo conteúdo do arquivo.</p>
+<form method="post" action="/documentos" enctype="multipart/form-data" class="grade">
+  <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+  <div class="larga"><label for="arquivo">Arquivo</label>
+    <input id="arquivo" name="arquivo" type="file" required accept=".pdf,.png,.jpg,.jpeg,.docx"></div>
+  <div class="larga"><label for="descricao">Descrição <small class="apoio">(opcional)</small></label>
+    <input id="descricao" name="descricao" maxlength="500"></div>
+  <div><label for="busca-proc">Processo</label>
+    <input id="busca-proc" type="search" name="busca" autocomplete="off" placeholder="buscar por número ou órgão"
+           hx-get="/documentos/processos" hx-trigger="input changed delay:300ms, search" hx-target="#processo_id">
+    <select id="processo_id" name="processo_id">
+      {{if .ProcessoID}}<option value="{{.ProcessoID}}" selected>{{.ProcessoNum}}</option>{{end}}
+      <option value="">— sem processo —</option>
+    </select></div>
+  <div><label for="busca-pes">Pessoa</label>
+    <input id="busca-pes" type="search" name="busca" autocomplete="off" placeholder="buscar por nome ou CPF/CNPJ"
+           hx-get="/documentos/pessoas" hx-trigger="input changed delay:300ms, search" hx-target="#pessoa_id">
+    <select id="pessoa_id" name="pessoa_id">
+      {{if .PessoaID}}<option value="{{.PessoaID}}" selected>{{.PessoaNome}}</option>{{end}}
+      <option value="">— sem pessoa —</option>
+    </select></div>
+  <p class="apoio larga">Vincule a pelo menos um processo ou uma pessoa.</p>
+  <div class="larga"><button type="submit">Enviar</button> <a class="botao secundario" href="/documentos">Cancelar</a></div>
+</form>
+{{end}}{{end}}

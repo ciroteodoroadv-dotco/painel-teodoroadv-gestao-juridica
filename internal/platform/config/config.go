@@ -23,7 +23,9 @@ type Config struct {
 	AccessTeamDomain string
 	AccessAUD        string
 	// PublicURL é o endereço pelo qual o navegador acessa o painel (define o domínio da chave de segurança).
-	PublicURL   string
+	PublicURL string
+	// DocsDir é a pasta privada (cifrada) dos documentos enviados.
+	DocsDir     string
 	DatabaseURL string // conexão do DONO do banco (migrações); contém a senha
 	// AppDatabaseURL é a conexão do papel restrito usado em tempo de execução; contém a senha.
 	AppDatabaseURL string
@@ -99,6 +101,7 @@ func Load(e Env) (Config, error) {
 		AccessTeamDomain: team,
 		AccessAUD:        aud,
 		PublicURL:        strings.TrimRight(public, "/"),
+		DocsDir:          orDefault(e.Getenv("PAINEL_DOCS_DIR"), "/data/documentos"),
 		DatabaseURL:      dbURL(e, dbHost, dbName, dbUser, dbPass),
 		AppDBPassword:    appPass,
 		AppDatabaseURL:   dbURL(e, dbHost, dbName, "painel_app", appPass),

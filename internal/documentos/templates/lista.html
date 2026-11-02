@@ -1,0 +1,47 @@
+{{define "content"}}{{with .Data}}
+<div class="cabeca">
+  <h1>Documentos</h1>
+  {{if .CanWrite}}<a class="botao" href="/documentos/novo{{if .F.ProcessoID}}?processo={{.F.ProcessoID}}{{else if .F.PessoaID}}?pessoa={{.F.PessoaID}}{{end}}">Enviar documento</a>{{end}}
+</div>
+<p class="apoio">Arquivos ficam cifrados no servidor. Cada leitura e cada envio são registrados na auditoria.</p>
+<form method="get" action="/documentos" role="search" class="busca"
+      hx-get="/documentos" hx-trigger="input changed delay:300ms from:#q, search from:#q"
+      hx-target="#resultado" hx-push-url="true" hx-sync="this:replace">
+  <label for="q">Buscar por nome ou descrição</label>
+  <input id="q" name="q" type="search" value="{{.F.Q}}" autocomplete="off">
+  {{if .F.ProcessoID}}<input type="hidden" name="processo" value="{{.F.ProcessoID}}">{{end}}
+  {{if .F.PessoaID}}<input type="hidden" name="pessoa" value="{{.F.PessoaID}}">{{end}}
+</form>
+<div id="resultado" aria-live="polite">{{template "resultado" .}}</div>
+{{end}}{{end}}
+
+{{define "resultado"}}
+{{if .Docs}}
+<div class="tabela">
+<table>
+  <caption>{{len .Docs}} documento(s) nesta página</caption>
+  <thead><tr><th scope="col">Arquivo</th><th scope="col">Tipo</th><th scope="col">Tamanho</th><th scope="col">Vínculo</th><th scope="col">Enviado em</th>{{if .CanWrite}}<th scope="col">Ações</th>{{else}}<th scope="col"></th>{{end}}</tr></thead>
+  <tbody>
+  {{$w := .CanWrite}}{{range .Docs}}
+  <tr>
+    <td><a href="/documentos/{{.ID}}/baixar" download>{{.Nome}}</a>{{if .Descricao}}<br><small class="apoio">{{.Descricao}}</small>{{end}}</td>
+    <td>{{.Tipo}}</td><td>{{tam .Tamanho}}</td>
+    <td>{{if .ProcessoNumero}}<a href="/processos/{{.ProcessoID}}"><code>{{.ProcessoNumero}}</code></a>{{end}}{{if .PessoaNome}} <a href="/pessoas/{{.PessoaID}}">{{.PessoaNome}}</a>{{end}}</td>
+    <td>{{.CriadoEm.Format "02/01/2006"}}</td>
+    <td class="acoes">
+      {{if $w}}<form method="post" action="/documentos/{{.ID}}/excluir">
+        <input type="hidden" name="csrf_token" value="{{$.CSRF}}"><input type="hidden" name="version" value="{{.Version}}">
+        <button type="submit" class="secundario" data-confirmar="Confirmar exclusão">Excluir</button></form>{{end}}
+    </td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+<nav class="paginas" aria-label="Páginas">
+  {{if .Anterior}}<a href="/documentos?q={{.F.Q}}&amp;processo={{.F.ProcessoID}}&amp;pessoa={{.F.PessoaID}}&amp;pag={{.Anterior}}">← Anterior</a>{{end}}
+  <span>Página {{.Pag}}</span>
+  {{if .Proxima}}<a href="/documentos?q={{.F.Q}}&amp;processo={{.F.ProcessoID}}&amp;pessoa={{.F.PessoaID}}&amp;pag={{.Proxima}}">Próxima →</a>{{end}}
+</nav>
+{{else}}<p class="apoio">Nenhum documento encontrado.</p>{{end}}
+{{end}}

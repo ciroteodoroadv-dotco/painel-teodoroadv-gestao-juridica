@@ -1,7 +1,9 @@
 package auth
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 
 	"painelteodoro/internal/audit"
 	"painelteodoro/internal/platform/csrf"
@@ -37,6 +39,17 @@ func (rt *Router) Handle(pattern string, perm Perm, h HandlerFunc) {
 	rt.routes = append(rt.routes, Route{pattern, perm})
 	rt.mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
 		r = rt.a.ensureAnon(w, r)
+		if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+			if err := r.ParseMultipartForm(26 << 20); err != nil {
+				var mbe *http.MaxBytesError
+				if errors.As(err, &mbe) {
+					http.Error(w, "Arquivo grande demais (o limite é 25 MiB).", http.StatusRequestEntityTooLarge)
+				} else {
+					http.Error(w, "Envio inválido.", http.StatusBadRequest)
+				}
+				return
+			}
+		}
 		if !rt.a.csrfOK(r) {
 			rt.a.deny(w, r, nil, "csrf", http.StatusForbidden)
 			return

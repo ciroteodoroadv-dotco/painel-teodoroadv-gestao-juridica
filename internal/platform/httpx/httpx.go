@@ -9,7 +9,10 @@ import (
 	"time"
 )
 
-const maxBody = 1 << 20 // 1 MiB; uploads de documentos terão rota própria (M4)
+const (
+	maxBody   = 1 << 20  // 1 MiB para todas as rotas
+	maxUpload = 26 << 20 // POST /documentos: 25 MiB de arquivo + folga do multipart
+)
 
 // NewServer devolve um servidor com timeouts. Slowloris e corpos gigantes não passam.
 func NewServer(addr string, h http.Handler) *http.Server {
@@ -17,8 +20,8 @@ func NewServer(addr string, h http.Handler) *http.Server {
 		Addr:              addr,
 		Handler:           h,
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      30 * time.Second,
+		ReadTimeout:       90 * time.Second, // envio de arquivos de até 25 MiB em conexão lenta
+		WriteTimeout:      60 * time.Second,
 		IdleTimeout:       60 * time.Second,
 		MaxHeaderBytes:    16 << 10,
 	}
@@ -52,7 +55,11 @@ func securityHeaders(next http.Handler) http.Handler {
 
 func bodyLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.Body = http.MaxBytesReader(w, r.Body, maxBody)
+		limit := int64(maxBody)
+		if r.Method == http.MethodPost && r.URL.Path == "/documentos" {
+			limit = maxUpload
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, limit)
 		next.ServeHTTP(w, r)
 	})
 }

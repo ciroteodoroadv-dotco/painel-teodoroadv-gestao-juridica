@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"painelteodoro/internal/agenda"
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/pessoas"
 	"painelteodoro/internal/platform/br"
@@ -64,6 +65,12 @@ func SeedDemo(ctx context.Context, pool *pgxpool.Pool, fieldKey []byte, store *a
 		if err := proc.AddParte(ctx, ac, v[0], v[1], v[2]); err != nil {
 			return err
 		}
+	}
+	ag := &agenda.Service{Pool: pool, Processos: proc, Pessoas: pes, Users: users}
+	amanha := time.Now().AddDate(0, 0, 1).In(webx.SP()).Format("2006-01-02") + "T14:00"
+	if _, err := ag.Create(ctx, ac, agenda.Input{Tipo: "audiencia", Titulo: "Exemplo: audiência de instrução", Inicio: amanha,
+		Local: "Fórum (exemplo), sala 3", ProcessoID: p1, ResponsavelID: actorID}); err != nil {
+		return err
 	}
 	d := func(dias int) string { return time.Now().AddDate(0, 0, dias).Format("2006-01-02") }
 	for _, t := range []tarefas.Input{

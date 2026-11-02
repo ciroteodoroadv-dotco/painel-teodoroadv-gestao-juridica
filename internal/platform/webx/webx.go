@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Erros que os domínios devolvem e as telas traduzem em respostas.
@@ -59,3 +60,21 @@ func Nullable(s string) *string {
 	}
 	return &s
 }
+
+// SP é o fuso do escritório. Datas e horas da agenda são digitadas e exibidas nele.
+func SP() *time.Location {
+	loc, err := time.LoadLocation("America/Sao_Paulo")
+	if err != nil {
+		return time.FixedZone("BRT", -3*3600)
+	}
+	return loc
+}
+
+// ParseLocal lê "2006-01-02T15:04" (campo datetime-local) no fuso do escritório e devolve em UTC.
+func ParseLocal(s string) (time.Time, error) {
+	t, err := time.ParseInLocation("2006-01-02T15:04", strings.TrimSpace(s), SP())
+	return t.UTC(), err
+}
+
+// FormatLocal devolve "2006-01-02T15:04" no fuso do escritório (para preencher datetime-local).
+func FormatLocal(t time.Time) string { return t.In(SP()).Format("2006-01-02T15:04") }

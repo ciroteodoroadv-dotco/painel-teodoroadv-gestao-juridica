@@ -7,7 +7,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"painelteodoro/internal/agenda"
 	"painelteodoro/internal/auth"
+	"painelteodoro/internal/documentos"
 	"painelteodoro/internal/pessoas"
 	"painelteodoro/internal/platform/webx"
 	"painelteodoro/internal/processos"
@@ -34,14 +36,24 @@ func (u userLookup) Emails(ctx context.Context, ids []string) (map[string]string
 }
 
 // RegisterDomains liga todos os domínios ao roteador. fieldKey é a chave mestra de cifra de campos.
-func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey []byte) {
+func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey []byte, docsDir string) error {
 	users := userLookup{s: a.Store}
 	pes := &pessoas.Service{Pool: pool, FieldKey: fieldKey}
 	proc := &processos.Service{Pool: pool, Pessoas: pes, Users: users}
 	pes.Processos = proc
 	tar := &tarefas.Service{Pool: pool, Processos: proc, Users: users}
 
+	ag := &agenda.Service{Pool: pool, Processos: proc, Pessoas: pes, Users: users}
+	store, err := documentos.NewStore(docsDir, fieldKey)
+	if err != nil {
+		return err
+	}
+	doc := &documentos.Service{Pool: pool, Store: store, Processos: proc, Pessoas: pes}
+
 	(&pessoas.Handler{A: a, S: pes}).Register(rt)
 	(&processos.Handler{A: a, S: proc}).Register(rt)
 	(&tarefas.Handler{A: a, S: tar}).Register(rt)
+	(&agenda.Handler{A: a, S: ag}).Register(rt)
+	(&documentos.Handler{A: a, S: doc}).Register(rt)
+	return nil
 }

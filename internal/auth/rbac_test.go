@@ -20,6 +20,10 @@ func TestMatrizDePapeis(t *testing.T) {
 		{Administrador, PermAuditRead, true},
 		{Administrador, PermUsersManage, true},
 		{Administrador, PermProcWrite, false},
+		{Assistente, PermDocRead, true},
+		{Assistente, PermDocWrite, false},
+		{Advogado, PermDocWrite, true},
+		{Assistente, PermAgendaWrite, true},
 		{Role("visitante"), PermHome, false},
 		{Advogado, Perm("inexistente:x"), false},
 	}

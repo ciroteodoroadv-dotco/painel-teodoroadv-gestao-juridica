@@ -82,7 +82,9 @@ func serve() error {
 	a.RegisterAccount(rt)
 	a.RegisterAdmin(rt)
 	a.RegisterPages(rt)
-	app.RegisterDomains(a, rt, pool, cfg.FieldKey)
+	if err := app.RegisterDomains(a, rt, pool, cfg.FieldKey, cfg.DocsDir); err != nil {
+		return fmt.Errorf("pasta de documentos: %w", err)
+	}
 
 	srv := httpx.NewServer(cfg.Addr, httpx.Chain(cfaccess.Middleware(verifier(cfg, log), log, mux), log))
 	errc := make(chan error, 1)
