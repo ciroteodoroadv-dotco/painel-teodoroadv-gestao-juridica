@@ -36,11 +36,39 @@ func TestTemaPainelContrato(t *testing.T) {
 	}
 }
 
-func TestAppJSSemEvalNemInline(t *testing.T) {
-	js := lerStatic(t, "app.js")
-	for _, proibido := range []string{"eval(", "new Function", "innerHTML", "document.write"} {
-		if strings.Contains(js, proibido) {
-			t.Errorf("app.js contém %q", proibido)
+var scriptsDoPainel = []string{"app.js", "drawer.js", "forms.js", "mascaras.js"}
+
+func TestScriptsSemEvalNemInline(t *testing.T) {
+	for _, nome := range scriptsDoPainel {
+		js := lerStatic(t, nome)
+		for _, proibido := range []string{"innerHTML", "eval(", "new Function", "document.write", ".onclick =", `setAttribute("on`, "insertAdjacentHTML"} {
+			if strings.Contains(js, proibido) {
+				t.Errorf("%s contém %q", nome, proibido)
+			}
 		}
+		if n := strings.Count(js, "\n"); n > 300 {
+			t.Errorf("%s tem %d linhas (limite 300)", nome, n)
+		}
+	}
+}
+
+func TestMascarasPortadasDoB(t *testing.T) {
+	js := lerStatic(t, "mascaras.js")
+	for _, f := range []string{"maskCPF", "maskCNPJ", "maskCEP", "maskPhone", "maskCNJ", "maskCurrencyInput", "isValidCPF", "isValidCNPJ"} {
+		if !strings.Contains(js, "function "+f+"(") {
+			t.Errorf("mascaras.js sem a função %s", f)
+		}
+	}
+}
+
+func TestDrawerNaoFechaPorEscNemPorCliqueFora(t *testing.T) {
+	js := lerStatic(t, "drawer.js")
+	for _, proibido := range []string{"Escape", "keydown", "keyup", "keypress"} {
+		if strings.Contains(js, proibido) {
+			t.Errorf("drawer.js contém %q: o drawer só fecha pelos botões dele", proibido)
+		}
+	}
+	if !strings.Contains(js, "data-drawer-fechar") || !strings.Contains(js, "data-drawer-sobrepor") {
+		t.Error("drawer.js sem o contrato data-drawer-fechar/data-drawer-sobrepor")
 	}
 }

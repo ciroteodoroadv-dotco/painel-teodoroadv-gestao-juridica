@@ -7,13 +7,8 @@ a:hover{color:var(--wine-dark);}
 .erro{color:var(--wine-dark);font-weight:600;}
 .ok{color:var(--ink-2);font-weight:600;}
 code{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;}
-.pular{position:absolute;left:8px;top:8px;z-index:100;transform:translateY(-150%);background:var(--ink);color:#fff;padding:8px 12px;border-radius:var(--radius);font-weight:600;}
-.pular:focus{transform:translateY(0);}
 
 .cartao{max-width:420px;margin:8vh auto;padding:24px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);}
-.pagina{padding:18px 28px 40px 28px;}
-.cabeca{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-bottom:14px;}
-.cabeca h1{font-size:24px;font-weight:600;margin:0;}
 .busca{margin:0 0 14px 0;}
 .linha{display:flex;flex-wrap:wrap;gap:12px;align-items:end;}
 .linha>div{flex:1 1 200px;}
@@ -31,7 +26,7 @@ button:hover,.botao:hover{background:var(--wine-dark);color:#fff;}
 button.secundario{margin:0;background:transparent;color:var(--text);border:1px solid var(--border-strong);}
 button.secundario:hover{background:#fff;color:var(--text);}
 button.perigo{background:var(--wine-dark);}
-.cabeca .botao,.linha button,.acoes button,.lista button{margin-top:0;}
+.linha button,.acoes button,.lista button{margin-top:0;}
 .acoes button,.lista button{padding:5px 10px;font-size:12px;}
 .acoes{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
 .acoes form,.lista form{margin:0;}
@@ -61,16 +56,22 @@ tbody tr:hover{background:#EEF2F1;}
 .chave{letter-spacing:.08em;word-break:break-all;}
 .qr{display:block;margin:14px 0;background:#fff;padding:8px;border-radius:var(--radius);}
 .codigos{columns:2;list-style:none;padding:0;font-size:16px;}
-@media (max-width:640px){.ficha{grid-template-columns:1fr;}.pagina{padding:14px 16px 40px 16px;}}
+@media (max-width:640px){.ficha{grid-template-columns:1fr;}}
 
-/* Menu lateral com links (o B usa botões). */
-nav.tabs a{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:var(--radius);font-size:13.5px;color:#C3CBD1;text-decoration:none;}
+/* Menu lateral com links (o B usa botões): mesmas regras de nav.tabs button, trocando o seletor. */
+[hidden]{display:none!important;}
+nav.tabs a{cursor:pointer;padding:9px 12px;border-radius:var(--radius);font-size:13.5px;color:#C3CBD1;text-decoration:none;display:flex;align-items:center;justify-content:space-between;}
 nav.tabs a:hover{background:var(--ink-2);color:#fff;}
-nav.tabs a[aria-current=page]{background:var(--ink-2);color:#fff;box-shadow:inset 2px 0 0 var(--brass);}
-a.brand{display:flex;justify-content:center;margin-bottom:28px;}
-.sidebar .sair{margin-top:20px;padding-top:14px;border-top:1px solid #262626;display:flex;flex-direction:column;gap:8px;}
+nav.tabs a.active{background:var(--ink-2);color:#fff;box-shadow:inset 2px 0 0 var(--brass);}
+nav.tabs a .count{font-size:11px;color:#8B98A3;background:rgba(255,255,255,.06);padding:1px 6px;border-radius:10px;}
+nav.tabs a.active .count{color:#F1EFE9;}
+nav.tabs-sistema{margin-bottom:0;margin-top:14px;padding-top:10px;border-top:1px solid #262626;}
+/* Botões do topo feitos com <a>: o a:hover genérico não pode apagar a cor do texto. */
+a.btn-primary,a.btn-primary:hover{color:#fff;}
+a.btn-ghost,a.btn-ghost:hover{color:var(--text);}
+.sidebar .sair{margin-top:14px;padding-top:14px;border-top:1px solid #262626;display:flex;flex-direction:column;gap:8px;}
 .sidebar .quem{color:#8B98A3;font-size:12px;overflow-wrap:anywhere;}
 .sidebar button.secundario{color:#D9DEE2;border-color:#3a3a3a;}
 .sidebar button.secundario:hover{background:var(--ink-2);color:#fff;}
 :focus-visible{outline:3px solid var(--brass);outline-offset:2px;}
-@media (max-width:780px){.sidebar .sair{margin:0 0 0 16px;padding:0;border:0;flex-direction:row;align-items:center;}a.brand{margin-bottom:0;}}
+@media (max-width:780px){.sidebar .sair{margin:0 0 0 16px;padding:0;border:0;flex-direction:row;align-items:center;}nav.tabs-sistema{margin:0 0 0 16px;padding:0;border:0;}}

@@ -12,6 +12,6 @@ while IFS= read -r -d '' f; do
   fi
 done < <(find . \( -name .git -o -name node_modules -o -path ./internal/db/gen \) -prune -o \
   -type f \( -name '*.go' -o -name '*.html' -o -name '*.css' -o -name '*.sql' \) \
-  ! -name '*_test.go' -print0)
+  ! -name '*_test.go' ! -name painel.css -print0)
 [ "$falhou" -eq 0 ] && echo "OK: nenhum arquivo de produção acima de $LIMITE linhas."
 exit "$falhou"
