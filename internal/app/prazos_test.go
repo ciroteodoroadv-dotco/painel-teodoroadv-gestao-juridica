@@ -189,8 +189,7 @@ func TestPrazosUrgenciaEValidacao(t *testing.T) {
 		}
 	}
 	// Vínculo com processo existente funciona e aparece na lista.
-	r, _ := adv.post("/processos", url.Values{"numero": {br.MakeCNJ("0000900", "2024", "8", "26", "0100")}, "situacao": {"ativo"}})
-	proc := idFrom(t, r, "/processos/")
+	proc := adv.criarProcesso(t, br.MakeCNJ("0000900", "2024", "8", "26", "0100"))
 	f := prazoForm("Com processo", 6)
 	f.Set("processo_id", proc)
 	if r, _ := adv.post("/prazos", f); r.StatusCode != 303 {

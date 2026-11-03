@@ -18,10 +18,8 @@ func TestAgenda(t *testing.T) {
 	ass, _ := e.user("ass@exemplo.test", auth.Assistente)
 	ctx := context.Background()
 
-	r, _ := adv.post("/processos", url.Values{"numero": {br.MakeCNJ("0000500", "2024", "8", "26", "0100")}, "situacao": {"ativo"}})
-	proc := idFrom(t, r, "/processos/")
-	r, _ = adv.post("/pessoas", pessoaForm("Dora Lopes", ""))
-	pes := idFrom(t, r, "/pessoas/")
+	proc := adv.criarProcesso(t, br.MakeCNJ("0000500", "2024", "8", "26", "0100"))
+	pes := adv.criarPessoa(t, "Dora Lopes", "")
 
 	amanha := time.Now().In(time.FixedZone("BRT", -3*3600)).AddDate(0, 0, 1).Format("2006-01-02")
 	form := func(titulo, ini, fim string) url.Values {
@@ -43,7 +41,7 @@ func TestAgenda(t *testing.T) {
 	}
 
 	// Assistente escreve na agenda (permitido). Horário digitado em Brasília é gravado em UTC.
-	r, _ = ass.post("/agenda", form("Audiência de instrução", amanha+"T14:00", amanha+"T16:30"))
+	r, _ := ass.post("/agenda", form("Audiência de instrução", amanha+"T14:00", amanha+"T16:30"))
 	id := idFrom(t, r, "/agenda/")
 	var h int
 	if err := e.pool.QueryRow(ctx, `SELECT extract(hour from inicio at time zone 'UTC')::int FROM agenda_eventos WHERE id=$1`, id).Scan(&h); err != nil || h != 17 {
@@ -61,7 +59,7 @@ func TestAgenda(t *testing.T) {
 	if r, _ := adv.post("/agenda/"+id+"/participantes", url.Values{"pessoa_id": {pes}}); r.StatusCode != 303 {
 		t.Fatalf("adicionar participante = %d", r.StatusCode)
 	}
-	if _, det := adv.get("/agenda/" + id); !strings.Contains(det, "Dora Lopes") {
+	if _, det := adv.get("/agenda/" + id); !strings.Contains(det, "DORA LOPES") {
 		t.Error("o participante deveria aparecer")
 	}
 	if r, _ := adv.post("/agenda/"+id+"/participantes/remover", url.Values{"pessoa_id": {pes}}); r.StatusCode != 303 {

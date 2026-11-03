@@ -28,9 +28,7 @@ func TestCascaDoPainelB(t *testing.T) {
 	adv, _ := e.user("adv@exemplo.test", auth.Advogado)
 	ass, _ := e.user("ass@exemplo.test", auth.Assistente)
 
-	if r, _ := adv.post("/pessoas", pessoaForm("Ana Souza", "")); r.StatusCode != 303 {
-		t.Fatalf("criar pessoa = %d", r.StatusCode)
-	}
+	adv.criarPessoa(t, "Ana Souza", "")
 	if r, _ := adv.post("/tarefas", url.Values{"titulo": {"Tarefa da casca"}, "status": {"aberta"}}); r.StatusCode != 303 {
 		t.Fatalf("criar tarefa = %d", r.StatusCode)
 	}

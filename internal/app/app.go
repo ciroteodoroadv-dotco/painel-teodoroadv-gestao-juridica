@@ -40,9 +40,11 @@ func (u userLookup) Emails(ctx context.Context, ids []string) (map[string]string
 func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey []byte, docsDir string) error {
 	users := userLookup{s: a.Store}
 	pes := &pessoas.Service{Pool: pool, FieldKey: fieldKey}
-	proc := &processos.Service{Pool: pool, Pessoas: pes, Users: users}
-	pes.Processos = proc
+	proc := &processos.Service{Pool: pool, Pessoas: pes}
+	pes.Papeis = proc // os papéis da pessoa derivam dos processos (decisão do painel B)
 	tar := &tarefas.Service{Pool: pool, Processos: proc, Users: users}
+	praz := &prazos.Service{Pool: pool, Processos: proc, Users: users}
+	proc.Vinculos = []processos.VinculosLookup{tar, praz}
 
 	ag := &agenda.Service{Pool: pool, Processos: proc, Pessoas: pes, Users: users}
 	store, err := documentos.NewStore(docsDir, fieldKey)
@@ -51,7 +53,7 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	}
 	doc := &documentos.Service{Pool: pool, Store: store, Processos: proc, Pessoas: pes}
 
-	(&prazos.Handler{A: a, S: &prazos.Service{Pool: pool, Processos: proc, Users: users}}).Register(rt) // 1º: widget no topo de "Hoje"
+	(&prazos.Handler{A: a, S: praz}).Register(rt) // 1º: widget no topo de "Hoje"
 	(&pessoas.Handler{A: a, S: pes}).Register(rt)
 	(&processos.Handler{A: a, S: proc}).Register(rt)
 	(&tarefas.Handler{A: a, S: tar}).Register(rt)

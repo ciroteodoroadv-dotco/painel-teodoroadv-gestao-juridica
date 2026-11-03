@@ -113,3 +113,11 @@ func (s *Service) Proximas(ctx context.Context, userID string, dias, limit int) 
 	s.enrich(ctx, out)
 	return out, nil
 }
+
+// AbertosDoProcesso conta as tarefas em aberto ligadas ao processo (usado para pedir confirmação extra ao excluí-lo).
+func (s *Service) AbertosDoProcesso(ctx context.Context, processoID string) (int, error) {
+	var n int
+	err := s.Pool.QueryRow(ctx, `SELECT count(*) FROM tarefas WHERE processo_id=$1::uuid AND excluido_em IS NULL
+		AND status IN ('aberta','em_andamento','em_revisao')`, processoID).Scan(&n)
+	return n, err
+}

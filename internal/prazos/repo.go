@@ -120,3 +120,11 @@ func (s *Service) Criticos(ctx context.Context, dias, limit int) (list []Prazo, 
 	s.enrich(ctx, list)
 	return list, aConferir, nil
 }
+
+// AbertosDoProcesso conta os prazos ainda não cumpridos nem cancelados ligados ao processo.
+func (s *Service) AbertosDoProcesso(ctx context.Context, processoID string) (int, error) {
+	var n int
+	err := s.Pool.QueryRow(ctx, `SELECT count(*) FROM prazos WHERE processo_id=$1::uuid AND excluido_em IS NULL
+		AND situacao IN ('a_conferir','confirmado')`, processoID).Scan(&n)
+	return n, err
+}

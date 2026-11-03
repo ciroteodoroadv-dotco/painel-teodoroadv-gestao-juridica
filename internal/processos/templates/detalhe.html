@@ -1,59 +1,31 @@
 {{define "content"}}{{with .Data}}{{$p := .P}}
-{{if .Aviso}}<p class="ok" role="status">Processo cadastrado. Agora adicione as partes.</p>{{end}}
-{{if .Erro}}<p class="erro" role="alert">Não foi possível adicionar a parte. Escolha uma pessoa e a qualidade.</p>{{end}}
 <dl class="ficha">
-  <dt>Órgão / vara</dt><dd>{{if $p.Orgao}}{{$p.Orgao}}{{else}}—{{end}}</dd>
-  <dt>Situação</dt><dd>{{$p.SituacaoRotulo}}</dd>
-  <dt>Responsável</dt><dd>{{if $p.ResponsavelEmail}}{{$p.ResponsavelEmail}}{{else}}—{{end}}</dd>
+  <dt>Código</dt><dd>{{$p.Codigo}}</dd>
+  <dt>Estado</dt><dd>{{$p.Estado}}</dd>
+  <dt>Título</dt><dd>{{if $p.Titulo}}{{$p.Titulo}}{{else}}—{{end}}</dd>
+  <dt>Classe / matéria</dt><dd>{{if $p.Classe}}{{$p.Classe}}{{else}}—{{end}} · {{if $p.Materia}}{{$p.Materia}}{{else}}—{{end}}</dd>
+  <dt>Valor da causa</dt><dd>{{if $p.Valor}}{{$p.ValorBR}}{{else}}—{{end}}</dd>
+  <dt>Distribuição</dt><dd>{{$p.DistribuicaoBR}}</dd>
+  {{if $p.ProxOQue}}<dt>Próxima providência</dt><dd>{{$p.ProxOQue}}{{if $p.ProxAte}} · até {{$p.ProxAte}}{{end}}{{if $p.ProxQuem}} · {{$p.ProxQuem}}{{end}}</dd>{{end}}
 </dl>
 <p><a href="/documentos?processo={{$p.ID}}">Documentos deste processo</a> · <a href="/prazos?processo={{$p.ID}}">Prazos</a> · <a href="/prazos/novo?processo={{$p.ID}}">Novo prazo</a> · <a href="/tarefas/nova?processo={{$p.ID}}">Nova tarefa</a> · <a href="/agenda/novo?processo={{$p.ID}}">Novo evento</a></p>
 <p class="apoio">Prazos não são calculados pelo sistema: registre-os como tarefas, com a data informada pelo advogado.</p>
 
 <section aria-labelledby="p-partes">
   <h2 id="p-partes">Partes</h2>
-  {{if $p.Partes}}
-  <ul class="lista">
-    {{range $p.Partes}}
-    <li><span><a href="/pessoas/{{.PessoaID}}">{{.Nome}}</a> <small class="apoio">· {{.QualidadeRotulo}}</small></span>
-      {{if $.Data.CanWrite}}
-      <form method="post" action="/processos/{{$p.ID}}/partes/remover">
-        <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
-        <input type="hidden" name="pessoa_id" value="{{.PessoaID}}">
-        <input type="hidden" name="qualidade" value="{{.Qualidade}}">
-        <button type="submit" class="secundario">Retirar</button>
-      </form>
-      {{end}}
-    </li>
-    {{end}}
-  </ul>
+  {{if $p.Partes}}<ul class="lista">{{range $p.Partes}}<li><span><a href="/pessoas/{{.PessoaID}}">{{.Nome}}</a> <small class="apoio">· {{.Papel}}{{if .Cliente}} · cliente do escritório{{end}}</small></span></li>{{end}}</ul>
   {{else}}<p class="apoio">Nenhuma parte cadastrada.</p>{{end}}
-
-  {{if .CanWrite}}
-  <form method="post" action="/processos/{{$p.ID}}/partes" class="linha">
-    <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
-    <div><label for="busca">Buscar pessoa</label>
-      <input id="busca" name="busca" type="search" autocomplete="off" placeholder="nome ou CPF/CNPJ"
-             hx-get="/processos/{{$p.ID}}/pessoas" hx-trigger="input changed delay:300ms, search" hx-target="#pessoa_id"></div>
-    <div><label for="pessoa_id">Pessoa</label>
-      <select id="pessoa_id" name="pessoa_id" required><option value="">Digite para buscar…</option></select></div>
-    <div><label for="qualidade">Qualidade</label>
-      <select id="qualidade" name="qualidade" required>
-        {{range .Qualidades}}<option value="{{.Valor}}">{{.Rotulo}}</option>{{end}}
-      </select></div>
-    <button type="submit">Adicionar parte</button>
-  </form>
-  {{end}}
 </section>
 
-{{if .CanWrite}}
-<section class="bloco" aria-labelledby="p-acoes">
-  <h2 id="p-acoes">Ações</h2>
-  <form method="post" action="/processos/{{$p.ID}}/excluir">
-    <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
-    <input type="hidden" name="version" value="{{$p.Version}}">
-    <button type="submit" class="perigo" data-confirmar="Clique de novo para confirmar a exclusão">Excluir processo</button>
-    <small class="apoio">A exclusão apenas oculta o registro e fica na auditoria.</small>
-  </form>
+<section aria-labelledby="p-and">
+  <h2 id="p-and">Andamentos</h2>
+  {{if .Andamentos}}<ul class="lista">{{range .Andamentos}}<li><span>{{.OQue}}{{if .Documento}} <small class="apoio">· {{.Documento}}</small>{{end}}</span><small class="apoio">{{.Data}}</small></li>{{end}}</ul>
+  {{else}}<p class="apoio">Nenhum.</p>{{end}}
 </section>
-{{end}}
+
+<section aria-labelledby="p-fin">
+  <h2 id="p-fin">Financeiro</h2>
+  {{if .Financeiro}}<ul class="lista">{{range .Financeiro}}<li><span>{{.Item}}</span><small class="apoio">{{.Valor}}{{if .Situacao}} · {{.Situacao}}{{end}}</small></li>{{end}}</ul>
+  {{else}}<p class="apoio">Nenhum.</p>{{end}}
+</section>
 {{end}}{{end}}

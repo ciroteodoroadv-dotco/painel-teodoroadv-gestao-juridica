@@ -1,23 +1,91 @@
-{{define "content"}}
-{{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
-{{with .Data}}
-<form method="post" action="{{if .IsNew}}/processos{{else}}/processos/{{.ID}}{{end}}" data-protege class="grade">
-  <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
-  {{if not .IsNew}}<input type="hidden" name="version" value="{{.Version}}">{{end}}
-  <div class="larga"><label for="numero">Número do processo <small class="apoio">(20 dígitos, com ou sem pontuação)</small></label>
-    <input id="numero" name="numero" value="{{.In.Numero}}" required inputmode="numeric" autocomplete="off" autofocus placeholder="0000000-00.0000.0.00.0000"></div>
-  <div class="larga"><label for="orgao">Órgão / vara</label>
-    <input id="orgao" name="orgao" value="{{.In.Orgao}}" maxlength="200"></div>
-  <div><label for="situacao">Situação</label>
-    <select id="situacao" name="situacao" required>
-      {{$s := .In.Situacao}}{{range .Situacoes}}<option value="{{.Valor}}" {{if eq .Valor $s}}selected{{end}}>{{.Rotulo}}</option>{{end}}
-    </select></div>
-  <div><label for="responsavel_id">Responsável</label>
-    <select id="responsavel_id" name="responsavel_id">
-      <option value="">— sem responsável —</option>
-      {{$r := .In.ResponsavelID}}{{range .Responsaveis}}<option value="{{.Valor}}" {{if eq .Valor $r}}selected{{end}}>{{.Rotulo}}</option>{{end}}
-    </select></div>
-  <div class="larga"><button type="submit">Salvar</button>
-    <a class="botao secundario" href="{{if .IsNew}}/processos{{else}}/processos/{{.ID}}{{end}}">Cancelar</a></div>
-</form>
-{{end}}{{end}}
+{{define "comOutro"}}<select name="{{.Nome}}" data-mostra-quando="Outro" data-mostra="proximo">
+      <option value="">—</option>{{$sel := .Sel}}{{range .Opcoes}}<option{{if eq . $sel}} selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    <input type="text" name="{{.Nome}}_outro" class="outro-campo" placeholder="Especifique" value="{{.Outro}}"{{if ne .Sel "Outro"}} hidden{{end}}>{{end}}
+
+{{define "linhaParte"}}<div class="row-parte">
+    <div class="row2">
+      <div class="field"><label>Pessoa</label><select name="parte_pessoa" class="parte-pessoa"><option value="">—</option>{{$pes := .Pessoa}}{{range .Pessoas}}<option value="{{.Valor}}"{{if eq .Valor $pes}} selected{{end}}>{{.Rotulo}}</option>{{end}}</select></div>
+      <div class="field"><label>Papel processual</label>
+        <select name="parte_papel" class="parte-papel" data-mostra-quando="Outro" data-mostra="proximo">
+          <option value="">—</option>{{$sel := .Papel.Sel}}{{range .Papel.Opcoes}}<option{{if eq . $sel}} selected{{end}}>{{.}}</option>{{end}}
+        </select>
+        <input type="text" name="parte_papel_outro" class="parte-papel-outro outro-campo" placeholder="Especifique o papel" value="{{.Papel.Outro}}"{{if ne .Papel.Sel "Outro"}} hidden{{end}}>
+      </div>
+    </div>
+    <label class="radio-opt"><input type="hidden" name="parte_cliente" value="{{if .Cliente}}1{{else}}0{{end}}"><input type="checkbox" class="parte-cliente" data-espelha{{if .Cliente}} checked{{end}}> É cliente do escritório</label>
+    <button type="button" class="btn-text" data-remove-row=".row-parte">Remover parte</button>
+  </div>{{end}}
+
+{{define "form"}}{{$p := .P}}{{if .Novo}}<h2>Novo processo</h2>
+    <p class="drawer-sub">Gera a ficha a partir do molde de processo, sempre em estado "ativo".</p>{{else}}<h2>Editar processo</h2>
+    <p class="drawer-sub">{{$p.NumeroOuTitulo}}</p>{{if .Aviso}}
+    <p class="drawer-sub">{{.Aviso}}</p>{{end}}{{end}}
+    <form data-drawer-form data-protege method="post" action="{{if .Novo}}/processos{{else}}/processos/{{$p.ID}}{{end}}">{{if not .Novo}}
+      <input type="hidden" name="version" value="{{$p.Version}}">{{end}}
+      <fieldset>
+        <legend>Partes</legend>
+        <div id="partesRows">{{range .Partes}}{{template "linhaParte" .}}{{end}}</div>
+        <template id="tplParte">{{template "linhaParte" .Vazia}}</template>
+        <button type="button" class="btn btn-ghost" data-add-row="#tplParte" data-row-target="#partesRows">+ Adicionar parte</button>
+        <div class="hint">Cada parte referencia uma Pessoa já cadastrada — use "Nova pessoa" antes, se precisar. Marque "é cliente do escritório" na(s) linha(s) correspondente(s).</div>
+      </fieldset>
+      <fieldset>
+        <legend>Responsáveis pelo cadastro</legend>
+        {{$pessoas := .Pessoas}}{{range .Resp}}{{$r := .Sel}}<div class="field"><label>Responsável {{.N}}</label><select name="responsavel" class="responsavel-select"><option value="">—</option>{{range $pessoas}}<option value="{{.Valor}}"{{if eq .Valor $r}} selected{{end}}>{{.Rotulo}}</option>{{end}}</select></div>
+        {{end}}
+      </fieldset>
+      <div class="row2">
+        <div class="field"><label for="prNumero">Número do processo (CNJ)</label><input type="text" id="prNumero" name="numero_processo" data-mask="cnj" placeholder="Em branco se ainda não distribuído" value="{{$p.Numero}}"></div>
+        <div class="field"><label for="prValor">Valor da causa</label><input type="text" id="prValor" name="valor_causa" data-mask="currency" value="{{$p.ValorBR}}"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Sistema</label>{{template "comOutro" .Sistema}}</div>
+        <div class="field"><label>Instância</label>{{template "comOutro" .Instan}}</div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="prClasse">Classe processual</label>
+          <select id="prClasse" name="classe"><option value="">—</option>{{range .Classes}}<option{{if eq . $p.Classe}} selected{{end}}>{{.}}</option>{{end}}</select>
+        </div>
+        <div class="field"><label for="prRamo">Matéria / ramo do direito</label>
+          <select id="prRamo" name="ramo"><option value="">—</option>{{range .Materias}}<option{{if eq . $p.Materia}} selected{{end}}>{{.}}</option>{{end}}</select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="prComarca">Comarca</label><input type="text" id="prComarca" name="comarca" value="{{$p.Comarca}}"></div>
+        <div class="field"><label for="prJuizo">Juízo</label><input type="text" id="prJuizo" name="juizo" value="{{$p.Juizo}}"></div>
+      </div>
+      <div class="field"><label>Contingência (valor da causa é ativa ou passiva para o escritório/cliente)</label>
+        <div class="radio-row">
+          <label class="radio-opt"><input type="radio" name="tipo_contingencia" value="Ativa"{{if eq $p.Contingencia "Ativa"}} checked{{end}}> Ativa</label>
+          <label class="radio-opt"><input type="radio" name="tipo_contingencia" value="Passiva"{{if eq $p.Contingencia "Passiva"}} checked{{end}}> Passiva</label>
+          <label class="radio-opt"><input type="radio" name="tipo_contingencia" value=""{{if not $p.Contingencia}} checked{{end}}> Não se aplica</label>
+        </div>
+      </div>
+      <fieldset>
+        <legend>Linha do tempo</legend>
+        <div class="row3">
+          <div class="field"><label for="prDistr">Distribuição</label><input type="date" id="prDistr" name="distribuido_em" value="{{$p.Distribuicao}}"></div>
+          <div class="field"><label for="prCitacao">Citação</label><input type="date" id="prCitacao" name="citacao" value="{{$p.Citacao}}"></div>
+          <div class="field"><label for="prAudiencia">Audiência</label><input type="date" id="prAudiencia" name="audiencia" value="{{$p.Audiencia}}"></div>
+        </div>
+        <div class="row3">
+          <div class="field"><label for="prSentenca">Sentença</label><input type="date" id="prSentenca" name="sentenca" value="{{$p.Sentenca}}"></div>
+          <div class="field"><label for="prRecursos">Recursos</label><input type="date" id="prRecursos" name="recursos" value="{{$p.Recursos}}"></div>
+          <div class="field"><label for="prExecucao">Fase de execução (satisfativa)</label><input type="date" id="prExecucao" name="fase_execucao" value="{{$p.FaseExecucao}}"></div>
+        </div>
+        <div class="hint">Audiência aqui é só anotação rápida — a ficha própria da aba Audiências continua sendo a fonte de verdade.</div>
+      </fieldset>
+      <div class="field"><label for="prAtend">Atendimento de origem (opcional)</label><select id="prAtend" name="atendimento_origem" disabled><option value="">—</option></select>
+        <div class="hint">Disponível quando o módulo Atendimentos for ativado</div></div>
+      <div class="field"><label for="prObs">Observações</label><textarea id="prObs" name="observacoes" rows="3">{{$p.Observacoes}}</textarea></div>{{if .Novo}}
+      <input type="hidden" name="projeto_vinculado" value="">{{else}}
+      <div class="field"><label for="prTitulo">Título da ficha</label><input type="text" id="prTitulo" name="titulo" value="{{$p.Titulo}}"></div>
+      <div class="field"><label for="prPolo">Polo</label><input type="text" id="prPolo" name="polo" value="{{$p.Polo}}"></div>
+      <div class="field"><label for="prProjeto">Projeto vinculado</label><input type="text" id="prProjeto" name="projeto_vinculado" value="{{$p.Projeto}}"></div>
+      <div class="hint hint-bloco">Estado (ativo/sobrestado/...) não se edita aqui — use "Mover estado" na lista.</div>{{end}}
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">{{if .Novo}}Salvar processo{{else}}Salvar alterações{{end}}</button>
+      </div>
+    </form>{{end}}

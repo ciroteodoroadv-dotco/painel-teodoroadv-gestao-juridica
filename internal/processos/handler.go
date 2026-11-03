@@ -5,6 +5,7 @@ import (
 	"errors"
 	"html/template"
 	"net/http"
+	"strings"
 
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/platform/webx"
@@ -23,198 +24,127 @@ func page(name string) *template.Template {
 	return template.Must(auth.BaseTemplate().ParseFS(tplFS, "templates/"+name))
 }
 
+// fragmento carrega um arquivo de templates sem a casca da página (miolo do drawer).
+func fragmento(names ...string) *template.Template {
+	for i := range names {
+		names[i] = "templates/" + names[i]
+	}
+	return template.Must(template.ParseFS(tplFS, names...))
+}
+
 // Register declara as rotas, cada uma com a sua permissão.
 func (h *Handler) Register(rt *auth.Router) {
 	h.A.AddNavCount("Processos", "/processos", auth.PermProcRead, webx.ContarAtivos(h.S.Pool, "processos"))
+	w := auth.PermProcWrite
 	rt.Handle("GET /processos", auth.PermProcRead, h.list)
-	rt.Handle("GET /processos/novo", auth.PermProcWrite, h.newForm)
-	rt.Handle("POST /processos", auth.PermProcWrite, h.create)
+	rt.Handle("GET /processos/novo", w, h.newForm)
+	rt.Handle("POST /processos", w, h.create)
 	rt.Handle("GET /processos/{id}", auth.PermProcRead, h.detail)
-	rt.Handle("GET /processos/{id}/editar", auth.PermProcWrite, h.editForm)
-	rt.Handle("POST /processos/{id}", auth.PermProcWrite, h.update)
-	rt.Handle("POST /processos/{id}/excluir", auth.PermProcWrite, h.remove)
-	rt.Handle("GET /processos/{id}/pessoas", auth.PermProcWrite, h.pessoaOptions)
-	rt.Handle("POST /processos/{id}/partes", auth.PermProcWrite, h.addParte)
-	rt.Handle("POST /processos/{id}/partes/remover", auth.PermProcWrite, h.removeParte)
-}
-
-type listData struct {
-	Q, Situacao   string
-	Rows          []Row
-	Situacoes     []Opcao
-	Pag, Anterior int
-	Proxima       int
-	CanWrite      bool
-}
-
-type formData struct {
-	IsNew        bool
-	ID           string
-	Version      int
-	In           Input
-	Situacoes    []Opcao
-	Responsaveis []Opcao
+	rt.Handle("GET /processos/{id}/editar", w, h.editForm)
+	rt.Handle("POST /processos/{id}", w, h.update)
+	rt.Handle("GET /processos/{id}/estado", w, h.estadoForm)
+	rt.Handle("POST /processos/{id}/estado", w, h.estado)
+	rt.Handle("GET /processos/{id}/andamento", w, h.andamentoForm)
+	rt.Handle("POST /processos/{id}/andamento", w, h.andamento)
+	rt.Handle("GET /processos/{id}/financeiro", w, h.financeiroForm)
+	rt.Handle("POST /processos/{id}/financeiro", w, h.financeiro)
+	rt.Handle("GET /processos/{id}/providencia", w, h.providenciaForm)
+	rt.Handle("POST /processos/{id}/providencia", w, h.providencia)
+	rt.Handle("GET /processos/{id}/excluir", w, h.removeForm)
+	rt.Handle("POST /processos/{id}/excluir", w, h.remove)
 }
 
 func base(s *auth.Session, title string) auth.PageData {
 	return auth.PageData{Title: title, Email: s.Email, Role: string(s.Role)}
 }
 
+// Grupo é um painel do acordeão.
+type Grupo struct {
+	Estado    Estado
+	Processos []*Processo
+}
+
+// Quantidade é o número do botão do grupo.
+func (g Grupo) Quantidade() int { return len(g.Processos) }
+
+type listData struct {
+	Grupos   []Grupo
+	Total    int
+	CanWrite bool
+}
+
+// Busca é o texto que o campo de busca da lista consulta: número, classe, matéria, cliente e partes.
+func (p *Processo) Busca() string {
+	return strings.Join([]string{p.Numero, p.Classe, p.Materia, p.ClienteNome(), strings.Join(p.ParteContraria(), ", ")}, " ")
+}
+
 func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	q, sit := r.URL.Query().Get("q"), r.URL.Query().Get("situacao")
-	pag, limit, off := webx.Page(r)
-	rows, err := h.S.List(r.Context(), q, sit, limit, off)
+	ps, err := h.S.Listar(r.Context())
 	if err != nil {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return
 	}
-	d := listData{Q: q, Situacao: sit, Pag: pag, Situacoes: Situacoes, CanWrite: auth.Can(s.Role, auth.PermProcWrite)}
-	if len(rows) > webx.PageSize {
-		rows, d.Proxima = rows[:webx.PageSize], pag+1
-	}
-	if pag > 1 {
-		d.Anterior = pag - 1
-	}
-	d.Rows = rows
-	t := page("lista.html")
-	if webx.IsHX(r) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_ = t.ExecuteTemplate(w, "resultado", d)
-		return
+	d := listData{Total: len(ps), CanWrite: auth.Can(s.Role, auth.PermProcWrite)}
+	for _, e := range Estados {
+		g := Grupo{Estado: e}
+		for _, p := range ps {
+			if p.Estado == e.Valor {
+				g.Processos = append(g.Processos, p)
+			}
+		}
+		d.Grupos = append(d.Grupos, g)
 	}
 	pd := base(s, "Processos")
-	pd.Head = auth.Head{Title: "Processos", Sub: "Cadastro processual: partes, órgão, situação e responsável."}
+	pd.Head = auth.Head{Title: "Processos", Sub: "Cadastro processual: partes, classe, valor da causa e marcos."}
 	if d.CanWrite {
-		pd.Head.ActionLabel, pd.Head.ActionHref = "Novo processo", "/processos/novo"
+		pd.Head.ActionLabel, pd.Head.ActionHref, pd.Head.ActionDrawer = "Novo processo", "/processos/novo", true
 	}
 	pd.Data = d
-	h.A.Render(w, r, http.StatusOK, t, pd)
-}
-
-func (h *Handler) renderForm(w http.ResponseWriter, r *http.Request, s *auth.Session, status int, f formData, msg string) {
-	f.Situacoes = Situacoes
-	f.Responsaveis, _ = h.S.Users.Options(r.Context())
-	pd := base(s, "Editar processo")
-	if f.IsNew {
-		pd.Title = "Novo processo"
-	}
-	pd.Data, pd.Error = f, msg
-	h.A.Render(w, r, status, page("form.html"), pd)
-}
-
-func inputFrom(r *http.Request) Input {
-	return Input{Numero: r.PostFormValue("numero"), Orgao: r.PostFormValue("orgao"),
-		Situacao: r.PostFormValue("situacao"), ResponsavelID: r.PostFormValue("responsavel_id")}
-}
-
-func (h *Handler) newForm(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	h.renderForm(w, r, s, http.StatusOK, formData{IsNew: true, In: Input{Situacao: "ativo", ResponsavelID: s.UserID}}, "")
-}
-
-func (h *Handler) create(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	in := inputFrom(r)
-	id, err := h.S.Create(r.Context(), webx.ActorOf(w, s.UserID), in)
-	var inv webx.Invalid
-	switch {
-	case errors.As(err, &inv):
-		h.renderForm(w, r, s, http.StatusBadRequest, formData{IsNew: true, In: in}, inv.Msg)
-	case err != nil:
-		http.Error(w, "Erro interno.", http.StatusInternalServerError)
-	default:
-		http.Redirect(w, r, "/processos/"+id+"?aviso=criado", http.StatusSeeOther)
-	}
+	h.A.Render(w, r, http.StatusOK, page("lista.html"), pd)
 }
 
 func (h *Handler) detail(w http.ResponseWriter, r *http.Request, s *auth.Session) {
 	p, err := h.S.Get(r.Context(), r.PathValue("id"))
-	if err != nil {
-		h.fail(w, err)
+	if h.falha(w, err) {
 		return
 	}
-	pd := base(s, p.Numero)
-	if auth.Can(s.Role, auth.PermProcWrite) {
-		pd.Head.ActionLabel, pd.Head.ActionHref = "Editar", "/processos/"+p.ID+"/editar"
+	and, err1 := h.S.Andamentos(r.Context(), p.ID)
+	fin, err2 := h.S.Financeiro(r.Context(), p.ID)
+	if err1 != nil || err2 != nil {
+		http.Error(w, "Erro interno.", http.StatusInternalServerError)
+		return
 	}
-	pd.Data = map[string]any{"P": p, "Qualidades": Qualidades, "CanWrite": auth.Can(s.Role, auth.PermProcWrite),
-		"Aviso": r.URL.Query().Get("aviso") == "criado", "Erro": r.URL.Query().Get("erro") != ""}
+	pd := base(s, p.NumeroOuTitulo())
+	pd.Head = auth.Head{Title: p.NumeroOuTitulo(), Sub: p.Codigo}
+	canWrite := auth.Can(s.Role, auth.PermProcWrite)
+	if canWrite {
+		pd.Head.ActionLabel, pd.Head.ActionHref, pd.Head.ActionDrawer = "Editar", "/processos/"+p.ID+"/editar", true
+	}
+	pd.Data = map[string]any{"P": p, "Andamentos": and, "Financeiro": fin, "CanWrite": canWrite}
 	h.A.Render(w, r, http.StatusOK, page("detalhe.html"), pd)
 }
 
-func (h *Handler) editForm(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	p, err := h.S.Get(r.Context(), r.PathValue("id"))
-	if err != nil {
-		h.fail(w, err)
-		return
-	}
-	in := Input{Numero: p.Numero, Orgao: p.Orgao, Situacao: p.Situacao, ResponsavelID: p.ResponsavelID}
-	h.renderForm(w, r, s, http.StatusOK, formData{ID: p.ID, Version: p.Version, In: in}, "")
+// ok responde sucesso ao formulário do drawer: o JS fecha o drawer, mostra o toast e recarrega o conteúdo.
+func ok(w http.ResponseWriter, msg string) {
+	w.Header().Set("X-Painel-Ok", msg)
+	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) update(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	id, in := r.PathValue("id"), inputFrom(r)
-	v := webx.Int(r.PostFormValue("version"))
-	err := h.S.Update(r.Context(), webx.ActorOf(w, s.UserID), id, v, in)
+// falha traduz o erro em texto simples (o JS do drawer mostra como toast de erro, como o showToast(..., true) do B).
+func (h *Handler) falha(w http.ResponseWriter, err error) bool {
+	if err == nil {
+		return false
+	}
 	var inv webx.Invalid
 	switch {
 	case errors.As(err, &inv):
-		h.renderForm(w, r, s, http.StatusBadRequest, formData{ID: id, Version: v, In: in}, inv.Msg)
-	case err != nil:
-		h.fail(w, err)
-	default:
-		http.Redirect(w, r, "/processos/"+id, http.StatusSeeOther)
-	}
-}
-
-func (h *Handler) remove(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	if err := h.S.Delete(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"), webx.Int(r.PostFormValue("version"))); err != nil {
-		h.fail(w, err)
-		return
-	}
-	http.Redirect(w, r, "/processos", http.StatusSeeOther)
-}
-
-// pessoaOptions devolve <option>s para o seletor de partes (busca ao vivo via htmx).
-func (h *Handler) pessoaOptions(w http.ResponseWriter, r *http.Request, _ *auth.Session) {
-	opts, err := h.S.Pessoas.Buscar(r.Context(), r.URL.Query().Get("busca"), 20)
-	if err != nil {
-		http.Error(w, "Erro interno.", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	t := template.Must(template.New("o").Parse(`{{range .}}<option value="{{.Valor}}">{{.Rotulo}}</option>{{else}}<option value="">Nenhuma pessoa encontrada</option>{{end}}`))
-	_ = t.Execute(w, opts)
-}
-
-func (h *Handler) addParte(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	id := r.PathValue("id")
-	err := h.S.AddParte(r.Context(), webx.ActorOf(w, s.UserID), id, r.PostFormValue("pessoa_id"), r.PostFormValue("qualidade"))
-	var inv webx.Invalid
-	switch {
-	case errors.As(err, &inv):
-		http.Redirect(w, r, "/processos/"+id+"?erro=parte", http.StatusSeeOther)
-	case err != nil:
-		h.fail(w, err)
-	default:
-		http.Redirect(w, r, "/processos/"+id, http.StatusSeeOther)
-	}
-}
-
-func (h *Handler) removeParte(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	id := r.PathValue("id")
-	if err := h.S.RemoveParte(r.Context(), webx.ActorOf(w, s.UserID), id, r.PostFormValue("pessoa_id"), r.PostFormValue("qualidade")); err != nil {
-		h.fail(w, err)
-		return
-	}
-	http.Redirect(w, r, "/processos/"+id, http.StatusSeeOther)
-}
-
-func (h *Handler) fail(w http.ResponseWriter, err error) {
-	switch {
+		http.Error(w, inv.Msg, http.StatusBadRequest)
 	case errors.Is(err, webx.ErrNotFound):
-		http.Error(w, "Registro não encontrado.", http.StatusNotFound)
+		http.Error(w, "Processo não encontrado.", http.StatusNotFound)
 	case errors.Is(err, webx.ErrConflict):
-		http.Error(w, "Este registro foi alterado por outra pessoa. Volte, recarregue a página e refaça a alteração.", http.StatusConflict)
+		http.Error(w, "Este registro foi alterado por outra pessoa. Feche, recarregue a página e refaça a alteração.", http.StatusConflict)
 	default:
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 	}
+	return true
 }

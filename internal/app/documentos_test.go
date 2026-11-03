@@ -69,8 +69,7 @@ func TestDocumentos(t *testing.T) {
 	adv, _ := e.user("adv@exemplo.test", auth.Advogado)
 	ass, _ := e.user("ass@exemplo.test", auth.Assistente)
 	ctx := context.Background()
-	r, _ := adv.post("/processos", url.Values{"numero": {br.MakeCNJ("0000600", "2024", "8", "26", "0100")}, "situacao": {"ativo"}})
-	proc := idFrom(t, r, "/processos/")
+	proc := adv.criarProcesso(t, br.MakeCNJ("0000600", "2024", "8", "26", "0100"))
 	vinc := map[string]string{"processo_id": proc, "descricao": "Contrato"}
 
 	// Assistente lê, mas não envia.
@@ -106,7 +105,7 @@ func TestDocumentos(t *testing.T) {
 	}
 
 	// Envio válido; nome com caminho é reduzido ao nome do arquivo.
-	r, _ = adv.enviar("../../etc/Contrato Social.pdf", pdfBytes(), vinc)
+	r, _ := adv.enviar("../../etc/Contrato Social.pdf", pdfBytes(), vinc)
 	if r.StatusCode != 303 {
 		t.Fatalf("envio válido = %d", r.StatusCode)
 	}
@@ -186,8 +185,7 @@ func TestDocumentos(t *testing.T) {
 func TestDocumentoGrandeDemais(t *testing.T) {
 	e := newEnv(t)
 	adv, _ := e.user("adv@exemplo.test", auth.Advogado)
-	r, _ := adv.post("/processos", url.Values{"numero": {br.MakeCNJ("0000700", "2024", "8", "26", "0100")}, "situacao": {"ativo"}})
-	proc := idFrom(t, r, "/processos/")
+	proc := adv.criarProcesso(t, br.MakeCNJ("0000700", "2024", "8", "26", "0100"))
 	grande := append([]byte("%PDF-"), make([]byte, 27<<20)...)
 	if r, _ := adv.enviar("grande.pdf", grande, map[string]string{"processo_id": proc}); r.StatusCode != 413 {
 		t.Fatalf("27 MiB = %d, esperado 413", r.StatusCode)
@@ -206,14 +204,13 @@ func TestDocumentosFalhasNoMeio(t *testing.T) {
 	e := newEnv(t)
 	adv, _ := e.user("adv@exemplo.test", auth.Advogado)
 	ctx := context.Background()
-	r, _ := adv.post("/processos", url.Values{"numero": {br.MakeCNJ("0000800", "2024", "8", "26", "0100")}, "situacao": {"ativo"}})
-	proc := idFrom(t, r, "/processos/")
+	proc := adv.criarProcesso(t, br.MakeCNJ("0000800", "2024", "8", "26", "0100"))
 	vinc := map[string]string{"processo_id": proc}
 
 	if _, err := e.pool.Exec(ctx, `ALTER TABLE audit_events RENAME TO audit_events_off`); err != nil {
 		t.Fatal(err)
 	}
-	r, _ = adv.enviar("a.pdf", pdfBytes(), vinc)
+	r, _ := adv.enviar("a.pdf", pdfBytes(), vinc)
 	_, _ = e.pool.Exec(ctx, `ALTER TABLE audit_events_off RENAME TO audit_events`)
 	if r.StatusCode < 500 {
 		t.Fatalf("falha na auditoria deveria virar erro interno: %d", r.StatusCode)
