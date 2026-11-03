@@ -17,4 +17,4 @@ Decisões conservadoras onde o plano foi ambíguo ou o B contradiz a segurança 
 13. **Tarefas na Agenda:** a lista de clientes ganhou o código PES (`VinculoLookup.Clientes`); `AbertasPorSubtitulo` foi substituída por `AgendaPorSubtitulo` (comparação sem acento, por prazo ou data base). Estados atrasados seguem `computeTarefaStatus`.
 14. **Seed:** cancela uma audiência com um `Reauth` que aceita qualquer senha, usado só em `SeedDemo` (dev).
 15. **TDD:** testes escritos antes do código nas Tasks 1–5 (vermelho por tabela inexistente / não compilava). Exceção: `tarefas.Agenda*` teve o código escrito antes do teste, que passou de primeira. Os commits da Task 2–5 foram juntados num só (o estado intermediário não compilava).
-16. **Verificação visual no Chrome e paridade de estilo computado B × v2 não foram feitas nesta rodada** (ver RELATORIO-4.md).
+16. A paridade de estilo B x v2 e o JS novo foram medidos e executados no Chrome (ver RELATORIO-4.md).

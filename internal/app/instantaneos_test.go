@@ -57,6 +57,25 @@ func TestInstantaneosParaParidade(t *testing.T) {
 	if err := e.pool.QueryRow(context.Background(), `SELECT id FROM tarefas WHERE codigo='TAR. 0000001'`).Scan(&tar1); err != nil {
 		t.Fatal(err)
 	}
+	// Plano 4: fragmentos dos drawers de Agenda, Audiências e Diligências.
+	var cmp1, aud1, dil1 string
+	for sql, dest := range map[string]*string{`SELECT id FROM agenda_compromissos ORDER BY data LIMIT 1`: &cmp1,
+		`SELECT id FROM audiencias WHERE codigo='AUD. 0000001'`: &aud1, `SELECT id FROM diligencias WHERE codigo='DIL. 0000001'`: &dil1} {
+		if err := e.pool.QueryRow(context.Background(), sql).Scan(dest); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, caminho := range []string{"/agenda/novo", "/agenda/" + cmp1 + "/editar", "/audiencias/nova", "/audiencias/" + aud1 + "/editar",
+		"/audiencias/" + aud1 + "/cancelar", "/diligencias/" + dil1 + "/editar"} {
+		_, frag := adv.do("GET", caminho, nil, map[string]string{"HX-Request": "true"})
+		alvo := filepath.Join(out, filepath.FromSlash(strings.TrimPrefix(caminho, "/")))
+		if err := os.MkdirAll(filepath.Dir(alvo), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(alvo, []byte(frag), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
 	for _, caminho := range []string{"/atendimentos/novo", "/atendimentos/" + ate1 + "/editar", "/atendimentos/pessoas", "/tarefas/nova",
 		"/tarefas/" + tar1 + "/editar", "/tarefas/" + tar1 + "/filha", "/tarefas/" + tar1 + "/excluir",
 		"/pessoas/nova", "/pessoas/" + pAna + "/editar", "/processos/novo",

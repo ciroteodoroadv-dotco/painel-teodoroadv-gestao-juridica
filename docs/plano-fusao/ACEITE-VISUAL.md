@@ -40,6 +40,8 @@
 ## Plano 4 — Agenda, Audiências, Diligências (03/11/2026)
 | Item | Estado |
 |---|---|
-| Estrutura/textos/ordem dos drawers e das 7 pílulas | coberto por testes HTTP e `textos4.py` |
-| Estilo computado B x v2 | **não feito** |
-| JS novo no navegador, capturas, conferência do advogado | **não feito / pendente** |
+| Estilo computado B x v2 (Agenda com 7 categorias, aba Audiências, 7 variantes de drawer) | feito: zero diferença além das justificadas (`paridade/RELATORIO-4.md`) |
+| Comparação texto a texto | feito: 10 ausências, todas justificadas |
+| JS novo no Chrome (acordeão, busca, mostra/oculta, filtro de opções, toast, decodificação do cabeçalho) | executado nos instantâneos |
+| Envio real de formulário por clique, capturas 1440/400 | **não feito** (testes HTTP cobrem o servidor) |
+| Conferência do advogado na tela real | pendente |
