@@ -38,6 +38,8 @@ const (
 	PermAudienciaCancel  Perm = "audiencias:cancelar" // cancelar com reautenticação: SÓ advogado
 	PermDiligenciaRead   Perm = "diligencias:ler"
 	PermDiligenciaWrite  Perm = "diligencias:escrever"
+	PermIntimacaoDecide  Perm = "intimacoes:decidir" // confirmar/descartar intimação: SÓ advogado
+	PermColetaManage     Perm = "coleta:gerir"       // OABs da coleta DJEN e "Executar coleta agora": SÓ administrador
 	PermDocRead          Perm = "documentos:ler"
 	PermDocWrite         Perm = "documentos:escrever"
 	PermPrazoRead        Perm = "prazos:ler"
@@ -54,10 +56,10 @@ var matrix = func() map[Role]map[Perm]bool {
 	for _, p := range leitura {
 		m[Administrador][p], m[Advogado][p], m[Assistente][p] = true, true, true
 	}
-	for _, p := range []Perm{PermUsersManage, PermAuditRead, PermTarefaDelete} {
+	for _, p := range []Perm{PermUsersManage, PermAuditRead, PermTarefaDelete, PermColetaManage} {
 		m[Administrador][p] = true
 	}
-	for _, p := range []Perm{PermPessoasWrite, PermProcWrite, PermTarefaWrite, PermTarefaDelete, PermAtendimentoWrite, PermAgendaWrite, PermAudienciaWrite, PermAudienciaCancel, PermDiligenciaWrite, PermDocWrite, PermPrazoWrite, PermPrazoConfirm} {
+	for _, p := range []Perm{PermPessoasWrite, PermProcWrite, PermTarefaWrite, PermTarefaDelete, PermAtendimentoWrite, PermAgendaWrite, PermAudienciaWrite, PermAudienciaCancel, PermDiligenciaWrite, PermIntimacaoDecide, PermDocWrite, PermPrazoWrite, PermPrazoConfirm} {
 		m[Advogado][p] = true
 	}
 	for _, p := range []Perm{PermTarefaWrite, PermAtendimentoWrite, PermAgendaWrite, PermAudienciaWrite, PermDiligenciaWrite, PermPrazoWrite} {

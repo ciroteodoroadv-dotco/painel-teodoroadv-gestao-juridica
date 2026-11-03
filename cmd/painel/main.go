@@ -82,8 +82,19 @@ func serve() error {
 	a.RegisterAccount(rt)
 	a.RegisterAdmin(rt)
 	a.RegisterPages(rt)
-	if err := app.RegisterDomains(a, rt, pool, cfg.FieldKey, cfg.DocsDir); err != nil {
-		return fmt.Errorf("pasta de documentos: %w", err)
+	var svcs app.Servicos
+	djenCfg := app.DJEN{Ativo: cfg.DJENAtivo, BaseURL: cfg.DJENURL, Intervalo: cfg.DJENIntervalo, AlertaHoras: cfg.DJENAlertaHoras}
+	if err := app.RegisterDomains(a, rt, pool, cfg.FieldKey, cfg.DocsDir, app.WithDJEN(djenCfg), app.WithServicos(&svcs)); err != nil {
+		return fmt.Errorf("pasta de documentos ou coleta de intimações: %w", err)
+	}
+	// Coleta do DJEN: DESLIGADA por padrão. Desligada, só registra o estado "bloqueado" (sem rede e sem agendador).
+	if err := svcs.Intimacoes.IniciarEstado(ctx); err != nil {
+		return fmt.Errorf("estado da coleta de intimações: %w", err)
+	}
+	if svcs.Intimacoes.Iniciar(ctx, log, 2*time.Minute) {
+		log.Warn("coleta de intimações do DJEN LIGADA", "intervalo", cfg.DJENIntervalo.String())
+	} else {
+		log.Info("coleta de intimações do DJEN desligada neste ambiente")
 	}
 
 	srv := httpx.NewServer(cfg.Addr, httpx.Chain(cfaccess.Middleware(verifier(cfg, log), log, mux), log))

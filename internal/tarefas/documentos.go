@@ -18,5 +18,8 @@ func (s *Service) AnexarDocumento(ctx context.Context, ac webx.Actor, id, nome s
 	if !strings.HasSuffix(strings.ToLower(strings.TrimSpace(nome)), ".pdf") {
 		return webx.Invalidf("Envie um arquivo PDF.")
 	}
+	if t.OrigemTipo == OrigemIntimacao {
+		return webx.Invalidf("Vincule a tarefa a um processo ou atendimento para anexar documentos.")
+	}
 	return s.Docs.Anexar(ctx, ac, t.ID, t.OrigemTipo, t.OrigemID, nome, conteudo)
 }

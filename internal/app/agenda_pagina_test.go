@@ -109,8 +109,8 @@ func TestPaginaAgendaSeteCategorias(t *testing.T) {
 	if !regexp.MustCompile(`tabular">` + regexp.QuoteMeta(webx.DataBR(webx.Hoje(time.Now()).AddDate(0, 0, 1))) + ` <span class="badge badge-warn">A CONFERIR</span>`).MatchString(pg) {
 		t.Error("o prazo fatal a conferir deveria levar o selo A CONFERIR no mesmo campo")
 	}
-	// Intimações: até o Plano 5, o bloco honesto do B.
-	if !strings.Contains(pg, `<div class="form-block"><strong>Intimações indisponíveis.</strong><br>Nenhuma sincronização de intimações foi executada.</div>`) {
+	// Intimações sem nenhuma coleta: o bloco do B, com o aviso de conferência manual ("sem resultado" nunca é "sem prazo").
+	if !strings.Contains(pg, `<div class="form-block"><strong>Intimações indisponíveis.</strong><br>Nenhuma sincronização de intimações foi executada. Confira o DJEN manualmente.</div>`) {
 		t.Error("Intimações deveria mostrar o bloco de indisponibilidade do B")
 	}
 	// Sem script nem estilo inline.

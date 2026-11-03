@@ -27,6 +27,7 @@ type (
 type Tarefa struct {
 	ID, Codigo, Titulo, Subtitulo, Estado, Prioridade string
 	OrigemTipo, OrigemID, OrigemCodigo, ClienteNome   string
+	IntimacaoID                                       string // intimação (DJEN) de onde a tarefa nasceu, se nasceu
 	Descricao, Observacoes                            string
 	TarefaPaiID, TarefaPaiCodigo                      string
 	DataBase, Prazo, PrazoFatal                       *time.Time

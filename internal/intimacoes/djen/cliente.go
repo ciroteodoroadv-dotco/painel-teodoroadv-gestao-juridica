@@ -24,6 +24,7 @@ type Config struct {
 	MaxPaginas, MaxResultados   int
 	MaxTentativasTaxa           int
 	ItensPorPagina              int
+	Transport                   http.RoundTripper // só para teste; nil usa o transporte padrão
 	Agora                       func() time.Time
 	Dormir                      func(time.Duration)
 }
@@ -85,7 +86,7 @@ func Novo(cfg Config) (*Cliente, error) {
 		cfg.Dormir = time.Sleep
 	}
 	host := u.Host
-	hc := &http.Client{Timeout: cfg.Timeout, CheckRedirect: func(req *http.Request, via []*http.Request) error {
+	hc := &http.Client{Timeout: cfg.Timeout, Transport: cfg.Transport, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		if req.URL.Host != host || len(via) > 3 {
 			return errors.New("djen: redirecionamento recusado")
 		}
@@ -260,41 +261,4 @@ func classeDoErro(err error) string {
 		return "cancelada"
 	}
 	return "conexão"
-}
-
-func texto(m itemJSON, chaves ...string) string {
-	for _, k := range chaves {
-		if v, ok := m[k]; ok && v != nil {
-			var s string
-			switch x := v.(type) {
-			case string:
-				s = x
-			case float64:
-				s = strconv.FormatFloat(x, 'f', -1, 64)
-			default:
-				continue
-			}
-			if s = strings.TrimSpace(s); s != "" {
-				return s
-			}
-		}
-	}
-	return ""
-}
-
-func normalizar(m itemJSON) (Comunicacao, error) {
-	c := Comunicacao{ID: texto(m, "id", "identificador"), Tribunal: texto(m, "siglaTribunal", "tribunal"),
-		Orgao: texto(m, "nomeOrgao", "orgao"), Processo: texto(m, "numeroprocessocommascara", "numero_processo", "processo"),
-		Tipo: texto(m, "tipoComunicacao", "tipo"), Texto: NormalizarResumo(texto(m, "texto", "resumo"))}
-	if l := texto(m, "link", "url"); strings.HasPrefix(l, "https://") {
-		c.Link = l
-	}
-	d := texto(m, "data_disponibilizacao", "dataPublicacao", "data_publicacao")
-	for _, f := range []string{"2006-01-02", "02/01/2006", time.RFC3339} {
-		if t, err := time.Parse(f, d); err == nil {
-			c.DataPublicacao = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
-			return c, nil
-		}
-	}
-	return c, errors.New("djen: comunicação com data inválida; não descartada")
 }

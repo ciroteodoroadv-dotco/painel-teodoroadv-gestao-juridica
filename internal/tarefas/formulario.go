@@ -80,6 +80,9 @@ func (h *Handler) montaForm(w http.ResponseWriter, r *http.Request, s *auth.Sess
 		switch {
 		case pai != nil:
 			f.Filha, f.Vinculo, f.OrigemID, src = true, pai.OrigemTipo, pai.OrigemID, pai
+			if pai.OrigemTipo == OrigemIntimacao { // a filha de uma tarefa do DJEN escolhe o próprio vínculo
+				f.Vinculo, f.OrigemID = "", ""
+			}
 			f.T = Tarefa{TarefaPaiID: pai.ID}
 		case f.TemAtend:
 			f.Vinculo = "atendimento"

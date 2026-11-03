@@ -40,7 +40,11 @@ func (u userLookup) Emails(ctx context.Context, ids []string) (map[string]string
 }
 
 // RegisterDomains liga todos os domínios ao roteador. fieldKey é a chave mestra de cifra de campos.
-func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey []byte, docsDir string) error {
+func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey []byte, docsDir string, opts ...Option) error {
+	var o options
+	for _, f := range opts {
+		f(&o)
+	}
 	users := userLookup{s: a.Store}
 	pes := &pessoas.Service{Pool: pool, FieldKey: fieldKey}
 	proc := &processos.Service{Pool: pool, Pessoas: pes}
@@ -61,6 +65,14 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	ag := &agenda.Service{Pool: pool, Pessoas: pes, Vinculos: agendaVinculos{ate: ate, proc: proc}, Audiencias: agendaAudiencias{s: aud},
 		Diligencias: agendaDiligencias{s: dil}, Tarefas: agendaTarefas{s: tar}}
 	proc.Vinculos = []processos.VinculosLookup{tar, praz}
+	intim, err := montarIntimacoes(a, pool, proc, tar, &o)
+	if err != nil {
+		return err
+	}
+	ag.Intimacoes = agendaIntimacoes{s: intim}
+	if o.out != nil {
+		*o.out = Servicos{Intimacoes: intim, Coletas: intim.Coletas}
+	}
 
 	(&prazos.Handler{A: a, S: praz}).Register(rt) // 1º: widget no topo de "Hoje"
 	(&pessoas.Handler{A: a, S: pes}).Register(rt)

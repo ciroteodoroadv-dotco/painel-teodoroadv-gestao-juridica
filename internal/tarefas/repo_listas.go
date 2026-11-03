@@ -19,6 +19,14 @@ func (s *Service) enrich(ctx context.Context, list []*Tarefa) error {
 		porTipo[t.OrigemTipo] = append(porTipo[t.OrigemTipo], t.OrigemID)
 	}
 	for tipo, oids := range porTipo {
+		if tipo == OrigemIntimacao { // não há ficha para consultar: a origem é o próprio DJEN
+			for _, t := range list {
+				if t.OrigemTipo == tipo {
+					t.OrigemCodigo = "DJEN"
+				}
+			}
+			continue
+		}
 		m, err := s.Vinculos.Resumos(ctx, tipo, oids)
 		if err != nil {
 			return err
@@ -26,6 +34,9 @@ func (s *Service) enrich(ctx context.Context, list []*Tarefa) error {
 		for _, t := range list {
 			if v, ok := m[t.OrigemID]; ok && t.OrigemTipo == tipo {
 				t.OrigemCodigo, t.ClienteNome = v[0], v[1]
+				if t.IntimacaoID != "" {
+					t.OrigemCodigo += " · DJEN"
+				}
 			}
 		}
 	}

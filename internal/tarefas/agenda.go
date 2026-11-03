@@ -40,7 +40,9 @@ func statusAgenda(t *Tarefa, hoje time.Time) (rotulo, classe string) {
 func (s *Service) agendaLinhas(ctx context.Context, ts []*Tarefa, hoje time.Time) ([]AgendaLinha, error) {
 	porTipo := map[string][]string{}
 	for _, t := range ts {
-		porTipo[t.OrigemTipo] = append(porTipo[t.OrigemTipo], t.OrigemID)
+		if t.OrigemTipo != OrigemIntimacao { // tarefa nascida da intimação, sem processo, não tem cliente a buscar
+			porTipo[t.OrigemTipo] = append(porTipo[t.OrigemTipo], t.OrigemID)
+		}
 	}
 	clientes := map[string][]Ref{}
 	for tipo, ids := range porTipo {

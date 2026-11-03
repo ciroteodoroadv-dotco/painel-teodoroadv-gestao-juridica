@@ -14,16 +14,17 @@ const mod = "painelteodoro/internal/"
 // Fronteiras entre domínios (especificação §4): um domínio nunca importa o outro por cima da
 // interface combinada. Só processos pode conhecer os TIPOS de pessoas (contrato pessoas.ProcessosLookup).
 var proibido = map[string][]string{
-	"pessoas":      {"processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos"},
-	"atendimentos": {"pessoas", "processos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos"},
-	"processos":    {"atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos"},
-	"tarefas":      {"pessoas", "processos", "atendimentos", "agenda", "audiencias", "diligencias", "documentos", "prazos"},
-	"agenda":       {"pessoas", "processos", "atendimentos", "tarefas", "audiencias", "diligencias", "documentos", "prazos"},
-	"audiencias":   {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "diligencias", "documentos", "prazos"},
-	"diligencias":  {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "documentos", "prazos"},
-	"documentos":   {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "prazos"},
-	"prazos":       {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos"},
-	"audit":        {"auth", "pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos", "app"},
+	"pessoas":      {"processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos", "intimacoes"},
+	"atendimentos": {"pessoas", "processos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos", "intimacoes"},
+	"processos":    {"atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos", "intimacoes"},
+	"tarefas":      {"pessoas", "processos", "atendimentos", "agenda", "audiencias", "diligencias", "documentos", "prazos", "intimacoes"},
+	"agenda":       {"pessoas", "processos", "atendimentos", "tarefas", "audiencias", "diligencias", "documentos", "prazos", "intimacoes"},
+	"audiencias":   {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "diligencias", "documentos", "prazos", "intimacoes"},
+	"diligencias":  {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "documentos", "prazos", "intimacoes"},
+	"documentos":   {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "prazos", "intimacoes"},
+	"prazos":       {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "intimacoes"},
+	"audit":        {"auth", "intimacoes", "pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos", "app"},
+	"intimacoes":   {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos"},
 }
 
 func TestFronteirasEntreDominios(t *testing.T) {
@@ -61,7 +62,7 @@ func TestFronteirasEntreDominios(t *testing.T) {
 func TestSQLNaoCruzaDominios(t *testing.T) {
 	outrosDominios := func(minha ...string) []string {
 		todas := []string{"pessoas", "processos", "processo_partes", "atendimentos", "atendimento_pessoas", "tarefas", "tarefa_partes",
-			"tarefa_responsaveis", "agenda_compromissos", "audiencias", "diligencias", "documentos", "prazos"}
+			"tarefa_responsaveis", "agenda_compromissos", "audiencias", "diligencias", "documentos", "prazos", "intimacoes", "oab_monitoradas"}
 		var out []string
 		for _, t := range todas {
 			proprio := false
@@ -84,6 +85,7 @@ func TestSQLNaoCruzaDominios(t *testing.T) {
 		"diligencias":  outrosDominios("diligencias"),
 		"documentos":   outrosDominios("documentos"),
 		"prazos":       outrosDominios("prazos"),
+		"intimacoes":   outrosDominios("intimacoes", "oab_monitoradas", "coletas"),
 	}
 	for dom, outras := range tabelas {
 		files, _ := filepath.Glob(filepath.Join("..", dom, "*.go"))

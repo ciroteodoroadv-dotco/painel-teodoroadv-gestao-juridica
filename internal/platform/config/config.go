@@ -9,7 +9,9 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
 const minKeyBytes = 32
@@ -32,6 +34,11 @@ type Config struct {
 	AppDBPassword  string
 	SessionKey     []byte
 	FieldKey       []byte
+	// Coleta do DJEN (intimações). Vem DESLIGADA: só PAINEL_DJEN_ATIVO=true liga, e só depois do teste manual orientado.
+	DJENAtivo       bool
+	DJENURL         string
+	DJENIntervalo   time.Duration
+	DJENAlertaHoras int
 }
 
 // String é seguro para log: não revela nenhum segredo.
@@ -95,6 +102,8 @@ func Load(e Env) (Config, error) {
 		errs = append(errs, err)
 	}
 
+	djenAtivo, djenURL, djenInt, djenAlerta := loadDJEN(e, &errs)
+
 	if len(errs) > 0 {
 		return Config{}, errors.Join(errs...)
 	}
@@ -112,6 +121,7 @@ func Load(e Env) (Config, error) {
 		AppDatabaseURL:   dbURL(e, dbHost, dbName, "painel_app", appPass, ssl),
 		SessionKey:       sessionKey,
 		FieldKey:         fieldKey,
+		DJENAtivo:        djenAtivo, DJENURL: djenURL, DJENIntervalo: djenInt, DJENAlertaHoras: djenAlerta,
 	}, nil
 }
 
@@ -196,4 +206,39 @@ func orDefault(v, def string) string {
 		return def
 	}
 	return v
+}
+
+// loadDJEN lê a configuração da coleta do DJEN. Padrão: desligada, endereço público oficial, rodada a cada 3 h e alerta
+// de 6 h sem sucesso. O endereço precisa ser https (não vem do usuário do painel, só do ambiente).
+func loadDJEN(e Env, errs *[]error) (ativo bool, urlBase string, intervalo time.Duration, alertaHoras int) {
+	switch v := strings.ToLower(strings.TrimSpace(e.Getenv("PAINEL_DJEN_ATIVO"))); v {
+	case "", "false", "0":
+	case "true", "1":
+		ativo = true
+	default:
+		*errs = append(*errs, errors.New("PAINEL_DJEN_ATIVO inválida: use true ou false"))
+	}
+	urlBase = orDefault(e.Getenv("PAINEL_DJEN_URL"), "https://comunicaapi.pje.jus.br/api/v1/comunicacao")
+	if u, err := url.Parse(urlBase); err != nil || u.Scheme != "https" || u.Hostname() == "" {
+		*errs = append(*errs, errors.New("PAINEL_DJEN_URL inválida: use um endereço https"))
+	}
+	intervalo = 3 * time.Hour
+	if v := strings.TrimSpace(e.Getenv("PAINEL_DJEN_INTERVALO")); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil || d < 15*time.Minute {
+			*errs = append(*errs, errors.New("PAINEL_DJEN_INTERVALO inválida: use uma duração de pelo menos 15m (ex.: 3h)"))
+		} else {
+			intervalo = d
+		}
+	}
+	alertaHoras = 6
+	if v := strings.TrimSpace(e.Getenv("PAINEL_DJEN_ALERTA_HORAS")); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > 168 {
+			*errs = append(*errs, errors.New("PAINEL_DJEN_ALERTA_HORAS inválida: use um número de 1 a 168"))
+		} else {
+			alertaHoras = n
+		}
+	}
+	return ativo, urlBase, intervalo, alertaHoras
 }

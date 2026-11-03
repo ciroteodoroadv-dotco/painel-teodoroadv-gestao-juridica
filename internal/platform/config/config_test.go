@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 )
 
 var goodKey = base64.StdEncoding.EncodeToString(make([]byte, 32))
@@ -168,5 +169,40 @@ func TestSSLModeDoBanco(t *testing.T) {
 		if isInternalHost(h) {
 			t.Errorf("%q NÃO deveria ser rede interna", h)
 		}
+	}
+}
+
+func TestDJENVemDesligadoPorPadrao(t *testing.T) {
+	c, err := Load(envOf(baseVars(), nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.DJENAtivo {
+		t.Fatal("a coleta do DJEN deve vir DESLIGADA por padrão")
+	}
+	if c.DJENURL != "https://comunicaapi.pje.jus.br/api/v1/comunicacao" || c.DJENIntervalo != 3*time.Hour || c.DJENAlertaHoras != 6 {
+		t.Fatalf("padrões do DJEN: %q %v %d", c.DJENURL, c.DJENIntervalo, c.DJENAlertaHoras)
+	}
+}
+
+func TestDJENVariaveis(t *testing.T) {
+	v := baseVars()
+	v["PAINEL_DJEN_ATIVO"], v["PAINEL_DJEN_INTERVALO"], v["PAINEL_DJEN_ALERTA_HORAS"] = "true", "90m", "4"
+	c, err := Load(envOf(v, nil))
+	if err != nil || !c.DJENAtivo || c.DJENIntervalo != 90*time.Minute || c.DJENAlertaHoras != 4 {
+		t.Fatalf("variáveis do DJEN: %+v %v", c, err)
+	}
+	for nome, valor := range map[string]string{"PAINEL_DJEN_ATIVO": "talvez", "PAINEL_DJEN_INTERVALO": "5s", "PAINEL_DJEN_ALERTA_HORAS": "0",
+		"PAINEL_DJEN_URL": "http://comunicaapi.pje.jus.br/api"} {
+		w := baseVars()
+		w[nome] = valor
+		if _, err := Load(envOf(w, nil)); err == nil {
+			t.Errorf("%s=%q deveria ser recusado", nome, valor)
+		}
+	}
+	w := baseVars()
+	w["PAINEL_DJEN_INTERVALO"] = "abc"
+	if _, err := Load(envOf(w, nil)); err == nil {
+		t.Error("intervalo inválido deveria ser recusado")
 	}
 }

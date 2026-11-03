@@ -160,6 +160,6 @@ type TarefaLinha struct {
 
 // IntimacaoLinha é uma intimação na tabela da Agenda (Plano 5).
 type IntimacaoLinha struct {
-	Origem, Processo, Data, StatusRotulo, StatusClasse, Tarefa, TarefaEstado string
-	Busca                                                                    string
+	ID, Origem, Processo, Data, Status, StatusRotulo, StatusClasse, Tarefa, TarefaEstado string
+	Busca                                                                                string
 }

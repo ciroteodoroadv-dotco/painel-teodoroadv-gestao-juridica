@@ -32,9 +32,13 @@ type env struct {
 	a    *auth.Auth
 	srv  *httptest.Server
 	docs string // pasta dos documentos desta execução
+	svc  *Servicos
 }
 
-func newEnv(t *testing.T) *env {
+func newEnv(t *testing.T) *env { return newEnvOpts(t) }
+
+// newEnvOpts monta o ambiente com opções (DJEN falso, relógio, serviços). Por padrão NENHUMA rede: o transporte falha o teste.
+func newEnvOpts(t *testing.T, opts ...Option) *env {
 	t.Helper()
 	dsn := os.Getenv("PAINEL_TEST_DB")
 	if dsn == "" {
@@ -64,12 +68,14 @@ func newEnv(t *testing.T) *env {
 	a.RegisterAccount(rt)
 	a.RegisterPages(rt)
 	docs := t.TempDir()
-	if err := RegisterDomains(a, rt, pool, fieldKey, docs); err != nil {
+	var svc Servicos
+	opts = append([]Option{WithDJEN(DJEN{Transport: semRede{t}}), WithServicos(&svc)}, opts...)
+	if err := RegisterDomains(a, rt, pool, fieldKey, docs, opts...); err != nil {
 		t.Fatal(err)
 	}
 	srv := httptest.NewServer(httpx.Chain(mux, a.Log)) // cadeia real: limites de corpo, cabeçalhos
 	t.Cleanup(srv.Close)
-	return &env{t: t, pool: pool, a: a, srv: srv, docs: docs}
+	return &env{t: t, pool: pool, a: a, srv: srv, docs: docs, svc: &svc}
 }
 
 // user cria um usuário e devolve um navegador JÁ autenticado (sessão com 2FA concluído).
@@ -154,4 +160,12 @@ func idFrom(t *testing.T, r *http.Response, prefix string) string {
 		id = id[:i]
 	}
 	return id
+}
+
+// semRede é o transporte HTTP dos testes: qualquer requisição de saída reprova o teste.
+type semRede struct{ t *testing.T }
+
+func (s semRede) RoundTrip(r *http.Request) (*http.Response, error) {
+	s.t.Errorf("requisição de rede proibida nos testes: %s %s", r.Method, r.URL.Host)
+	return nil, io.ErrClosedPipe
 }

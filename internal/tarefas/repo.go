@@ -9,14 +9,14 @@ import (
 	"painelteodoro/internal/platform/webx"
 )
 
-const cols = `id, codigo, titulo, subtitulo, estado, origem_tipo, coalesce(atendimento_id, processo_id)::text,
+const cols = `id, codigo, titulo, subtitulo, estado, origem_tipo, coalesce(atendimento_id, processo_id, intimacao_id)::text,
 	coalesce(tarefa_pai_id::text,''), coalesce(criado_por_pessoa_id::text,''), descricao, observacoes,
-	data_base, prazo, prazo_fatal, prioridade, version`
+	data_base, prazo, prazo_fatal, prioridade, version, coalesce(intimacao_id::text,'')`
 
 func scan(row pgx.Row) (*Tarefa, error) {
 	var t Tarefa
 	err := row.Scan(&t.ID, &t.Codigo, &t.Titulo, &t.Subtitulo, &t.Estado, &t.OrigemTipo, &t.OrigemID, &t.TarefaPaiID,
-		&t.CriadoPorID, &t.Descricao, &t.Observacoes, &t.DataBase, &t.Prazo, &t.PrazoFatal, &t.Prioridade, &t.Version)
+		&t.CriadoPorID, &t.Descricao, &t.Observacoes, &t.DataBase, &t.Prazo, &t.PrazoFatal, &t.Prioridade, &t.Version, &t.IntimacaoID)
 	return &t, err
 }
 
