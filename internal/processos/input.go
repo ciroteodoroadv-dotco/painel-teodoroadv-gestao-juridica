@@ -25,6 +25,7 @@ type Input struct {
 	Distribuicao, Citacao, Audiencia, Sentenca, Recursos string
 	FaseExecucao, Observacoes                            string
 	Titulo, Polo, Projeto                                string // edição (na criação o título é derivado das partes)
+	AtendimentoOrigem                                    string // id do atendimento (opcional)
 }
 
 type normalized struct {
@@ -35,6 +36,7 @@ type normalized struct {
 	comarca, juizo, contingencia        string
 	datas                               [6]*time.Time // distribuição, citação, audiência, sentença, recursos, execução
 	obs, titulo, polo, projeto          string
+	atendimento                         string
 }
 
 func (n normalized) data(i int) *time.Time { return n.datas[i] }
@@ -102,6 +104,18 @@ func (s *Service) normalize(ctx context.Context, in Input) (n normalized, err er
 	}
 	if err := s.conferePessoas(ctx, in, &n); err != nil {
 		return n, err
+	}
+	if n.atendimento = strings.TrimSpace(in.AtendimentoOrigem); n.atendimento != "" {
+		ok := false
+		if s.Atendimentos != nil && len(n.atendimento) == 36 {
+			var err error
+			if ok, err = s.Atendimentos.Existe(ctx, n.atendimento); err != nil {
+				return n, err
+			}
+		}
+		if !ok {
+			return n, webx.Invalidf("Atendimento de origem não encontrado.")
+		}
 	}
 	return n, nil
 }

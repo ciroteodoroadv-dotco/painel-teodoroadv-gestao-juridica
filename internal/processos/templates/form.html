@@ -76,8 +76,7 @@
         </div>
         <div class="hint">Audiência aqui é só anotação rápida — a ficha própria da aba Audiências continua sendo a fonte de verdade.</div>
       </fieldset>
-      <div class="field"><label for="prAtend">Atendimento de origem (opcional)</label><select id="prAtend" name="atendimento_origem" disabled><option value="">—</option></select>
-        <div class="hint">Disponível quando o módulo Atendimentos for ativado</div></div>
+      <div class="field"><label for="prAtend">Atendimento de origem (opcional)</label><select id="prAtend" name="atendimento_origem"><option value="">—</option>{{range .Origens}}<option value="{{.Valor}}"{{if eq .Valor $p.AtendimentoOrigem}} selected{{end}}>{{.Rotulo}}</option>{{end}}</select></div>
       <div class="field"><label for="prObs">Observações</label><textarea id="prObs" name="observacoes" rows="3">{{$p.Observacoes}}</textarea></div>{{if .Novo}}
       <input type="hidden" name="projeto_vinculado" value="">{{else}}
       <div class="field"><label for="prTitulo">Título da ficha</label><input type="text" id="prTitulo" name="titulo" value="{{$p.Titulo}}"></div>

@@ -50,6 +50,7 @@ type formView struct {
 	Instan   ComOutro
 	Classes  []string
 	Materias []string
+	Origens  []Opcao
 }
 
 // montaForm monta o que o formulário precisa. p é zero na criação.
@@ -64,6 +65,12 @@ func (h *Handler) montaForm(w http.ResponseWriter, r *http.Request, s *auth.Sess
 	}
 	f := formView{Novo: novo, P: p, Pessoas: ops, Classes: Classes, Materias: Materias, Vazia: linha(Parte{}),
 		Sistema: novoComOutro("sistema", Sistemas, p.Sistema), Instan: novoComOutro("instancia", Instancias, p.Instancia)}
+	if h.S.Atendimentos != nil {
+		if f.Origens, err = h.S.Atendimentos.OpcoesOrigem(r.Context()); err != nil {
+			http.Error(w, "Erro interno.", http.StatusInternalServerError)
+			return formView{}, false
+		}
+	}
 	for _, pt := range p.Partes {
 		f.Partes = append(f.Partes, linha(pt))
 	}
@@ -141,7 +148,7 @@ func inputFrom(r *http.Request) (Input, bool) {
 		Classe: v("classe"), Materia: v("ramo"), Comarca: v("comarca"), Juizo: v("juizo"), Contingencia: v("tipo_contingencia"),
 		Distribuicao: v("distribuido_em"), Citacao: v("citacao"), Audiencia: v("audiencia"), Sentenca: v("sentenca"),
 		Recursos: v("recursos"), FaseExecucao: v("fase_execucao"), Observacoes: v("observacoes"),
-		Titulo: v("titulo"), Polo: v("polo"), Projeto: v("projeto_vinculado")}
+		Titulo: v("titulo"), Polo: v("polo"), Projeto: v("projeto_vinculado"), AtendimentoOrigem: v("atendimento_origem")}
 	for i := range pes {
 		in.Partes = append(in.Partes, ParteIn{PessoaID: pes[i], Papel: comOutro(pap[i], outro[i]), Cliente: cli[i] == "1"})
 	}

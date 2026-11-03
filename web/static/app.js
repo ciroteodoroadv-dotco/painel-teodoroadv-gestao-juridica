@@ -56,10 +56,15 @@
     return fetch(location.href, { credentials: "same-origin" })
       .then(function (r) { return r.text(); })
       .then(function (html) {
+        // O acordeão mantém os painéis abertos depois de recarregar (state.accOpen do B).
+        var abertos = Array.prototype.map.call(document.querySelectorAll(".acc-item.open"), function (x) { return x.getAttribute("data-acc"); });
         var doc = new DOMParser().parseFromString(html, "text/html");
         ["content", "stats", "navTabs", "navSistema", "topbar"].forEach(function (id) {
           var novo = doc.getElementById(id), atual = document.getElementById(id);
           if (novo && atual) atual.replaceChildren.apply(atual, Array.prototype.slice.call(novo.childNodes));
+        });
+        abertos.forEach(function (k) {
+          document.querySelectorAll('[data-acc="' + k + '"]').forEach(function (x) { x.classList.add("open"); });
         });
       });
   };

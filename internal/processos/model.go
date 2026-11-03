@@ -50,6 +50,12 @@ type PessoaLookup interface {
 	Opcoes(ctx context.Context, ac webx.Actor, comDocumento bool) ([]pessoas.Opcao, error)
 }
 
+// AtendimentoLookup é o que este domínio precisa do domínio de atendimentos (seletor "Atendimento de origem").
+type AtendimentoLookup interface {
+	OpcoesOrigem(ctx context.Context) ([]Opcao, error)
+	Existe(ctx context.Context, id string) (bool, error)
+}
+
 // VinculosLookup é implementado por quem tem trabalho em aberto ligado ao processo (tarefas, prazos).
 type VinculosLookup interface {
 	AbertosDoProcesso(ctx context.Context, processoID string) (int, error)

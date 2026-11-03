@@ -15,9 +15,10 @@ import (
 
 // Service concentra as regras de processos. Só toca nas próprias tabelas.
 type Service struct {
-	Pool     *pgxpool.Pool
-	Pessoas  PessoaLookup
-	Vinculos []VinculosLookup // tarefas, prazos… (opcional): quem tem trabalho em aberto ligado ao processo
+	Pool         *pgxpool.Pool
+	Pessoas      PessoaLookup
+	Atendimentos AtendimentoLookup // opcional: seletor e conferência do "Atendimento de origem"
+	Vinculos     []VinculosLookup  // tarefas, prazos… (opcional): quem tem trabalho em aberto ligado ao processo
 }
 
 func (s *Service) record(ctx context.Context, tx pgx.Tx, ac webx.Actor, action, id string, meta map[string]string) error {
@@ -83,11 +84,11 @@ func escreverPartes(ctx context.Context, tx pgx.Tx, id string, n normalized) err
 }
 
 // valores devolve os parâmetros comuns de INSERT e UPDATE, na ordem: numero, titulo, polo, sistema, instancia,
-// classe, materia, comarca, juizo, contingencia, valor, 6 datas, projeto, observacoes.
+// classe, materia, comarca, juizo, contingencia, valor, 6 datas, projeto, observacoes, atendimento de origem.
 func (n normalized) valores(titulo string) []any {
 	return []any{n.numero, titulo, n.polo, n.sistema, n.instancia, n.classe, n.materia, n.comarca, n.juizo,
 		n.contingencia, nullableNumeric(n.valor), n.datas[0], n.datas[1], n.datas[2], n.datas[3], n.datas[4], n.datas[5],
-		n.projeto, n.obs}
+		n.projeto, n.obs, webx.Nullable(n.atendimento)}
 }
 
 func nullableNumeric(v string) any {
@@ -114,8 +115,8 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input) (id, codi
 	args := append([]any{codigo, "ativo", ac.UserID}, n.valores(s.tituloDe(ctx, n))...)
 	err = tx.QueryRow(ctx, `INSERT INTO processos (codigo, situacao, created_by, updated_by, numero_cnj, titulo, polo, sistema,
 		instancia, classe_processual, materia_direito, comarca, juizo, tipo_contingencia, valor_causa, distribuicao,
-		citacao, audiencia, sentenca, recursos, fase_execucao, projeto_vinculado, observacoes)
-		VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING id`, args...).Scan(&id)
+		citacao, audiencia, sentenca, recursos, fase_execucao, projeto_vinculado, observacoes, atendimento_origem_id)
+		VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23) RETURNING id`, args...).Scan(&id)
 	if webx.IsUniqueViolation(err) {
 		return "", "", webx.Invalidf("Já existe um processo cadastrado com este número.")
 	}
@@ -149,7 +150,7 @@ func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version 
 	tag, err := tx.Exec(ctx, `UPDATE processos SET numero_cnj=$4, titulo=$5, polo=$6, sistema=$7, instancia=$8,
 		classe_processual=$9, materia_direito=$10, comarca=$11, juizo=$12, tipo_contingencia=$13, valor_causa=$14,
 		distribuicao=$15, citacao=$16, audiencia=$17, sentenca=$18, recursos=$19, fase_execucao=$20,
-		projeto_vinculado=$21, observacoes=$22, updated_at=now(), updated_by=$3, version=version+1
+		projeto_vinculado=$21, observacoes=$22, atendimento_origem_id=$23, updated_at=now(), updated_by=$3, version=version+1
 		WHERE id=$1 AND version=$2 AND excluido_em IS NULL`, args...)
 	if webx.IsUniqueViolation(err) {
 		return webx.Invalidf("Já existe um processo cadastrado com este número.")

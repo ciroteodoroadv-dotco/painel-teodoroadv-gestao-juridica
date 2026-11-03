@@ -26,6 +26,10 @@
     }).then(function (r) {
       var ok = r.headers.get("X-Painel-Ok");
       var redir = r.headers.get("HX-Redirect");
+      if (ok !== null && App.aposSalvar) {
+        var tratado = App.aposSalvar(r, f); // ex.: pessoa criada de dentro do atendimento volta ao rascunho
+        if (tratado) return tratado;
+      }
       if (ok !== null || redir !== null) {
         App.drawerStack.length = 0;
         App.closeDrawer();
@@ -33,7 +37,9 @@
         return App.recarregarConteudo().catch(function () {
           var falhas = {
             pessoas: "Ação registrada, mas houve falha ao recarregar a lista de pessoas.",
-            processos: "Ação registrada, mas houve falha ao recarregar a lista de processos."
+            processos: "Ação registrada, mas houve falha ao recarregar a lista de processos.",
+            atendimentos: "Ação registrada, mas houve falha ao recarregar os atendimentos.",
+            tarefas: "Ação registrada, mas houve falha ao recarregar a lista de tarefas."
           };
           window.PainelToast(falhas[document.body.getAttribute("data-tab")] || "Ação registrada, mas houve falha ao recarregar a lista.", true);
         });
@@ -154,7 +160,7 @@
         if (!tr.hidden) visiveis++;
       });
       var vazio = tabela.parentElement && tabela.parentElement.querySelector("[data-vazio-filtro]");
-      if (vazio) { vazio.hidden = visiveis > 0; tabela.hidden = visiveis === 0; }
+      if (vazio) { vazio.hidden = visiveis > 0; if (!i.hasAttribute("data-manter-tabela")) tabela.hidden = visiveis === 0; }
       var item = tabela.closest("[data-acc]");
       var cont = item && document.querySelector('button.acc-head[data-acc="' + item.getAttribute("data-acc") + '"] .count');
       if (cont) cont.textContent = String(visiveis);
