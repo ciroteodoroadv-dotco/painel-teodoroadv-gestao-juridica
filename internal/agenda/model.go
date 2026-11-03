@@ -124,3 +124,17 @@ func (e ErrConflito) Error() string { return "Já existe " + e.Com + " para este
 
 // Unwrap faz o conflito aparecer ao handler como erro de validação (mensagem na tela, dados preservados).
 func (e ErrConflito) Unwrap() error { return webx.Invalid{Msg: e.Error()} }
+
+// TipoClasse: audiência em vermelho, demais tipos neutros (selo sempre com texto).
+func (e Evento) TipoClasse() string {
+	if e.Tipo == "audiencia" {
+		return "badge-danger"
+	}
+	return "badge-neutral"
+}
+
+// DataFmt e HoraFmt formatam no fuso do escritório.
+func (e Evento) DataFmt() string { return e.Inicio.In(webx.SP()).Format("02/01/2006") }
+
+// HoraFmt devolve a hora de início.
+func (e Evento) HoraFmt() string { return e.Inicio.In(webx.SP()).Format("15:04") }

@@ -1,10 +1,10 @@
 {{define "content"}}{{with .Data}}
 <div class="cabeca">
   <h1>Agenda</h1>
-  {{if .CanWrite}}<a class="botao" href="/agenda/novo">Novo evento</a>{{end}}
+  <span>{{if .CanWrite}}<a class="botao" href="/agenda/novo">Novo evento</a> {{end}}<a href="/agenda">Voltar ao painel</a></span>
 </div>
-<form method="get" action="/agenda" class="busca linha"
-      hx-get="/agenda" hx-trigger="change" hx-target="#resultado" hx-push-url="true" hx-sync="this:replace">
+<form method="get" action="/agenda/todos" class="busca linha"
+      hx-get="/agenda/todos" hx-trigger="change" hx-target="#resultado" hx-push-url="true" hx-sync="this:replace">
   <div><label for="periodo">Período</label>
     <select id="periodo" name="periodo">
       <option value="proximos" {{if eq .Periodo "proximos"}}selected{{end}}>De hoje em diante</option>
@@ -37,9 +37,9 @@
 </table>
 </div>
 <nav class="paginas" aria-label="Páginas">
-  {{if .Anterior}}<a href="/agenda?periodo={{.Periodo}}&amp;tipo={{.Tipo}}&amp;pag={{.Anterior}}">← Anterior</a>{{end}}
+  {{if .Anterior}}<a href="/agenda/todos?periodo={{.Periodo}}&amp;tipo={{.Tipo}}&amp;pag={{.Anterior}}">← Anterior</a>{{end}}
   <span>Página {{.Pag}}</span>
-  {{if .Proxima}}<a href="/agenda?periodo={{.Periodo}}&amp;tipo={{.Tipo}}&amp;pag={{.Proxima}}">Próxima →</a>{{end}}
+  {{if .Proxima}}<a href="/agenda/todos?periodo={{.Periodo}}&amp;tipo={{.Tipo}}&amp;pag={{.Proxima}}">Próxima →</a>{{end}}
 </nav>
 {{else}}<p class="apoio">Nenhum evento neste filtro.</p>{{end}}
 {{end}}

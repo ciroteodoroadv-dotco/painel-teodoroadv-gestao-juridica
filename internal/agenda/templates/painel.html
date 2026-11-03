@@ -1,0 +1,72 @@
+{{define "content"}}{{with .Data}}
+<div class="agenda-head">
+  <div class="title-row">
+    <h1>Agenda</h1>
+    <span class="agenda-date">{{.Hoje}}</span>
+    <span class="agenda-date-chip">{{.HojeCurto}}</span>
+  </div>
+</div>
+<div class="cabeca">
+  <form method="get" action="/agenda" role="search" class="busca"
+        hx-get="/agenda" hx-trigger="input changed delay:400ms from:#buscaAgenda, search from:#buscaAgenda"
+        hx-target="#painel-agenda" hx-select="#painel-agenda" hx-swap="outerHTML" hx-push-url="true" hx-sync="this:replace">
+    {{if .Aberta}}<input type="hidden" name="cat" value="{{.Aberta}}">{{end}}
+    <label for="buscaAgenda">Buscar compromisso ou tarefa</label>
+    <input id="buscaAgenda" name="q" type="search" value="{{.Q}}" autocomplete="off" placeholder="buscar pelo título">
+  </form>
+  <div class="acoes">
+    <a href="/agenda/todos">Todos os eventos</a>
+    {{if .CanWrite}}<a class="botao" href="/agenda/novo" data-drawer="/agenda/novo">Novo compromisso</a>{{end}}
+  </div>
+</div>
+<div id="painel-agenda">
+  <nav class="acc-heads" aria-label="Categorias da agenda">
+    {{range .Resumos}}<a class="acc-head{{if .Aberta}} open{{end}}" href="{{.Href}}"{{if .Aberta}} aria-current="true"{{end}}>{{.Rotulo}} <span class="count">{{.Quantidade}}</span></a>
+    {{end}}
+  </nav>
+  {{if .Aberta}}
+  <section aria-labelledby="cat-titulo">
+    <h2 id="cat-titulo">{{.AbertaRotulo}}</h2>
+    {{if .Aviso}}<p class="apoio">{{.Aviso}}</p>{{end}}
+    {{if .Eventos}}
+    <div class="tabela">
+    <table>
+      <caption>{{len .Eventos}} compromisso(s) de hoje em diante. Horário de Brasília.</caption>
+      <thead><tr><th scope="col">Tipo</th><th scope="col">Compromisso</th><th scope="col">Data</th><th scope="col">Hora</th><th scope="col">Local</th><th scope="col">Processo</th></tr></thead>
+      <tbody>
+      {{range .Eventos}}
+      <tr><td><span class="badge {{.TipoClasse}}">{{.TipoRotulo}}</span></td>
+          <td><a href="/agenda/{{.ID}}">{{.Titulo}}</a></td>
+          <td>{{.DataFmt}}</td><td>{{.HoraFmt}}</td>
+          <td>{{if .Local}}{{.Local}}{{else}}—{{end}}</td>
+          <td>{{if .ProcessoNumero}}<a href="/processos/{{.ProcessoID}}"><code>{{.ProcessoNumero}}</code></a>{{else}}—{{end}}</td></tr>
+      {{end}}
+      </tbody>
+    </table>
+    </div>
+    {{end}}
+    {{if .Tarefas}}
+    <div class="tabela">
+    <table>
+      <caption>{{len .Tarefas}} tarefa(s) em aberto. O vencimento é o informado pelo advogado.</caption>
+      <thead><tr><th scope="col">Tarefa</th><th scope="col">Processo</th><th scope="col">Responsável</th><th scope="col">Vencimento</th><th scope="col">Prioridade</th><th scope="col">Situação</th></tr></thead>
+      <tbody>
+      {{range .Tarefas}}
+      <tr><td>{{.Titulo}}{{if .Subtitulo}}<br><small class="apoio">{{.Subtitulo}}</small>{{end}}</td>
+          <td>{{if .ProcessoNumero}}<code>{{.ProcessoNumero}}</code>{{else}}—{{end}}</td>
+          <td>{{if .Responsavel}}{{.Responsavel}}{{else}}—{{end}}</td>
+          <td>{{if .Vencimento}}{{.Vencimento.Format "02/01/2006"}}{{else}}—{{end}}</td>
+          <td><span class="badge {{.PrioridadeClasse}}">{{.PrioridadeRotulo}}</span></td>
+          <td>{{.Status}}{{if .AConferir}} <span class="badge badge-warn">A CONFERIR</span>{{end}}</td></tr>
+      {{end}}
+      </tbody>
+    </table>
+    </div>
+    {{end}}
+    {{if and (not .Eventos) (not .Tarefas) (not .Aviso)}}<div class="empty"><h3>Nada por aqui</h3><p>Não há {{.AbertaRotulo}} em aberto{{if .Q}} para esta busca{{end}}.</p></div>{{end}}
+  </section>
+  {{else}}
+  <p class="apoio">Escolha uma categoria acima para ver os compromissos e tarefas.</p>
+  {{end}}
+</div>
+{{end}}{{end}}

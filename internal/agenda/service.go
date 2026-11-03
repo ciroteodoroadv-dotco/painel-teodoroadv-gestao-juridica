@@ -17,6 +17,7 @@ type Service struct {
 	Processos ProcessoLookup
 	Pessoas   PessoaLookup
 	Users     UserLookup
+	Tarefas   TarefaLookup // opcional: tarefas em aberto para as categorias da Agenda
 }
 
 func (s *Service) record(ctx context.Context, tx pgx.Tx, ac webx.Actor, action, id string, meta map[string]string) error {

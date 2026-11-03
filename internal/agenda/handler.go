@@ -30,7 +30,8 @@ func page(name string) *template.Template {
 func (h *Handler) Register(rt *auth.Router) {
 	h.A.AddNav("Agenda", "/agenda", auth.PermAgendaRead)
 	h.A.AddWidget(h.widget)
-	rt.Handle("GET /agenda", auth.PermAgendaRead, h.list)
+	rt.Handle("GET /agenda", auth.PermAgendaRead, h.painel)
+	rt.Handle("GET /agenda/todos", auth.PermAgendaRead, h.list)
 	rt.Handle("GET /agenda/novo", auth.PermAgendaWrite, h.newForm)
 	rt.Handle("POST /agenda", auth.PermAgendaWrite, h.create)
 	rt.Handle("GET /agenda/processos", auth.PermAgendaWrite, h.processoOptions)
@@ -278,4 +279,18 @@ func (h *Handler) conflitoDe(ctx context.Context, e *Evento) string {
 		return ""
 	}
 	return "Atenção: já existe " + com + " para este responsável no mesmo horário."
+}
+
+// painel é a tela principal da Agenda: sete categorias com contador, uma aberta por vez (?cat=).
+func (h *Handler) painel(w http.ResponseWriter, r *http.Request, s *auth.Session) {
+	qs := r.URL.Query()
+	v, err := h.S.Painel(r.Context(), qs.Get("cat"), qs.Get("q"), time.Now())
+	if err != nil {
+		http.Error(w, "Erro interno.", http.StatusInternalServerError)
+		return
+	}
+	v.CanWrite = auth.Can(s.Role, auth.PermAgendaWrite)
+	pd := base(s, "Agenda")
+	pd.Data = v
+	h.A.Render(w, r, http.StatusOK, page("painel.html"), pd)
 }
