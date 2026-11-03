@@ -596,7 +596,7 @@ git commit -m "docs(fusao): aceite visual do plano 1"
 
 | # | Plano | O que herda do B (o melhor que vale aproveitar) |
 |---|---|---|
-| 2 | Agenda + Tarefas no visual do B | acordeão de categorias com contador; conflito de horário (crítico = audiência/prazo fatal); tarefas em 6 estados; PDF anexo validado por `%PDF`; baixa de intimação só quando **todas** as tarefas-filhas fecham (corrige `tarefas/http.go:148-160` do B) |
+| 2 | Agenda + Tarefas no visual do B | **7 categorias da Agenda** (Tarefas, Intimações, Audiências, Diligências, Reuniões, Ligações, **Aulas**) em pílulas com contador, uma aberta por vez; botão **"Novo compromisso"** com tipo Reunião/Ligação/Diligência/**Aula** (`CATEGORIAS_AGENDA` em `11-agenda.js:22-30`); tarefas com subtítulo Ligação/Reunião/Aula aparecem também na categoria correspondente (`11-agenda.js:39-44`); prazo fatal não é categoria, é campo da tarefa; conflito de horário (crítico = audiência/prazo fatal; audiência nunca é bloqueada); tarefas em 6 estados; PDF anexo validado por `%PDF`; baixa de intimação só quando **todas** as tarefas-filhas fecham (corrige `tarefas/http.go:148-160` do B) |
 | 3 | Processos e Pessoas completos | financeiro, próxima providência, andamentos; partes/responsáveis; CEP (ViaCEP) com timeout; máscaras CPF/CNPJ |
 | 4 | Atendimentos, Audiências, Diligências | 6 tipos de audiência; cancelamento com reautenticação (no v2: confirmação com 2º fator) |
 | 5 | Coletor DJEN + Intimações | paginação até 100, teto 10.000, 429, página repetida, sobreposição de 7 dias, dedupe por hash, tarefa idempotente; **sem** `prazo_fatal` automático: gera *sugestão* para o advogado confirmar |

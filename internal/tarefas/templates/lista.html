@@ -32,12 +32,12 @@
   <tbody>
   {{$w := .CanWrite}}{{range .Tarefas}}
   <tr>
-    <td>{{if .Vencimento}}{{.Vencimento.Format "02/01/2006"}}{{else}}—{{end}}{{if .Atrasada}} <strong class="erro">atrasada</strong>{{end}}</td>
-    <td>{{.Titulo}}{{if .AConferir}} <span class="selo">a conferir pelo advogado</span>{{end}}</td>
+    <td>{{if .Vencimento}}{{.Vencimento.Format "02/01/2006"}}{{else}}—{{end}}{{if .Atrasada}} <span class="badge badge-danger">atrasada</span>{{end}}</td>
+    <td>{{.Titulo}}{{if .AConferir}} <span class="badge badge-warn">a conferir pelo advogado</span>{{end}}</td>
     <td>{{if .ProcessoNumero}}<a href="/processos/{{.ProcessoID}}"><code>{{.ProcessoNumero}}</code></a>{{else}}—{{end}}</td>
     <td>{{.Responsavel}}</td>
     <td>{{.StatusRotulo}}</td>
-    {{if $w}}<td class="acoes">
+    {{if $w}}<td class="acoes row-actions">
       <a href="/tarefas/{{.ID}}/editar">Editar</a>
       {{if .Aberta}}<form method="post" action="/tarefas/{{.ID}}/status">
         <input type="hidden" name="csrf_token" value="{{$.CSRF}}"><input type="hidden" name="version" value="{{.Version}}">

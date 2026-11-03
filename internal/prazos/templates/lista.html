@@ -34,12 +34,12 @@
   {{$c := .CanConfirm}}{{$w := .CanWrite}}{{range .Prazos}}
   <tr class="nivel-{{.Nivel}}">
     <td><strong>{{.DataFatal.Format "02/01/2006"}}</strong><br>{{if .Rotulo}}<span class="selo-nivel">{{.Rotulo}}</span> {{end}}<small>{{.Texto}}</small></td>
-    <td>{{if eq .Situacao "a_conferir"}}<span class="selo">{{.SituacaoRotulo}}</span>{{else}}{{.SituacaoRotulo}}{{end}}
+    <td>{{if eq .Situacao "a_conferir"}}<span class="badge badge-warn">{{.SituacaoRotulo}}</span>{{else}}{{.SituacaoRotulo}}{{end}}
       {{if and .ConfirmadoEm .ConfirmadoPor}}<br><small class="apoio">por {{.ConfirmadoPor}}, {{.ConfirmadoEm.Format "02/01 15:04"}}</small>{{end}}</td>
     <td>{{.Descricao}}{{if .Fundamento}}<br><small class="apoio">{{.Fundamento}}</small>{{end}}</td>
     <td>{{if .ProcessoNumero}}<a href="/processos/{{.ProcessoID}}"><code>{{.ProcessoNumero}}</code></a>{{else}}—{{end}}</td>
     <td>{{.Responsavel}}</td>
-    <td class="acoes">
+    <td class="acoes row-actions">
       {{if and $w .Aberto}}<a href="/prazos/{{.ID}}/editar">Editar</a>{{end}}
       {{if $c}}
         {{if eq .Situacao "a_conferir"}}<form method="post" action="/prazos/{{.ID}}/confirmar"><input type="hidden" name="csrf_token" value="{{$.CSRF}}"><input type="hidden" name="version" value="{{.Version}}"><button type="submit">Confirmar</button></form>{{end}}

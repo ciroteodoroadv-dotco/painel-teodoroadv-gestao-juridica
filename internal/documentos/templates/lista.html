@@ -28,7 +28,7 @@
     <td>{{.Tipo}}</td><td>{{tam .Tamanho}}</td>
     <td>{{if .ProcessoNumero}}<a href="/processos/{{.ProcessoID}}"><code>{{.ProcessoNumero}}</code></a>{{end}}{{if .PessoaNome}} <a href="/pessoas/{{.PessoaID}}">{{.PessoaNome}}</a>{{end}}</td>
     <td>{{.CriadoEm.Format "02/01/2006"}}</td>
-    <td class="acoes">
+    <td class="acoes row-actions">
       {{if $w}}<form method="post" action="/documentos/{{.ID}}/excluir">
         <input type="hidden" name="csrf_token" value="{{$.CSRF}}"><input type="hidden" name="version" value="{{.Version}}">
         <button type="submit" class="secundario" data-confirmar="Confirmar exclusão">Excluir</button></form>{{end}}

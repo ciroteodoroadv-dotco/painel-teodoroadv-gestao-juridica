@@ -7,7 +7,8 @@
 <meta name="csrf-token" content="{{.CSRF}}">
 <meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false}'>
 <title>{{.Title}} · Painel Teodoro</title>
-<link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/painel.css">
+<link rel="stylesheet" href="/static/compat.css">
 <script src="/static/htmx.min.js" defer></script>
 <script src="/static/webauthn.js" defer></script>
 <script src="/static/app.js" defer></script>
@@ -15,25 +16,38 @@
 <body>
 <a class="pular" href="#conteudo">Pular para o conteúdo</a>
 {{if .Role}}
-<header class="topo">
-  <a class="marca" href="/">Painel Teodoro</a>
-  <nav aria-label="Principal">
-    <a href="/">Hoje</a>
-    {{range .Nav}}<a href="{{.Href}}">{{.Label}}</a>{{end}}
-    <a href="/conta">Minha conta</a>
-    {{if .CanUsers}}<a href="/admin/usuarios">Usuários</a>{{end}}
-    {{if .CanAudit}}<a href="/admin/auditoria">Auditoria</a>{{end}}
-  </nav>
-  <form method="post" action="/logout" class="sair">
-    <input type="hidden" name="csrf_token" value="{{.CSRF}}">
-    <span class="quem">{{.Email}} · {{.Role}}</span>
-    <button type="submit" class="secundario">Sair</button>
-  </form>
-</header>
-{{end}}
-<main id="conteudo" class="{{if .Role}}pagina{{else}}cartao{{end}}">
+<div id="app">
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Painel Teodoro — início"><img class="seal-logo" src="/static/logo.png" alt="" width="150" height="150"></a>
+    <nav class="tabs" aria-label="Principal">
+      <a href="/">Hoje</a>
+      {{range .Nav}}<a href="{{.Href}}">{{.Label}}</a>{{end}}
+      <a href="/conta">Minha conta</a>
+      {{if .CanUsers}}<a href="/admin/usuarios">Usuários</a>{{end}}
+      {{if .CanAudit}}<a href="/admin/auditoria">Auditoria</a>{{end}}
+    </nav>
+    <form method="post" action="/logout" class="sair">
+      <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+      <span class="quem">{{.Email}}<br>{{.Role}}</span>
+      <button type="submit" class="secundario">Sair</button>
+    </form>
+  </aside>
+  <div class="main">
+    <main id="conteudo" class="pagina">
+{{template "content" .}}
+    </main>
+  </div>
+</div>
+<aside id="drawer" class="drawer-overlay hidden" aria-hidden="true">
+  <div class="drawer" role="dialog" aria-labelledby="drawer-titulo" aria-modal="false" tabindex="-1">
+    <div id="drawer-corpo"></div>
+  </div>
+</aside>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+{{else}}
+<main id="conteudo" class="cartao">
 {{template "content" .}}
 </main>
+{{end}}
 </body>
 </html>{{end}}
-
