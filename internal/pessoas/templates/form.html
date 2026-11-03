@@ -1,30 +1,145 @@
-{{define "content"}}{{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
-{{with .Data}}
-<form method="post" action="{{if .IsNew}}/pessoas{{else}}/pessoas/{{.ID}}{{end}}" data-protege class="grade">
-  <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
-  {{if not .IsNew}}<input type="hidden" name="version" value="{{.Version}}">{{end}}
+{{define "form"}}{{$p := .P}}{{$pj := $p.Juridica}}{{if .Novo}}<h2>Nova pessoa</h2>
+    <p class="drawer-sub">Qualificação nos termos do art. 319 do CPC.</p>{{else}}<h2>Editar pessoa</h2>
+    <p class="drawer-sub">{{$p.NomeLista}} — {{$p.Codigo}}</p>{{end}}
+    <form data-drawer-form data-protege method="post" action="{{if .Novo}}/pessoas{{else}}/pessoas/{{$p.ID}}{{end}}">{{if not .Novo}}
+      <input type="hidden" name="version" value="{{$p.Version}}">{{end}}
+      <div class="field">
+        <label>Tipo de pessoa</label>
+        <div class="radio-row radio-row-flat">
+          <label class="radio-opt"><input type="radio" name="tipo_pessoa" value="Física" data-exibe="#fsPF"{{if not $pj}} checked{{end}}{{if not $.Novo}} disabled{{end}}> Física</label>
+          <label class="radio-opt"><input type="radio" name="tipo_pessoa" value="Jurídica" data-exibe="#fsPJ"{{if $pj}} checked{{end}}{{if not $.Novo}} disabled{{end}}> Jurídica</label>
+        </div>
+        {{if not .Novo}}<div class="hint">Tipo de pessoa não se troca depois de criada — exclua e recrie, se for o caso.</div>{{end}}
+      </div>
 
-  <div><label for="tipo">Tipo</label>
-    <select id="tipo" name="tipo" required>
-      <option value="PF" {{if eq .In.Tipo "PF"}}selected{{end}}>Pessoa física</option>
-      <option value="PJ" {{if eq .In.Tipo "PJ"}}selected{{end}}>Pessoa jurídica</option>
-    </select></div>
-  <div><label for="papel">Papel</label>
-    <select id="papel" name="papel" required>
-      {{$p := .In.Papel}}{{range .Papeis}}<option value="{{.Valor}}" {{if eq .Valor $p}}selected{{end}}>{{.Rotulo}}</option>{{end}}
-    </select></div>
-  <div class="larga"><label for="nome">Nome</label>
-    <input id="nome" name="nome" value="{{.In.Nome}}" required minlength="2" maxlength="200" autofocus></div>
-  <div><label for="documento">CPF / CNPJ <small class="apoio">(opcional; guardado cifrado)</small></label>
-    <input id="documento" name="documento" value="{{.In.Documento}}" inputmode="numeric" autocomplete="off"></div>
-  <div><label for="telefone">Telefone</label>
-    <input id="telefone" name="telefone" value="{{.In.Telefone}}" inputmode="tel" autocomplete="off"></div>
-  <div class="larga"><label for="email">E-mail</label>
-    <input id="email" name="email" type="email" value="{{.In.Email}}" maxlength="200" autocomplete="off"></div>
-  <div><label for="retencao_ate">Guardar até <small class="apoio">(retenção, opcional)</small></label>
-    <input id="retencao_ate" name="retencao_ate" type="date" value="{{.In.RetencaoAte}}"></div>
+      <fieldset id="fsPF"{{if $pj}} hidden{{end}}>
+        <legend>Pessoa física</legend>
+        <div class="field">
+          <label for="pNome">Nome completo</label>
+          <input type="text" id="pNome" name="nome_completo" class="uc" data-maiusculo data-req value="{{$p.NomeCompleto}}"{{if not $pj}} required{{end}}>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="pCpf">CPF</label>
+            <input type="text" id="pCpf" name="cpf" inputmode="numeric" autocomplete="off" maxlength="14" data-mask="cpf" data-validate="cpf" value="{{$p.CPFMask}}">
+          </div>
+          <div class="field">
+            <label for="pRg">RG (+ órgão expedidor)</label>
+            <input type="text" id="pRg" name="rg" value="{{$p.RG}}" placeholder="00.000.000-0 SSP/UF">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="pEstCivil">Estado civil</label>
+            <select id="pEstCivil" name="estado_civil"><option value="">—</option>{{range $.Estados}}<option{{if eq . $p.EstadoCivil}} selected{{end}}>{{.}}</option>{{end}}</select>
+          </div>
+          <div class="field">
+            <label for="pProfissao">Profissão</label>
+            <input type="text" id="pProfissao" name="profissao" value="{{$p.Profissao}}">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="pNacion">Nacionalidade</label>
+            <input type="text" id="pNacion" name="nacionalidade" value="{{$p.Nacionalidade}}">
+          </div>
+          <div class="field">
+            <label for="pNasc">Data de nascimento</label>
+            <input type="date" id="pNasc" name="data_nascimento" value="{{$p.Nascimento}}">
+          </div>
+        </div>
+      </fieldset>
 
-  <div class="larga"><button type="submit">Salvar</button>
-    <a class="botao secundario" href="{{if .IsNew}}/pessoas{{else}}/pessoas/{{.ID}}{{end}}">Cancelar</a></div>
-</form>
-{{end}}{{end}}
+      <fieldset id="fsPJ"{{if not $pj}} hidden{{end}}>
+        <legend>Pessoa jurídica</legend>
+        <div class="field">
+          <label for="pRazao">Razão social</label>
+          <input type="text" id="pRazao" name="razao_social" class="uc" data-maiusculo data-req value="{{$p.RazaoSocial}}"{{if $pj}} required{{end}}>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="pFantasia">Nome fantasia</label>
+            <input type="text" id="pFantasia" name="nome_fantasia" class="uc" data-maiusculo value="{{$p.NomeFantasia}}">
+          </div>
+          <div class="field">
+            <label for="pCnpj">CNPJ</label>
+            <input type="text" id="pCnpj" name="cnpj" inputmode="numeric" autocomplete="off" maxlength="18" data-mask="cnpj" data-validate="cnpj" value="{{$p.CNPJMask}}">
+          </div>
+        </div>
+        <div class="row3">
+          <div class="field">
+            <label for="pRepNome">Representante legal</label>
+            <input type="text" id="pRepNome" name="representante_nome" value="{{$p.RepresentanteNome}}">
+          </div>
+          <div class="field">
+            <label for="pRepCpf">CPF do representante</label>
+            <input type="text" id="pRepCpf" name="representante_cpf" maxlength="14" data-mask="cpf" data-validate="cpf" value="{{$p.RepCPFMask}}">
+          </div>
+          <div class="field">
+            <label for="pRepCargo">Cargo</label>
+            <input type="text" id="pRepCargo" name="representante_cargo" value="{{$p.RepresentanteCargo}}">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Endereço</legend>
+        <div class="row3">
+          <div class="field span2">
+            <label for="pLogr">Logradouro</label>
+            <input type="text" id="pLogr" name="logradouro" value="{{$p.Logradouro}}">
+          </div>
+          <div class="field">
+            <label for="pNum">Número</label>
+            <input type="text" id="pNum" name="numero" value="{{$p.Numero}}">
+          </div>
+        </div>
+        <div class="row3">
+          <div class="field">
+            <label for="pCompl">Complemento</label>
+            <input type="text" id="pCompl" name="complemento" value="{{$p.Complemento}}">
+          </div>
+          <div class="field">
+            <label for="pBairro">Bairro</label>
+            <input type="text" id="pBairro" name="bairro" value="{{$p.Bairro}}">
+          </div>
+          <div class="field">
+            <label for="pCep">CEP</label>
+            <div class="cep-linha">
+              <input type="text" id="pCep" name="cep" maxlength="9" data-mask="cep" value="{{$p.CEPMask}}">
+              <button type="button" class="btn btn-ghost btn-small" data-buscar-cep>Buscar CEP</button>
+            </div>
+            <div class="hint" data-cep-fonte></div>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="pCidade">Cidade</label>
+            <input type="text" id="pCidade" name="cidade" value="{{$p.Cidade}}">
+          </div>
+          <div class="field">
+            <label for="pUf">UF</label>
+            <input type="text" id="pUf" name="uf" maxlength="2" value="{{$p.UF}}" class="uc" data-maiusculo>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="row2">
+        <div class="field">
+          <label for="pEmail">E-mail</label>
+          <input type="email" id="pEmail" name="email" autocomplete="email" value="{{$p.Email}}">
+        </div>
+        <div class="field">
+          <label for="pTel">Telefone</label>
+          <input type="tel" id="pTel" name="telefone" autocomplete="tel" inputmode="tel" maxlength="15" data-mask="phone" value="{{$p.TelefoneMask}}">
+        </div>
+      </div>
+      <div class="field">
+        <label for="pObs">Observações</label>
+        <textarea id="pObs" name="observacoes">{{$p.Observacoes}}</textarea>
+      </div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar {{if .Novo}}cadastro{{else}}alterações{{end}}</button>
+      </div>
+    </form>{{end}}

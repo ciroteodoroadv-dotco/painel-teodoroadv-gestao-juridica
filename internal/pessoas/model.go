@@ -1,96 +1,149 @@
-// Package pessoas cuida do cadastro de pessoas (clientes, partes, testemunhas).
-// Documento (CPF/CNPJ) é sensível: guardado cifrado, buscável por índice cego, mascarado nas telas.
+// Package pessoas cuida do cadastro de pessoas (clientes, partes adversas, terceiros interessados).
+// A ficha segue o painel B (art. 319 do CPC). CPF, CNPJ, RG e CPF do representante são sensíveis:
+// guardados cifrados, mascarados nas telas de quem só lê. O papel da pessoa NÃO é um campo: deriva dos processos.
 package pessoas
 
 import (
-	"net/mail"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"painelteodoro/internal/platform/br"
 	"painelteodoro/internal/platform/webx"
 )
 
-// Papéis aceitos e seus rótulos.
-var Papeis = []Opcao{
-	{Valor: "cliente", Rotulo: "Cliente"}, {Valor: "parte_contraria", Rotulo: "Parte contrária"},
-	{Valor: "testemunha", Rotulo: "Testemunha"}, {Valor: "outro", Rotulo: "Outro"},
-}
-
 // Opcao é um valor/rótulo de lista suspensa.
 type Opcao = webx.Opcao
 
+// EstadosCivis é a lista do painel B (OPCOES.estadoCivil), na mesma ordem.
+var EstadosCivis = []string{"Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)", "União Estável", "Separado(a) Judicialmente"}
+
+// Tipos de pessoa (os mesmos valores do painel B).
+const (
+	Fisica   = "Física"
+	Juridica = "Jurídica"
+)
+
 // Pessoa é a visão de leitura.
 type Pessoa struct {
-	ID, Tipo, Nome, Papel  string
-	Email, Telefone        string
-	DocMask                string
-	RetencaoAte            *time.Time
-	Version                int
-	CriadoEm, AtualizadoEm time.Time
+	ID, Codigo, TipoPessoa, Nome                        string // Nome = nome de exibição (nome completo ou razão social)
+	NomeCompleto, EstadoCivil, Profissao, Nacionalidade string
+	DataNascimento                                      *time.Time
+	RazaoSocial, NomeFantasia                           string
+	RepresentanteNome, RepresentanteCargo               string
+	Logradouro, Numero, Complemento, Bairro             string
+	CEP, Cidade, UF                                     string
+	Email, Telefone, Observacoes                        string
+	Documento                                           string // CPF/CNPJ: completo e formatado, ou mascarado
+	RG, RepresentanteCPF                                string // só preenchidos por GetCompleto (auditado)
+	Version                                             int
+	CriadoEm, AtualizadoEm                              time.Time
+
+	encDoc, encRG, encRep []byte
 }
 
-// PapelRotulo devolve o rótulo do papel.
-func (p Pessoa) PapelRotulo() string { return rotulo(p.Papel) }
+// Juridica diz se é pessoa jurídica.
+func (p Pessoa) Juridica() bool { return p.TipoPessoa == Juridica }
 
-func rotulo(v string) string {
-	for _, o := range Papeis {
-		if o.Valor == v {
-			return o.Rotulo
+// NomeLista é o texto da coluna Nome (pessoaNome do B).
+func (p Pessoa) NomeLista() string {
+	if p.Juridica() {
+		if p.RazaoSocial == "" {
+			return "(sem razão social)"
 		}
+		return p.RazaoSocial
 	}
-	return v
+	if p.NomeCompleto == "" {
+		return "(sem nome)"
+	}
+	return p.NomeCompleto
 }
 
-// Input é o que vem do formulário (texto cru).
-type Input struct {
-	Tipo, Nome, Documento, Email, Telefone, Papel, RetencaoAte string
+// TipoLista é o texto da coluna Tipo.
+func (p Pessoa) TipoLista() string {
+	if p.TipoPessoa == "" {
+		return "—"
+	}
+	return p.TipoPessoa
 }
 
-type normalized struct {
-	tipo, nome, doc, email, tel, papel string
-	retencao                           *time.Time
+// DocLista é o texto da coluna Documento (pessoaDoc do B).
+func (p Pessoa) DocLista() string {
+	if p.Documento == "" {
+		return "—"
+	}
+	return p.Documento
 }
 
-func (in Input) normalize() (normalized, error) {
-	n := normalized{tipo: in.Tipo, papel: in.Papel, nome: strings.TrimSpace(in.Nome)}
-	if n.tipo != "PF" && n.tipo != "PJ" {
-		return n, webx.Invalidf("Escolha se é pessoa física ou jurídica.")
+// CodigoLista é o texto da coluna Código.
+func (p Pessoa) CodigoLista() string {
+	if p.Codigo == "" {
+		return "—"
 	}
-	if c := utf8.RuneCountInString(n.nome); c < 2 || c > 200 {
-		return n, webx.Invalidf("Informe o nome (de 2 a 200 caracteres).")
-	}
-	if rotulo(n.papel) == n.papel {
-		return n, webx.Invalidf("Escolha o papel da pessoa.")
-	}
-	if d := strings.TrimSpace(in.Documento); d != "" {
-		doc, err := br.NormalizeDocumento(n.tipo, d)
-		if err != nil {
-			return n, webx.Invalidf(err.Error() + " (confira os números e se o tipo PF/PJ está certo).")
-		}
-		n.doc = doc
-	}
-	if e := strings.TrimSpace(in.Email); e != "" {
-		a, err := mail.ParseAddress(e)
-		if err != nil || a.Address != e || len(e) > 200 {
-			return n, webx.Invalidf("E-mail inválido.")
-		}
-		n.email = e
-	}
-	if t := strings.TrimSpace(in.Telefone); t != "" {
-		d := br.Digits(t)
-		if len(d) < 8 || len(d) > 13 {
-			return n, webx.Invalidf("Telefone inválido (use DDD + número).")
-		}
-		n.tel = d
-	}
-	if r := strings.TrimSpace(in.RetencaoAte); r != "" {
-		t, err := time.Parse("2006-01-02", r)
-		if err != nil {
-			return n, webx.Invalidf("Data de retenção inválida.")
-		}
-		n.retencao = &t
-	}
-	return n, nil
+	return p.Codigo
 }
+
+// Nascimento devolve a data no formato do campo date (AAAA-MM-DD) ou vazio.
+func (p Pessoa) Nascimento() string {
+	if p.DataNascimento == nil {
+		return ""
+	}
+	return p.DataNascimento.Format("2006-01-02")
+}
+
+// CPFMask devolve o CPF formatado para preencher o formulário (vazio para pessoa jurídica).
+func (p Pessoa) CPFMask() string {
+	if p.Juridica() {
+		return ""
+	}
+	return p.Documento
+}
+
+// CNPJMask devolve o CNPJ formatado (vazio para pessoa física).
+func (p Pessoa) CNPJMask() string {
+	if !p.Juridica() {
+		return ""
+	}
+	return p.Documento
+}
+
+// RepCPFMask devolve o CPF do representante formatado.
+func (p Pessoa) RepCPFMask() string { return br.FormatDocumento(p.RepresentanteCPF) }
+
+// CEPMask devolve o CEP como #####-###.
+func (p Pessoa) CEPMask() string { return MaskCEP(p.CEP) }
+
+// TelefoneMask devolve o telefone como (##) #####-####.
+func (p Pessoa) TelefoneMask() string { return MaskTelefone(p.Telefone) }
+
+// MaskCEP aplica #####-### (igual a maskCEP do B).
+func MaskCEP(v string) string {
+	d := br.Digits(v)
+	if len(d) > 8 {
+		d = d[:8]
+	}
+	if len(d) <= 5 {
+		return d
+	}
+	return d[:5] + "-" + d[5:]
+}
+
+// MaskTelefone aplica (##) ####-#### ou (##) #####-#### (igual a maskPhone do B).
+func MaskTelefone(v string) string {
+	d := br.Digits(v)
+	if len(d) > 11 {
+		d = d[:11]
+	}
+	switch {
+	case len(d) == 0:
+		return ""
+	case len(d) <= 2:
+		return "(" + d
+	case len(d) <= 6:
+		return "(" + d[:2] + ") " + d[2:]
+	case len(d) <= 10:
+		return "(" + d[:2] + ") " + d[2:6] + "-" + d[6:]
+	}
+	return "(" + d[:2] + ") " + d[2:7] + "-" + d[7:]
+}
+
+func upper(s string) string { return strings.ToUpper(strings.TrimSpace(s)) }

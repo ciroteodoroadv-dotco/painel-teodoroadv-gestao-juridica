@@ -1,4 +1,4 @@
-/* Formulário no drawer, acordeão, linhas repetíveis, "Outro" revela campo e filtro de tabela.
+/* Formulário no drawer, acordeão, linhas repetíveis, campos que aparecem/somem e filtro de tabela.
    Tudo por atributos data-* e delegação de eventos (sem handler inline). */
 (function () {
   "use strict";
@@ -8,7 +8,8 @@
 
   // ---- Formulário no drawer: <form data-drawer-form action="/x" method="post">
   // 200 + HTML  -> troca o drawer (erro de validação mantém o drawer aberto);
-  // X-Painel-Ok -> fecha o drawer, mostra o toast e recarrega o conteúdo da página.
+  // X-Painel-Ok -> fecha o drawer, mostra o toast e recarrega o conteúdo da página;
+  // texto simples (erro) -> toast de erro e o formulário continua como estava.
   document.addEventListener("submit", function (ev) {
     var f = ev.target;
     if (!f.matches || !f.matches("form[data-drawer-form]")) return;
@@ -75,9 +76,11 @@
     }
   });
 
-  // ---- "Outro" revela campo: <select data-mostra-quando="Outro" data-mostra="#idCampo">.
+  // ---- Revela campo: <select data-mostra-quando="Outro" data-mostra="#idCampo">. Nas linhas repetíveis, onde
+  // não há id único, data-mostra="proximo" revela o campo que vem logo depois do select.
   function aplicarMostra(sel) {
-    var alvo = document.querySelector(sel.getAttribute("data-mostra"));
+    var a = sel.getAttribute("data-mostra");
+    var alvo = a === "proximo" ? sel.nextElementSibling : document.querySelector(a);
     if (alvo) alvo.hidden = sel.value !== sel.getAttribute("data-mostra-quando");
   }
   document.addEventListener("change", function (ev) {
@@ -87,16 +90,68 @@
     document.querySelectorAll("select[data-mostra-quando]").forEach(aplicarMostra);
   });
 
-  // ---- Filtro de tabela no navegador: <input data-filtro="#idTabela"> (sem acento, sem maiúscula).
+  // ---- Alterna blocos pela opção marcada: <input type="radio" name="x" data-exibe="#bloco">.
+  // Aparece o bloco do radio marcado; somem os dos outros radios do grupo. Campos com data-req dentro do
+  // bloco visível passam a ser obrigatórios (e deixam de ser no oculto), como no B.
+  document.addEventListener("change", function (ev) {
+    var r = ev.target;
+    if (!r.matches || !r.matches("input[type=radio][data-exibe]")) return;
+    (r.form || document).querySelectorAll('input[type=radio][data-exibe][name="' + r.name + '"]').forEach(function (o) {
+      var bloco = document.querySelector(o.getAttribute("data-exibe"));
+      if (!bloco) return;
+      bloco.hidden = !o.checked;
+      bloco.querySelectorAll("[data-req]").forEach(function (c) { c.required = o.checked; });
+    });
+  });
+
+  // ---- Caixa de marcar que vira 0/1: <input type="hidden" name="x" value="0"><input type="checkbox" data-espelha>.
+  // O campo escondido (logo antes) leva a marcação, mantendo as listas paralelas das linhas repetíveis alinhadas.
+  document.addEventListener("change", function (ev) {
+    var c = ev.target;
+    if (!c.matches || !c.matches("input[type=checkbox][data-espelha]")) return;
+    var h = c.previousElementSibling;
+    if (h) h.value = c.checked ? "1" : "0";
+  });
+
+  // ---- Maiúsculas ao digitar: <input data-maiusculo> (toLocaleUpperCase('pt-BR'), mantendo o cursor).
+  document.addEventListener("input", function (ev) {
+    var i = ev.target;
+    if (!i.matches || !i.matches("input[data-maiusculo]")) return;
+    var a = i.selectionStart, b = i.selectionEnd;
+    i.value = i.value.toLocaleUpperCase("pt-BR");
+    if (a !== null) i.setSelectionRange(a, b);
+  });
+
+  // ---- Buscar CEP: a consulta externa só será ligada em plano futuro (integração desligada por padrão).
+  document.addEventListener("click", function (ev) {
+    var e = el(ev.target), b = e && e.closest("[data-buscar-cep]");
+    if (!b) return;
+    var campo = b.form && b.form.elements.cep;
+    var digitos = campo ? campo.value.replace(/\D/g, "") : "";
+    if (digitos.length !== 8) { window.PainelToast("Informe um CEP com oito dígitos.", true); return; }
+    window.PainelToast("Consulta de CEP indisponível neste painel.", true);
+  });
+
+  // ---- Filtro de tabela no navegador: <input data-filtro="SELETOR"> (sem acento, sem maiúscula).
+  // Casa com o atributo data-busca da linha, se houver; senão, com o texto dela. Dentro de um acordeão,
+  // atualiza o número do botão do grupo e troca a tabela vazia pelo aviso <div data-vazio-filtro hidden>.
   function normaliza(s) { return String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
   document.addEventListener("input", function (ev) {
     var i = ev.target;
     if (!i.matches || !i.matches("input[data-filtro]")) return;
-    var tabela = document.querySelector(i.getAttribute("data-filtro"));
-    if (!tabela) return;
     var q = normaliza(i.value.trim());
-    tabela.querySelectorAll("tbody tr").forEach(function (tr) {
-      tr.hidden = q !== "" && normaliza(tr.textContent).indexOf(q) < 0;
+    document.querySelectorAll(i.getAttribute("data-filtro")).forEach(function (tabela) {
+      var visiveis = 0;
+      tabela.querySelectorAll("tbody tr").forEach(function (tr) {
+        var texto = tr.hasAttribute("data-busca") ? tr.getAttribute("data-busca") : tr.textContent;
+        tr.hidden = q !== "" && normaliza(texto).indexOf(q) < 0;
+        if (!tr.hidden) visiveis++;
+      });
+      var vazio = tabela.parentElement && tabela.parentElement.querySelector("[data-vazio-filtro]");
+      if (vazio) { vazio.hidden = visiveis > 0; tabela.hidden = visiveis === 0; }
+      var item = tabela.closest("[data-acc]");
+      var cont = item && document.querySelector('button.acc-head[data-acc="' + item.getAttribute("data-acc") + '"] .count');
+      if (cont) cont.textContent = String(visiveis);
     });
   });
 })();

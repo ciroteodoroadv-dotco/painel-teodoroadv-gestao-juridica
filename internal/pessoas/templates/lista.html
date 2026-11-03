@@ -1,32 +1,22 @@
-{{define "content"}}{{with .Data}}
-<form method="get" action="/pessoas" role="search" class="busca">
-  <label for="q">Buscar por nome ou por CPF/CNPJ completo</label>
-  <input id="q" name="q" type="search" value="{{.Q}}" autocomplete="off"
-         hx-get="/pessoas" hx-trigger="input changed delay:300ms, search" hx-target="#resultado"
-         hx-push-url="true" hx-sync="this:replace">
-</form>
-<div id="resultado" aria-live="polite">{{template "resultado" .}}</div>
-{{end}}{{end}}
+{{define "stats"}}{{with .Data}}{{if .Total}}<div class="acc-heads">{{range .Grupos}}
+    <button class="acc-head" data-acc="pessoas:{{.Chave}}"><span>{{.Rotulo}}</span><span class="count">{{.Quantidade}}</span></button>{{end}}</div>{{end}}{{end}}{{end}}
 
-{{define "resultado"}}
-{{if .Pessoas}}
-<div class="tabela">
-<table>
-  <caption>{{len .Pessoas}} resultado(s) nesta página</caption>
-  <thead><tr><th scope="col">Nome</th><th scope="col">Tipo</th><th scope="col">Papel</th><th scope="col">Documento</th></tr></thead>
-  <tbody>
-  {{range .Pessoas}}
-  <tr><td><a href="/pessoas/{{.ID}}">{{.Nome}}</a></td><td>{{.Tipo}}</td><td>{{.PapelRotulo}}</td><td><code>{{if .DocMask}}{{.DocMask}}{{else}}—{{end}}</code></td></tr>
-  {{end}}
-  </tbody>
-</table>
-</div>
-<nav class="paginas" aria-label="Páginas">
-  {{if .Anterior}}<a href="/pessoas?q={{.Q}}&amp;pag={{.Anterior}}">← Anterior</a>{{end}}
-  <span>Página {{.Pag}}</span>
-  {{if .Proxima}}<a href="/pessoas?q={{.Q}}&amp;pag={{.Proxima}}">Próxima →</a>{{end}}
-</nav>
-{{else}}
-<p class="apoio">Nenhuma pessoa encontrada.</p>
-{{end}}
-{{end}}
+{{define "content"}}{{with .Data}}<div class="toolbar">
+    <label class="sr-only" for="buscaPessoas">Buscar pessoas</label>
+    <input id="buscaPessoas" class="search" autocomplete="off" placeholder="Buscar por nome…" data-filtro=".acc table">
+  </div>
+{{if not .Total}}<div class="empty"><h3>Nenhuma pessoa cadastrada</h3><p>Crie a primeira pessoa pelo botão "Nova pessoa" acima.</p></div>
+{{else}}{{$w := .CanWrite}}<div class="acc">{{range .Grupos}}
+    <div class="acc-item" data-acc="pessoas:{{.Chave}}">
+      <div class="acc-body">{{if .Pessoas}}<table><thead><tr><th>Código</th><th>Nome</th><th>Tipo</th><th>Documento</th><th></th></tr></thead><tbody>{{range .Pessoas}}<tr data-busca="{{.NomeLista}}">
+    <td>{{.CodigoLista}}</td>
+    <td>{{.NomeLista}}</td>
+    <td>{{.TipoLista}}</td>
+    <td class="tabular">{{.DocLista}}</td>
+    <td class="row-actions">{{if $w}}
+      <button type="button" class="btn-text" data-drawer="/pessoas/{{.ID}}/editar">Editar</button>
+      <button type="button" class="btn-danger-text" data-drawer="/pessoas/{{.ID}}/excluir">Excluir</button>{{end}}
+    </td>
+  </tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhuma pessoa nesta categoria.</p></div>{{else}}<div class="empty"><p>Nenhuma pessoa nesta categoria.</p></div>{{end}}</div>
+    </div>{{end}}</div>
+{{end}}{{end}}{{end}}

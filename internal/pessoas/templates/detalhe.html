@@ -1,19 +1,17 @@
 {{define "content"}}{{with .Data}}{{$p := .P}}
-{{if .Aviso}}<p class="ok" role="status">Pessoa cadastrada.</p>{{end}}
 <dl class="ficha">
-  <dt>Tipo</dt><dd>{{if eq $p.Tipo "PF"}}Pessoa física{{else}}Pessoa jurídica{{end}}</dd>
-  <dt>Papel</dt><dd>{{$p.PapelRotulo}}</dd>
-  <dt>Documento</dt><dd><code>{{if $p.DocMask}}{{$p.DocMask}}{{else}}—{{end}}</code></dd>
+  <dt>Código</dt><dd>{{$p.CodigoLista}}</dd>
+  <dt>Tipo</dt><dd>{{$p.TipoLista}}</dd>
+  <dt>{{if $p.Juridica}}CNPJ{{else}}CPF{{end}}</dt><dd><code>{{$p.DocLista}}</code></dd>
   <dt>E-mail</dt><dd>{{if $p.Email}}{{$p.Email}}{{else}}—{{end}}</dd>
-  <dt>Telefone</dt><dd>{{if $p.Telefone}}{{$p.Telefone}}{{else}}—{{end}}</dd>
-  {{if $p.RetencaoAte}}<dt>Guardar até</dt><dd>{{$p.RetencaoAte.Format "02/01/2006"}}</dd>{{end}}
+  <dt>Telefone</dt><dd>{{if $p.Telefone}}{{$p.TelefoneMask}}{{else}}—{{end}}</dd>
 </dl>
 
 <p><a href="/documentos?pessoa={{$p.ID}}">Documentos desta pessoa</a></p>
 
 <section aria-labelledby="d-proc">
-  <h2 id="d-proc">Processos em que é parte</h2>
-  {{if .Refs}}<ul class="lista">{{range .Refs}}<li><a href="/processos/{{.ID}}">{{.Numero}}</a> <small class="apoio">· {{.Qualidade}}</small></li>{{end}}</ul>
+  <h2 id="d-proc">Processos em que aparece</h2>
+  {{if .Refs}}<ul class="lista">{{range .Refs}}<li><a href="/processos/{{.ProcessoID}}">{{.NumeroOuTitulo}}</a> <small class="apoio">· {{.Rotulo}}</small></li>{{end}}</ul>
   {{else}}<p class="apoio">Nenhum.</p>{{end}}
 </section>
 
@@ -21,12 +19,6 @@
 <section aria-labelledby="d-acoes" class="bloco">
   <h2 id="d-acoes">Ações</h2>
   <p><a class="botao secundario" href="/pessoas/{{$p.ID}}/relatorio">Relatório “dados desta pessoa” (pedido do titular)</a></p>
-  <form method="post" action="/pessoas/{{$p.ID}}/excluir">
-    <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
-    <input type="hidden" name="version" value="{{$p.Version}}">
-    <button type="submit" class="perigo" data-confirmar="Clique de novo para confirmar a exclusão">Excluir pessoa</button>
-    <small class="apoio">A exclusão apenas oculta o registro e fica na auditoria.</small>
-  </form>
 </section>
 {{end}}
 {{end}}{{end}}

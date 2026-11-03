@@ -3,6 +3,7 @@ package pessoas
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 
@@ -12,49 +13,130 @@ import (
 	"painelteodoro/internal/platform/webx"
 )
 
-const cols = `id, tipo, nome, documento_enc, coalesce(email,''), coalesce(telefone,''), papel,
-	retencao_ate, version, created_at, updated_at`
+const cols = `id, codigo, tipo_pessoa, nome_exibicao, nome_completo, documento_enc, rg_enc, estado_civil, profissao,
+	nacionalidade, data_nascimento, razao_social, nome_fantasia, representante_nome, representante_cpf_enc,
+	representante_cargo, logradouro, numero, complemento, bairro, cep, cidade, coalesce(uf,''), email, telefone,
+	observacoes, version, created_at, updated_at`
 
-func (s *Service) scan(row pgx.Row) (*Pessoa, error) {
+// limiteLista protege a tela: o acordeão do B mostra tudo, sem paginação.
+const limiteLista = 2000
+
+func scan(row pgx.Row) (*Pessoa, error) {
 	var p Pessoa
-	var enc []byte
-	if err := row.Scan(&p.ID, &p.Tipo, &p.Nome, &enc, &p.Email, &p.Telefone, &p.Papel,
-		&p.RetencaoAte, &p.Version, &p.CriadoEm, &p.AtualizadoEm); err != nil {
-		return nil, err
-	}
-	p.DocMask = br.MaskDocumento(s.unseal(enc))
-	return &p, nil
+	err := row.Scan(&p.ID, &p.Codigo, &p.TipoPessoa, &p.Nome, &p.NomeCompleto, &p.encDoc, &p.encRG, &p.EstadoCivil,
+		&p.Profissao, &p.Nacionalidade, &p.DataNascimento, &p.RazaoSocial, &p.NomeFantasia, &p.RepresentanteNome,
+		&p.encRep, &p.RepresentanteCargo, &p.Logradouro, &p.Numero, &p.Complemento, &p.Bairro, &p.CEP, &p.Cidade,
+		&p.UF, &p.Email, &p.Telefone, &p.Observacoes, &p.Version, &p.CriadoEm, &p.AtualizadoEm)
+	return &p, err
 }
 
-// Get devolve uma pessoa não excluída (documento só mascarado).
+// mostrarDocumento preenche Documento: completo e formatado, ou mascarado.
+func (s *Service) mostrarDocumento(p *Pessoa, completo bool) {
+	d := s.unseal(purposeDoc, p.encDoc)
+	if completo {
+		p.Documento = br.FormatDocumento(d)
+	} else {
+		p.Documento = br.MaskDocumento(d)
+	}
+}
+
+// Get devolve uma pessoa não excluída, com o documento só mascarado.
 func (s *Service) Get(ctx context.Context, id string) (*Pessoa, error) {
-	p, err := s.scan(s.Pool.QueryRow(ctx, `SELECT `+cols+` FROM pessoas WHERE id=$1 AND excluido_em IS NULL`, id))
+	p, err := scan(s.Pool.QueryRow(ctx, `SELECT `+cols+` FROM pessoas WHERE id=$1 AND excluido_em IS NULL`, id))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, webx.ErrNotFound
 	}
+	if err != nil {
+		return nil, err
+	}
+	s.mostrarDocumento(p, false)
+	return p, nil
+}
+
+// GetCompleto devolve a pessoa com CPF/CNPJ, RG e CPF do representante em claro e AUDITA o acesso (LGPD).
+func (s *Service) GetCompleto(ctx context.Context, ac webx.Actor, id string) (*Pessoa, error) {
+	p, err := scan(s.Pool.QueryRow(ctx, `SELECT `+cols+` FROM pessoas WHERE id=$1 AND excluido_em IS NULL`, id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, webx.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	s.mostrarDocumento(p, true)
+	p.RG = s.unseal(purposeRG, p.encRG)
+	p.RepresentanteCPF = s.unseal(purposeRep, p.encRep)
+	err = audit.RecordPool(ctx, s.Pool, audit.Event{Actor: ac.UserID, Action: "pessoa.documento_revelado",
+		TargetType: "pessoa", TargetID: id, Result: audit.OK, RequestID: ac.RequestID})
 	return p, err
 }
 
-// List busca por nome (trecho) ou por documento exato (CPF/CNPJ digitado inteiro). Devolve até limit linhas.
-func (s *Service) List(ctx context.Context, q string, limit, offset int) ([]Pessoa, error) {
-	var idx []byte
-	if d := br.Digits(q); len(d) == 11 || len(d) == 14 {
-		idx = crypt.BlindIndex(s.FieldKey, purpose, d)
-	}
-	rows, err := s.Pool.Query(ctx, `SELECT `+cols+` FROM pessoas
-		WHERE excluido_em IS NULL AND ($1 = '' OR nome ILIKE $2 OR ($3::bytea IS NOT NULL AND documento_idx = $3))
-		ORDER BY lower(nome), id LIMIT $4 OFFSET $5`, q, webx.Like(q), idx, limit, offset)
+// Listar devolve todas as pessoas não excluídas, por nome. Com completo=true os documentos saem inteiros
+// (quem pode ver documento) e o acesso é auditado uma vez; senão, mascarados.
+func (s *Service) Listar(ctx context.Context, ac webx.Actor, completo bool) ([]Pessoa, error) {
+	rows, err := s.Pool.Query(ctx, `SELECT `+cols+` FROM pessoas WHERE excluido_em IS NULL
+		ORDER BY lower(nome_exibicao), id LIMIT $1`, limiteLista)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	var out []Pessoa
 	for rows.Next() {
-		p, err := s.scan(rows)
+		p, err := scan(rows)
 		if err != nil {
 			return nil, err
 		}
+		s.mostrarDocumento(p, completo)
 		out = append(out, *p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if completo && len(out) > 0 {
+		err = audit.RecordPool(ctx, s.Pool, audit.Event{Actor: ac.UserID, Action: "pessoa.documentos_listados",
+			TargetType: "pessoa", TargetID: "lista", Result: audit.OK, RequestID: ac.RequestID,
+			Meta: map[string]string{"quantidade": strconv.Itoa(len(out))}})
+	}
+	return out, err
+}
+
+// Opcoes monta as opções de um <select> de pessoa, com o rótulo do B: "NOME — Física (123.456.789-09)".
+// O documento só entra no rótulo se comDocumento (permissão de ver documento).
+func (s *Service) Opcoes(ctx context.Context, ac webx.Actor, comDocumento bool) ([]Opcao, error) {
+	ps, err := s.Listar(ctx, ac, comDocumento)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Opcao, len(ps))
+	for i, p := range ps {
+		r := p.NomeLista() + " — " + p.TipoPessoa
+		if comDocumento && p.Documento != "" {
+			r += " (" + p.Documento + ")"
+		}
+		out[i] = Opcao{Valor: p.ID, Rotulo: r}
+	}
+	return out, nil
+}
+
+// Buscar devolve opções (id → nome) para seletores de outros domínios; busca por nome ou por documento exato.
+func (s *Service) Buscar(ctx context.Context, q string, limit int) ([]Opcao, error) {
+	var idx []byte
+	if d := br.Digits(q); len(d) == 11 || len(d) == 14 {
+		idx = crypt.BlindIndex(s.FieldKey, purposeDoc, d)
+	}
+	rows, err := s.Pool.Query(ctx, `SELECT id, nome_exibicao, tipo_pessoa FROM pessoas
+		WHERE excluido_em IS NULL AND ($1 = '' OR nome_exibicao ILIKE $2 OR ($3::bytea IS NOT NULL AND documento_idx = $3))
+		ORDER BY lower(nome_exibicao), id LIMIT $4`, q, webx.Like(q), idx, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Opcao
+	for rows.Next() {
+		var id, nome, tipo string
+		if err := rows.Scan(&id, &nome, &tipo); err != nil {
+			return nil, err
+		}
+		out = append(out, Opcao{Valor: id, Rotulo: nome + " (" + tipo + ")"})
 	}
 	return out, rows.Err()
 }
@@ -65,7 +147,7 @@ func (s *Service) Names(ctx context.Context, ids []string) (map[string]string, e
 	if len(ids) == 0 {
 		return out, nil
 	}
-	rows, err := s.Pool.Query(ctx, `SELECT id, nome FROM pessoas WHERE id = ANY($1::uuid[])`, ids)
+	rows, err := s.Pool.Query(ctx, `SELECT id, nome_exibicao FROM pessoas WHERE id = ANY($1::uuid[])`, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -82,68 +164,46 @@ func (s *Service) Names(ctx context.Context, ids []string) (map[string]string, e
 
 // Exist informa quais ids existem e não estão excluídos.
 func (s *Service) Exist(ctx context.Context, ids []string) (map[string]bool, error) {
-	n, err := s.Names(ctx, ids)
+	ok := map[string]bool{}
+	if len(ids) == 0 {
+		return ok, nil
+	}
+	rows, err := s.Pool.Query(ctx, `SELECT id FROM pessoas WHERE id = ANY($1::uuid[]) AND excluido_em IS NULL`, ids)
 	if err != nil {
 		return nil, err
 	}
-	ok := map[string]bool{}
-	for id := range n {
-		ok[id] = true
-	}
-	if len(ids) > 0 { // Names inclui excluídas; refina
-		rows, err := s.Pool.Query(ctx, `SELECT id FROM pessoas WHERE id = ANY($1::uuid[]) AND excluido_em IS NOT NULL`, ids)
-		if err != nil {
+	defer rows.Close()
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		defer rows.Close()
-		for rows.Next() {
-			var id string
-			if err := rows.Scan(&id); err != nil {
-				return nil, err
-			}
-			delete(ok, id)
-		}
+		ok[id] = true
 	}
-	return ok, nil
+	return ok, rows.Err()
 }
 
 // Relatorio reúne os dados de UMA pessoa para atender pedido do titular (LGPD art. 18) e audita a emissão.
 type Relatorio struct {
 	Pessoa    *Pessoa
-	Documento string
-	Processos []ProcessoRef
+	Processos []PapelEmProcesso
 }
 
 // Relatorio emite o relatório "dados desta pessoa".
 func (s *Service) Relatorio(ctx context.Context, ac webx.Actor, id string) (*Relatorio, error) {
-	p, err := s.Get(ctx, id)
+	p, err := s.GetCompleto(ctx, ac, id)
 	if err != nil {
 		return nil, err
 	}
-	doc, err := s.Reveal(ctx, ac, id)
-	if err != nil {
-		return nil, err
-	}
-	r := &Relatorio{Pessoa: p, Documento: br.FormatDocumento(doc)}
-	if s.Processos != nil {
-		if r.Processos, err = s.Processos.ProcessosDaPessoa(ctx, id); err != nil {
+	r := &Relatorio{Pessoa: p}
+	if s.Papeis != nil {
+		m, err := s.Papeis.PapeisPorPessoa(ctx, []string{id})
+		if err != nil {
 			return nil, err
 		}
+		r.Processos = m[id]
 	}
 	err = audit.RecordPool(ctx, s.Pool, audit.Event{Actor: ac.UserID, Action: "pessoa.relatorio_titular",
 		TargetType: "pessoa", TargetID: id, Result: audit.OK, RequestID: ac.RequestID})
 	return r, err
-}
-
-// Buscar devolve opções (id → nome) para seletores de outros domínios.
-func (s *Service) Buscar(ctx context.Context, q string, limit int) ([]Opcao, error) {
-	rows, err := s.List(ctx, q, limit, 0)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]Opcao, len(rows))
-	for i, p := range rows {
-		out[i] = Opcao{Valor: p.ID, Rotulo: p.Nome + " (" + p.Tipo + ")"}
-	}
-	return out, nil
 }

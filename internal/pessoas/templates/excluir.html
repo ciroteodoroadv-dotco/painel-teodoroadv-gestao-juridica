@@ -1,0 +1,16 @@
+{{define "confirmar"}}<h2>Excluir pessoa</h2>
+      <p class="drawer-sub">Excluir esta ficha? Ela deixa de aparecer nas listas e a exclusão fica registrada na auditoria.</p>
+      <form data-drawer-form method="post" action="/pessoas/{{.P.ID}}/excluir">
+        <input type="hidden" name="version" value="{{.P.Version}}">
+        <div class="drawer-actions">
+          <button type="button" class="btn btn-ghost" data-drawer-fechar>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Excluir</button>
+        </div>
+      </form>{{end}}
+
+{{define "escolha"}}<h2>Escolha o processo</h2>
+    <p class="drawer-sub">Esta pessoa aparece em mais de um processo.</p>
+    {{$id := .P.ID}}{{range .Processos}}<div class="field"><button type="button" class="btn btn-ghost btn-bloco" data-drawer="/processos/{{.ProcessoID}}/editar?da_pessoa={{$id}}">{{.NumeroOuTitulo}} — {{.Rotulo}}</button></div>
+    {{end}}<div class="drawer-actions">
+      <button type="button" class="btn btn-ghost" data-drawer-fechar>Fechar</button>
+    </div>{{end}}

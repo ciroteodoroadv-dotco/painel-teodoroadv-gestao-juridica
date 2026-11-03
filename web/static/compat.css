@@ -78,3 +78,15 @@ a.btn-ghost,a.btn-ghost:hover{color:var(--text);}
 .sidebar button.secundario:hover{background:var(--ink-2);color:#fff;}
 :focus-visible{outline:3px solid var(--brass);outline-offset:2px;}
 @media (max-width:780px){.sidebar .sair{margin:0 0 0 16px;padding:0;border:0;flex-direction:row;align-items:center;}nav.tabs-sistema{margin:0 0 0 16px;padding:0;border:0;}}
+
+/* Substitutos dos style="" do painel B (a CSP proíbe atributo style): mesmas medidas, em classes. */
+.uc{text-transform:uppercase;}
+.radio-row-flat{margin-bottom:0;padding-top:9px;}
+.field.span2{grid-column:span 2;}
+.cep-linha{display:flex;gap:8px;align-items:flex-start;}
+.btn-bloco{width:100%;text-align:left;}
+.row-parte,.row-parte-tarefa{border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;}
+.outro-campo{margin-top:6px;}
+.hint-muted{color:var(--text-muted);}
+.hint-tabela{color:var(--text-muted);margin-top:3px;}
+.hint-bloco{margin-bottom:14px;}

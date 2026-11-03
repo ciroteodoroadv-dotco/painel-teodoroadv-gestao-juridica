@@ -10,7 +10,8 @@
   });
   document.addEventListener("submit", function () { sujo = false; });
   window.addEventListener("beforeunload", function (ev) {
-    if (sujo) { ev.preventDefault(); ev.returnValue = ""; }
+    // Só avisa se o formulário alterado ainda está na tela (um drawer cancelado não deve travar a navegação).
+    if (sujo && document.querySelector("form[data-protege]")) { ev.preventDefault(); ev.returnValue = ""; }
   });
 
   function csrf() {

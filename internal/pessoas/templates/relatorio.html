@@ -1,18 +1,21 @@
 {{define "content"}}{{with .Data}}{{$p := .Pessoa}}
 <p class="apoio">Relatório para atender pedido do titular (LGPD, art. 18). A emissão foi registrada na auditoria. Confira a identidade do solicitante antes de entregar.</p>
 <dl class="ficha">
-  <dt>Nome</dt><dd>{{$p.Nome}}</dd>
-  <dt>Tipo</dt><dd>{{$p.Tipo}}</dd>
-  <dt>Documento</dt><dd>{{if .Documento}}{{.Documento}}{{else}}—{{end}}</dd>
+  <dt>Código</dt><dd>{{$p.CodigoLista}}</dd>
+  <dt>Nome</dt><dd>{{$p.NomeLista}}</dd>
+  <dt>Tipo</dt><dd>{{$p.TipoLista}}</dd>
+  <dt>{{if $p.Juridica}}CNPJ{{else}}CPF{{end}}</dt><dd>{{$p.DocLista}}</dd>
+  {{if $p.RG}}<dt>RG</dt><dd>{{$p.RG}}</dd>{{end}}
+  {{if $p.RepresentanteCPF}}<dt>CPF do representante</dt><dd>{{$p.RepCPFMask}}</dd>{{end}}
+  {{if $p.Nascimento}}<dt>Data de nascimento</dt><dd>{{$p.DataNascimento.Format "02/01/2006"}}</dd>{{end}}
+  <dt>Endereço</dt><dd>{{$p.Logradouro}} {{$p.Numero}} {{$p.Complemento}} {{$p.Bairro}} {{$p.Cidade}}{{if $p.UF}}/{{$p.UF}}{{end}} {{if $p.CEP}}CEP {{$p.CEPMask}}{{end}}</dd>
   <dt>E-mail</dt><dd>{{if $p.Email}}{{$p.Email}}{{else}}—{{end}}</dd>
-  <dt>Telefone</dt><dd>{{if $p.Telefone}}{{$p.Telefone}}{{else}}—{{end}}</dd>
-  <dt>Papel no escritório</dt><dd>{{$p.PapelRotulo}}</dd>
+  <dt>Telefone</dt><dd>{{if $p.Telefone}}{{$p.TelefoneMask}}{{else}}—{{end}}</dd>
   <dt>Cadastrado em</dt><dd>{{$p.CriadoEm.Format "02/01/2006 15:04"}}</dd>
   <dt>Última alteração</dt><dd>{{$p.AtualizadoEm.Format "02/01/2006 15:04"}}</dd>
-  {{if $p.RetencaoAte}}<dt>Guardar até</dt><dd>{{$p.RetencaoAte.Format "02/01/2006"}}</dd>{{end}}
 </dl>
 <h2>Processos vinculados</h2>
-{{if .Processos}}<ul class="lista">{{range .Processos}}<li>{{.Numero}} <small class="apoio">· {{.Qualidade}}</small></li>{{end}}</ul>
+{{if .Processos}}<ul class="lista">{{range .Processos}}<li>{{.NumeroOuTitulo}} <small class="apoio">· {{.Rotulo}}</small></li>{{end}}</ul>
 {{else}}<p class="apoio">Nenhum.</p>{{end}}
 <p><a class="botao secundario" href="/pessoas/{{$p.ID}}">Voltar</a></p>
 {{end}}{{end}}
