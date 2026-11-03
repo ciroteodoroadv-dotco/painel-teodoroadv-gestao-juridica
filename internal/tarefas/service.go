@@ -60,9 +60,9 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input) (string, 
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	var id string
-	err = tx.QueryRow(ctx, `INSERT INTO tarefas (titulo, processo_id, responsavel_id, vencimento, status, origem, created_by, updated_by)
-		VALUES ($1,$2,$3,$4,$5,'manual',$6,$6) RETURNING id`,
-		n.titulo, webx.Nullable(n.processo), webx.Nullable(n.responsavel), n.vencimento, n.status, ac.UserID).Scan(&id)
+	err = tx.QueryRow(ctx, `INSERT INTO tarefas (titulo, processo_id, responsavel_id, vencimento, status, origem, created_by, updated_by, subtitulo, prioridade)
+		VALUES ($1,$2,$3,$4,$5,'manual',$6,$6,$7,$8) RETURNING id`,
+		n.titulo, webx.Nullable(n.processo), webx.Nullable(n.responsavel), n.vencimento, n.status, ac.UserID, n.subtitulo, n.prioridade).Scan(&id)
 	if err == nil {
 		err = s.record(ctx, tx, ac, "tarefa.criada", id)
 	}
@@ -82,9 +82,9 @@ func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version 
 		return err
 	}
 	return s.write(ctx, ac, id, "tarefa.alterada", `UPDATE tarefas SET titulo=$3, processo_id=$4, responsavel_id=$5,
-		vencimento=$6, status=$7, updated_at=now(), updated_by=$8, version=version+1
+		vencimento=$6, status=$7, updated_at=now(), updated_by=$8, version=version+1, subtitulo=$9, prioridade=$10
 		WHERE id=$1 AND version=$2 AND excluido_em IS NULL`,
-		id, version, n.titulo, webx.Nullable(n.processo), webx.Nullable(n.responsavel), n.vencimento, n.status, ac.UserID)
+		id, version, n.titulo, webx.Nullable(n.processo), webx.Nullable(n.responsavel), n.vencimento, n.status, ac.UserID, n.subtitulo, n.prioridade)
 }
 
 // SetStatus muda só o status (ex.: concluir), com a mesma proteção de versão.

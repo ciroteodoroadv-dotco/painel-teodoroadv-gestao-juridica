@@ -56,6 +56,7 @@ type formData struct {
 	Version      int
 	In           Input
 	Statuses     []Opcao
+	Prioridades  []Opcao
 	Responsaveis []Opcao
 	ProcessoNum  string
 }
@@ -97,7 +98,7 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) 
 }
 
 func (h *Handler) renderForm(w http.ResponseWriter, r *http.Request, s *auth.Session, status int, f formData, msg string) {
-	f.Statuses = Statuses
+	f.Statuses, f.Prioridades = Statuses, Prioridades
 	f.Responsaveis, _ = h.S.Users.Options(r.Context())
 	if f.In.ProcessoID != "" {
 		if m, err := h.S.Processos.Resumos(r.Context(), []string{f.In.ProcessoID}); err == nil {
@@ -106,16 +107,23 @@ func (h *Handler) renderForm(w http.ResponseWriter, r *http.Request, s *auth.Ses
 	}
 	pd := base(s, "Tarefa")
 	pd.Data, pd.Error = f, msg
+	if webx.IsHX(r) { // drawer: só o fragmento; erro de validação volta com 200 para o htmx trocar o conteúdo
+		pd.CSRF = h.A.CSRFFor(r)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_ = page("drawer.html").ExecuteTemplate(w, "drawer", pd)
+		return
+	}
 	h.A.Render(w, r, status, page("form.html"), pd)
 }
 
 func inputFrom(r *http.Request) Input {
 	return Input{Titulo: r.PostFormValue("titulo"), ProcessoID: r.PostFormValue("processo_id"),
-		ResponsavelID: r.PostFormValue("responsavel_id"), Vencimento: r.PostFormValue("vencimento"), Status: r.PostFormValue("status")}
+		ResponsavelID: r.PostFormValue("responsavel_id"), Vencimento: r.PostFormValue("vencimento"), Status: r.PostFormValue("status"),
+		Subtitulo: r.PostFormValue("subtitulo"), Prioridade: r.PostFormValue("prioridade")}
 }
 
 func (h *Handler) newForm(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	in := Input{Status: "aberta", ResponsavelID: s.UserID, ProcessoID: r.URL.Query().Get("processo")}
+	in := Input{Status: "aberta", Prioridade: "normal", ResponsavelID: s.UserID, ProcessoID: r.URL.Query().Get("processo")}
 	h.renderForm(w, r, s, http.StatusOK, formData{IsNew: true, In: in}, "")
 }
 
@@ -125,11 +133,11 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request, s *auth.Session
 	var inv webx.Invalid
 	switch {
 	case errors.As(err, &inv):
-		h.renderForm(w, r, s, http.StatusBadRequest, formData{IsNew: true, In: in}, inv.Msg)
+		h.renderForm(w, r, s, statusErro(r), formData{IsNew: true, In: in}, inv.Msg)
 	case err != nil:
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 	default:
-		http.Redirect(w, r, "/tarefas?quem=minhas", http.StatusSeeOther)
+		h.saved(w, r, "/tarefas?quem=minhas")
 	}
 }
 
@@ -139,7 +147,8 @@ func (h *Handler) editForm(w http.ResponseWriter, r *http.Request, s *auth.Sessi
 		h.fail(w, err)
 		return
 	}
-	in := Input{Titulo: t.Titulo, ProcessoID: t.ProcessoID, ResponsavelID: t.ResponsavelID, Status: t.Status}
+	in := Input{Titulo: t.Titulo, ProcessoID: t.ProcessoID, ResponsavelID: t.ResponsavelID, Status: t.Status,
+		Subtitulo: t.Subtitulo, Prioridade: t.Prioridade}
 	if t.Vencimento != nil {
 		in.Vencimento = t.Vencimento.Format("2006-01-02")
 	}
@@ -153,11 +162,11 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request, s *auth.Session
 	var inv webx.Invalid
 	switch {
 	case errors.As(err, &inv):
-		h.renderForm(w, r, s, http.StatusBadRequest, formData{ID: id, Version: v, In: in}, inv.Msg)
+		h.renderForm(w, r, s, statusErro(r), formData{ID: id, Version: v, In: in}, inv.Msg)
 	case err != nil:
 		h.fail(w, err)
 	default:
-		http.Redirect(w, r, "/tarefas", http.StatusSeeOther)
+		h.saved(w, r, "/tarefas")
 	}
 }
 
@@ -221,4 +230,22 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 	default:
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 	}
+}
+
+// statusErro: o htmx só troca o conteúdo em resposta 2xx; fora dele, erro de validação segue 400.
+func statusErro(r *http.Request) int {
+	if webx.IsHX(r) {
+		return http.StatusOK
+	}
+	return http.StatusBadRequest
+}
+
+// saved encerra um POST bem-sucedido: no drawer manda o navegador para a lista com aviso "Salvo.".
+func (h *Handler) saved(w http.ResponseWriter, r *http.Request, normal string) {
+	if webx.IsHX(r) {
+		w.Header().Set("HX-Redirect", "/tarefas?salvo=1")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	http.Redirect(w, r, normal, http.StatusSeeOther)
 }

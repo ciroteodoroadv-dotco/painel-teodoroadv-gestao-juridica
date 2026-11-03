@@ -10,11 +10,11 @@ import (
 	"painelteodoro/internal/platform/webx"
 )
 
-const cols = `id, titulo, coalesce(processo_id::text,''), coalesce(responsavel_id::text,''), vencimento, status, origem, version`
+const cols = `id, titulo, coalesce(processo_id::text,''), coalesce(responsavel_id::text,''), vencimento, status, origem, version, subtitulo, prioridade`
 
 func scan(row pgx.Row) (*Tarefa, error) {
 	var t Tarefa
-	err := row.Scan(&t.ID, &t.Titulo, &t.ProcessoID, &t.ResponsavelID, &t.Vencimento, &t.Status, &t.Origem, &t.Version)
+	err := row.Scan(&t.ID, &t.Titulo, &t.ProcessoID, &t.ResponsavelID, &t.Vencimento, &t.Status, &t.Origem, &t.Version, &t.Subtitulo, &t.Prioridade)
 	return &t, err
 }
 
@@ -50,7 +50,7 @@ func (s *Service) enrich(ctx context.Context, list []Tarefa) {
 func (s *Service) List(ctx context.Context, f Filtro, limit, offset int) ([]Tarefa, error) {
 	rows, err := s.Pool.Query(ctx, `SELECT `+cols+` FROM tarefas
 		WHERE excluido_em IS NULL
-		  AND (($1 = '' AND status IN ('aberta','em_andamento')) OR $1 = 'todas' OR status = $1)
+		  AND (($1 = '' AND status IN ('aberta','em_andamento','em_revisao')) OR $1 = 'todas' OR status = $1)
 		  AND ($2 = '' OR responsavel_id = $2::uuid)
 		  AND ($3 = '' OR titulo ILIKE $4)
 		ORDER BY vencimento NULLS LAST, created_at DESC, id LIMIT $5 OFFSET $6`,
@@ -92,7 +92,7 @@ func (s *Service) Get(ctx context.Context, id string) (*Tarefa, error) {
 func (s *Service) Proximas(ctx context.Context, userID string, dias, limit int) ([]Tarefa, error) {
 	ate := Hoje(time.Now()).AddDate(0, 0, dias)
 	rows, err := s.Pool.Query(ctx, `SELECT `+cols+` FROM tarefas
-		WHERE excluido_em IS NULL AND status IN ('aberta','em_andamento') AND responsavel_id = $1::uuid
+		WHERE excluido_em IS NULL AND status IN ('aberta','em_andamento','em_revisao') AND responsavel_id = $1::uuid
 		  AND vencimento IS NOT NULL AND vencimento <= $2
 		ORDER BY vencimento, id LIMIT $3`, userID, ate, limit)
 	if err != nil {
@@ -111,5 +111,34 @@ func (s *Service) Proximas(ctx context.Context, userID string, dias, limit int) 
 		return nil, err
 	}
 	s.enrich(ctx, out)
+	return out, nil
+}
+
+// AbertasPorSubtitulo devolve as tarefas em aberto (aberta, em andamento, em revisão), por vencimento
+// (sem data por último), com filtro opcional pelo título. A Agenda usa isto para as categorias que
+// aceitam tarefas pelo subtítulo; quem compara o subtítulo é ela, não este domínio.
+func (s *Service) AbertasPorSubtitulo(ctx context.Context, q string, limite int) ([]Tarefa, error) {
+	rows, err := s.Pool.Query(ctx, `SELECT `+cols+` FROM tarefas
+		WHERE excluido_em IS NULL AND status IN ('aberta','em_andamento','em_revisao')
+		  AND ($1 = '' OR titulo ILIKE $2)
+		ORDER BY vencimento NULLS LAST, created_at DESC, id LIMIT $3`, q, webx.Like(q), limite)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Tarefa
+	for rows.Next() {
+		t, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if s.Processos != nil && s.Users != nil {
+		s.enrich(ctx, out)
+	}
 	return out, nil
 }

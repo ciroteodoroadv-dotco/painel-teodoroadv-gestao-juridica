@@ -37,6 +37,12 @@ func Reset(ctx context.Context, pool *pgxpool.Pool) error {
 		return err
 	}
 	defer db.Close()
+	// O Down da 0007 recusa de propósito linhas com valores novos (não perde dado em silêncio).
+	// Reset é exclusivo de testes, então esvazia essas duas tabelas antes de reverter.
+	_, _ = db.ExecContext(ctx, `DO $$ BEGIN
+		IF to_regclass('public.tarefas') IS NOT NULL THEN DELETE FROM tarefas; END IF;
+		IF to_regclass('public.agenda_eventos') IS NOT NULL THEN DELETE FROM agenda_eventos; END IF;
+	END $$`)
 	return goose.DownToContext(ctx, db, ".", 0)
 }
 
