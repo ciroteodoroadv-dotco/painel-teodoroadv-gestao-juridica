@@ -17,3 +17,12 @@
 | Capturas 1440x900 e 400x800; Processos/Pessoas/Atendimentos/Audiências do B | **não feito** (janela não redimensiona) |
 | Envio de formulário em drawer (`data-drawer-form`) | código pronto, não exercitado (Plano 2) |
 | Conferência do advogado na tela real (login dele) | pendente |
+
+## Plano 2 — Pessoas e Processos (03/11/2026)
+| Item | Estado |
+|---|---|
+| Estilo computado B x v2 (páginas e 7 drawers) | feito: zero diferença além das justificadas (`paridade/RELATORIO-2.md`) |
+| Comparação texto a texto | feito: 19 ausências, todas justificadas |
+| Envio de formulário em drawer (`data-drawer-form`) | exercitado por testes HTTP; **não exercitado por clique no Chrome** |
+| Capturas 1440/400 e do B | **não feito** |
+| Conferência do advogado na tela real | pendente; aprovar a omissão de "Nome do arquivo da ficha" |

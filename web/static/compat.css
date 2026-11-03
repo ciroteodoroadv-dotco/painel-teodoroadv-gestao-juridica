@@ -90,3 +90,10 @@ a.btn-ghost,a.btn-ghost:hover{color:var(--text);}
 .hint-muted{color:var(--text-muted);}
 .hint-tabela{color:var(--text-muted);margin-top:3px;}
 .hint-bloco{margin-bottom:14px;}
+/* Tabelas do acordeão: o B deixa o texto quebrar (a regra nowrap acima é das telas antigas do v2). */
+.acc th,.acc td{white-space:normal;}
+/* Campo de busca da barra de ferramentas: largura própria do B, que o width:100% genérico não pode estourar. */
+.toolbar .search{width:240px;}
+.acc td.row-actions{white-space:nowrap;}
+/* "É cliente do escritório" (fora de .field, como no B): sem o negrito e a margem que o label genérico do v2 aplica. */
+.row-parte label.radio-opt,.row-parte-tarefa label.radio-opt{display:flex;align-items:center;gap:6px;margin:0;font-weight:400;font-size:13px;}
