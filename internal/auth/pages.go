@@ -11,6 +11,7 @@ import (
 func (a *Auth) RegisterPages(rt *Router) {
 	rt.Handle("GET /{$}", PermHome, a.home)
 	rt.Handle("GET /admin/auditoria", PermAuditRead, a.auditPage)
+	rt.Handle("GET /sync/estado", AnyLoggedIn, a.syncFragmento)
 }
 
 // home leva à Agenda, que é a página inicial do painel (como no B).

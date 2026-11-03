@@ -1,0 +1,19 @@
+{{define "content"}}{{with .Data}}<div class="form-block">
+    <strong>{{if .Ativa}}Coleta ativa{{else}}Coleta desligada neste ambiente.{{end}}</strong><br>
+    {{.Estado}}<br>
+    O DJEN não é em tempo real e é uma fonte pública: processos em segredo de justiça podem não aparecer. Sem resultado nunca significa sem prazo; a conferência nas fontes oficiais continua necessária.
+  </div>
+  {{if .Ativa}}<form class="toolbar" data-drawer-form method="post" action="/coleta-djen/executar">
+    <button type="submit" class="btn btn-primary btn-small">Executar coleta agora</button>
+  </form>{{end}}
+  {{if .Linhas}}<table><thead><tr><th>Advogado</th><th>OAB</th><th>Base da autorização</th><th>Data da autorização</th><th>Situação</th><th>Último sucesso</th><th></th></tr></thead>
+    <tbody>{{range .Linhas}}<tr>
+      <td>{{.Nome}}</td>
+      <td class="tabular">{{.Rotulo}}</td>
+      <td>{{.Base}}</td>
+      <td class="tabular">{{.Data}}</td>
+      <td>{{if .Ativa}}<span class="badge badge-ok">Ativa</span>{{else}}<span class="badge badge-neutral">Inativa</span>{{end}}</td>
+      <td class="tabular">{{.UltimoSucesso}}</td>
+      <td class="row-actions"><button type="button" class="btn-text" data-drawer="/coleta-djen/{{.ID}}/editar">Editar</button></td>
+    </tr>{{end}}</tbody></table>{{else}}<div class="empty"><p>Nenhuma OAB cadastrada.</p></div>{{end}}
+{{end}}{{end}}

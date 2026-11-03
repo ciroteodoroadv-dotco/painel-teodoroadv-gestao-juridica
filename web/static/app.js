@@ -59,7 +59,7 @@
         // O acordeão mantém os painéis abertos depois de recarregar (state.accOpen do B).
         var abertos = Array.prototype.map.call(document.querySelectorAll(".acc-item.open"), function (x) { return x.getAttribute("data-acc"); });
         var doc = new DOMParser().parseFromString(html, "text/html");
-        ["content", "stats", "navTabs", "navSistema", "topbar"].forEach(function (id) {
+        ["content", "stats", "navTabs", "navSistema", "topbar", "syncStatus"].forEach(function (id) {
           var novo = doc.getElementById(id), atual = document.getElementById(id);
           if (novo && atual) atual.replaceChildren.apply(atual, Array.prototype.slice.call(novo.childNodes));
         });
@@ -68,4 +68,30 @@
         });
       });
   };
+
+  // Rodapé "Estado das coletas" (16-sync-status.js do B): <section data-refresh="/sync/estado"> recarrega só o miolo,
+  // a cada 60 s e ao voltar à aba. Só lê o histórico local do painel; nunca dispara coleta nem consulta fonte externa.
+  var buscandoSync = false;
+  function syncIndisponivel(el) {
+    var t = document.createElement("strong");
+    t.textContent = "Estado das coletas indisponível";
+    var p = document.createElement("p");
+    p.textContent = "Não foi possível ler o histórico local. Não presuma que houve atualização. Confira as fontes oficiais.";
+    el.replaceChildren(t, p);
+  }
+  App.atualizarSync = function () {
+    var el = document.querySelector("[data-refresh]");
+    if (!el || buscandoSync) return Promise.resolve();
+    buscandoSync = true;
+    return fetch(el.getAttribute("data-refresh"), { cache: "no-store", credentials: "same-origin" })
+      .then(function (r) {
+        if (!r.ok || r.headers.get("X-Painel-Fragmento") !== "sync") throw new Error("indisponível");
+        return r.text();
+      })
+      .then(function (html) { el.replaceChildren.apply(el, App.nodesDeHTML(html)); })
+      .catch(function () { syncIndisponivel(el); })
+      .then(function () { buscandoSync = false; });
+  };
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) App.atualizarSync(); });
+  setInterval(function () { if (!document.hidden) App.atualizarSync(); }, 60000);
 })();

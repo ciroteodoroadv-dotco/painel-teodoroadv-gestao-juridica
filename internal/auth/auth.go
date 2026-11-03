@@ -19,6 +19,7 @@ import (
 
 	"painelteodoro/internal/audit"
 	"painelteodoro/internal/platform/cfaccess"
+	"painelteodoro/internal/platform/coletas"
 	"painelteodoro/internal/platform/csrf"
 	"painelteodoro/internal/platform/ratelimit"
 )
@@ -49,6 +50,7 @@ type Auth struct {
 	nav     []navItem
 	faixas  []FaixaFunc
 	widgets []WidgetFunc
+	sync    func(context.Context) ([]coletas.Estado, error)
 	gate    denyGate
 }
 
@@ -79,6 +81,7 @@ type PageData struct {
 	Tab                             string
 	Faixas                          []Faixa
 	Widgets                         []Widget
+	Sync                            SyncView
 	Data                            any // dados específicos da página de um domínio
 }
 
@@ -112,6 +115,9 @@ func (a *Auth) Render(w http.ResponseWriter, r *http.Request, status int, t *tem
 		d.NavSistema = sistemaFixos(d.NavSistema, Role(d.Role), r.URL.Path)
 	}
 	d.Tab = tabOf(r.URL.Path)
+	if d.Role != "" {
+		d.Sync = a.syncView(r.Context())
+	}
 	if d.Head.Title == "" {
 		d.Head.Title = d.Title
 	}

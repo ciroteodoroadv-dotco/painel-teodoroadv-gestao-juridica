@@ -53,7 +53,7 @@
 {{template "content" .}}
     </div>
 
-    <section id="syncStatus" class="sync-status" aria-label="Estado das coletas"><strong>Estado das coletas</strong><p>Nenhuma coleta configurada neste painel. Não presuma que houve atualização; confira as fontes oficiais.</p></section>
+    <section id="syncStatus" class="sync-status" aria-label="Estado das coletas" data-refresh="/sync/estado">{{template "syncConteudo" .Sync}}</section>
   </main>
 </div>
 <div id="idxTicker" class="idx-ticker" role="status" aria-label="Índices econômicos"><span class="idxt-status">Índices econômicos: não sincronizado</span></div>
@@ -72,3 +72,5 @@
 {{end}}
 </body>
 </html>{{end}}
+
+{{define "syncConteudo"}}{{if .Indisponivel}}<strong>Estado das coletas indisponível</strong><p>Não foi possível ler o histórico local. Não presuma que houve atualização. Confira as fontes oficiais.</p>{{else if .Linhas}}<strong>Estado das coletas</strong><p>Histórico local. Não comprova agendamento ativo nem substitui a conferência nas fontes oficiais.</p><ul>{{range .Linhas}}<li{{if .Erro}} class="sync-error"{{end}}>{{.Texto}}</li>{{end}}</ul>{{else}}<strong>Estado das coletas</strong><p>Nenhuma coleta configurada neste painel. Não presuma que houve atualização; confira as fontes oficiais.</p>{{end}}{{end}}

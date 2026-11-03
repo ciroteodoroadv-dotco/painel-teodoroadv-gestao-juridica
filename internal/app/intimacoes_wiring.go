@@ -119,6 +119,7 @@ func montarIntimacoes(a *auth.Auth, pool *pgxpool.Pool, proc *processos.Service,
 	svc := &intimacoes.Service{Pool: pool, Coletas: &coletas.Store{Pool: pool}, Coletor: col, Tarefas: auto,
 		TarefasDe: intimTarefas{s: tar}, Processos: intimProcessos{p: proc}, Now: o.agora,
 		Cfg: intimacoes.Config{Ativo: o.djen.Ativo, Intervalo: o.djen.Intervalo, AlertaHoras: o.djen.AlertaHoras}}
+	a.SetSyncSource(svc.Coletas.Listar)
 	a.AddFaixa(func(ctx context.Context, _ *auth.Session) (auth.Faixa, error) {
 		forte, texto, ativo, err := svc.Alerta(ctx)
 		if err != nil || !ativo {

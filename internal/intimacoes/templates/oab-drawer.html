@@ -1,0 +1,18 @@
+{{define "form"}}<h2>{{if .Novo}}Nova OAB{{else}}Editar OAB{{end}}</h2>
+    <p class="drawer-sub">{{if .Novo}}A coleta só consulta OABs ativas, com a base e a data da autorização preenchidas. Quem cadastra fica registrado na auditoria.{{else}}{{.O.Rotulo}}{{end}}</p>
+    <form data-drawer-form data-protege method="post" action="{{if .Novo}}/coleta-djen{{else}}/coleta-djen/{{.O.ID}}{{end}}">{{if not .Novo}}
+      <input type="hidden" name="version" value="{{.O.Version}}">{{end}}
+      <div class="field"><label>Nome do advogado *</label><input type="text" name="nome" required value="{{.O.Nome}}"></div>{{if .Novo}}
+      <div class="row2">
+        <div class="field"><label>Número da OAB *</label><input type="text" name="numero" required inputmode="numeric" placeholder="Só dígitos"></div>
+        <div class="field"><label>UF *</label><input type="text" name="uf" required maxlength="2" placeholder="SP" data-maiusculo></div>
+      </div>{{end}}
+      <div class="field"><label>Base da autorização *</label><input type="text" name="autorizacao_base" required value="{{.O.AutorizacaoBase}}"></div>
+      <div class="field"><label>Data da autorização *</label><input type="date" name="autorizacao_em" required value="{{.Data}}"></div>
+      <div class="field"><label class="radio-opt"><input type="checkbox" name="ativa" value="1"{{if .O.Ativa}} checked{{end}}> Ativa</label>
+        <p class="hint">Só OABs ativas entram na coleta. Desmarcar não apaga a OAB nem as intimações já registradas.</p></div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">{{if .Novo}}Salvar OAB{{else}}Salvar alterações{{end}}</button>
+      </div>
+    </form>{{end}}

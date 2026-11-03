@@ -13,6 +13,7 @@ import (
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/diligencias"
 	"painelteodoro/internal/documentos"
+	"painelteodoro/internal/intimacoes"
 	"painelteodoro/internal/pessoas"
 	"painelteodoro/internal/platform/webx"
 	"painelteodoro/internal/prazos"
@@ -80,6 +81,7 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	(&processos.Handler{A: a, S: proc}).Register(rt)
 	(&tarefas.Handler{A: a, S: tar}).Register(rt)
 	(&agenda.Handler{A: a, S: ag}).Register(rt)
+	(&intimacoes.Handler{A: a, S: intim}).Register(rt)
 	(&audiencias.Handler{A: a, S: aud}).Register(rt)
 	(&diligencias.Handler{A: a, S: dil}).Register(rt)
 	(&documentos.Handler{A: a, S: doc}).Register(rt)

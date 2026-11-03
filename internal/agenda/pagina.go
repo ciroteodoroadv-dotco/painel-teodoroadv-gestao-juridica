@@ -45,7 +45,7 @@ type Categoria struct {
 	Diligencias   []DiligenciaLinha
 	Compromissos  []CompromissoLinha
 
-	CanWrite, CanAudWrite, CanAudCancel, CanDilWrite bool
+	CanWrite, CanAudWrite, CanAudCancel, CanDilWrite, CanDecidir bool
 }
 
 type paginaData struct{ Cats []Categoria }
@@ -73,6 +73,7 @@ func (h *Handler) pagina(w http.ResponseWriter, r *http.Request, s *auth.Session
 		c.CanAudWrite = auth.Can(s.Role, auth.PermAudienciaWrite)
 		c.CanAudCancel = auth.Can(s.Role, auth.PermAudienciaCancel)
 		c.CanDilWrite = auth.Can(s.Role, auth.PermDiligenciaWrite)
+		c.CanDecidir = auth.Can(s.Role, auth.PermIntimacaoDecide)
 	})
 	if err != nil {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)

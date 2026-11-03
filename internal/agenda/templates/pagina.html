@@ -67,11 +67,11 @@
   </tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhuma diligência em aberto.</p></div>{{end}}{{end}}
 
 {{define "tabIntimacoes"}}{{if not .IntimOK}}<div class="form-block"><strong>Intimações indisponíveis.</strong><br>{{.IntimMsg}}</div>{{else if not .Intimacoes}}<div class="empty"><p>Nenhuma intimação registrada no histórico.</p></div>{{else}}<table><thead><tr><th>Origem</th><th>Processo</th><th>Data</th><th>Status</th><th>Tarefa de análise</th><th></th></tr></thead>
-    <tbody>{{range .Intimacoes}}<tr data-busca="{{.Busca}}">
+    <tbody>{{$d := .CanDecidir}}{{range .Intimacoes}}<tr data-busca="{{.Busca}}">
       <td>{{if .Origem}}{{.Origem}}{{else}}—{{end}}</td>
       <td>{{if .Processo}}{{.Processo}}{{else}}—{{end}}</td>
       <td class="tabular">{{.Data}}</td>
       <td><span class="badge {{.StatusClasse}}">{{.StatusRotulo}}</span></td>
       <td>{{if .Tarefa}}<strong>{{.Tarefa}}</strong><div class="hint">{{.TarefaEstado}}</div>{{else}}<span class="hint">Tarefa não localizada</span>{{end}}</td>
-      <td class="row-actions">—</td>
+      <td class="row-actions">{{if and $d (eq .Status "triagem")}}<form class="form-inline" data-drawer-form method="post" action="/intimacoes/{{.ID}}/decidir"><input type="hidden" name="status" value="confirmada"><button type="submit" class="btn-text">Confirmar</button></form><form class="form-inline" data-drawer-form method="post" action="/intimacoes/{{.ID}}/decidir"><input type="hidden" name="status" value="descartada"><button type="submit" class="btn-danger-text">Descartar</button></form>{{else}}—{{end}}</td>
     </tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhuma intimação registrada no histórico.</p></div>{{end}}{{end}}
