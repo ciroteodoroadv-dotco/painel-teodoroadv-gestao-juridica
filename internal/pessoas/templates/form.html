@@ -1,7 +1,4 @@
-{{define "content"}}{{with .Data}}
-<h1>{{if .IsNew}}Nova pessoa{{else}}Editar pessoa{{end}}</h1>
-{{end}}
-{{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
+{{define "content"}}{{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
 {{with .Data}}
 <form method="post" action="{{if .IsNew}}/pessoas{{else}}/pessoas/{{.ID}}{{end}}" data-protege class="grade">
   <input type="hidden" name="csrf_token" value="{{$.CSRF}}">

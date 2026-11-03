@@ -43,12 +43,15 @@ type Auth struct {
 	RequireAccessEmail bool
 	Now                func() time.Time
 	// WA é nil quando a chave física está desligada (sem PAINEL_PUBLIC_URL válido).
-	WA      *webauthn.WebAuthn
-	cer     ceremonies
-	fl      flash
-	nav     []navItem
-	widgets []WidgetFunc
-	gate    denyGate
+	WA     *webauthn.WebAuthn
+	cer    ceremonies
+	fl     flash
+	nav    []navItem
+	faixas []FaixaFunc
+	// HomeHead dá o cabeçalho da tela inicial (a Agenda); o domínio da agenda o preenche.
+	HomeHead func(s *Session) Head
+	widgets  []WidgetFunc
+	gate     denyGate
 }
 
 func (a *Auth) now() time.Time {
@@ -73,13 +76,13 @@ type PageData struct {
 	Users                           []UserRow
 	Notice                          string
 	CanUsers                        bool
-	Nav                             []NavLink
+	Nav, NavSistema                 []NavLink
+	Head                            Head
+	Tab                             string
+	Faixas                          []Faixa
 	Widgets                         []Widget
 	Data                            any // dados específicos da página de um domínio
 }
-
-// NavLink é um item do menu superior já filtrado pelo papel.
-type NavLink struct{ Label, Href string }
 
 // Widget é um bloco da tela "Hoje" fornecido por um domínio (HTML já escapado pelo próprio domínio).
 type Widget struct {
@@ -87,18 +90,8 @@ type Widget struct {
 	Body  template.HTML
 }
 
-type navItem struct {
-	label, href string
-	perm        Perm
-}
-
 // WidgetFunc produz o bloco de um domínio para a tela "Hoje".
 type WidgetFunc func(ctx context.Context, s *Session) (Widget, error)
-
-// AddNav registra um item de menu visível para quem tem a permissão.
-func (a *Auth) AddNav(label, href string, perm Perm) {
-	a.nav = append(a.nav, navItem{label, href, perm})
-}
 
 // AddWidget registra um bloco da tela "Hoje".
 func (a *Auth) AddWidget(f WidgetFunc) { a.widgets = append(a.widgets, f) }
@@ -116,11 +109,16 @@ func (a *Auth) Render(w http.ResponseWriter, r *http.Request, status int, t *tem
 	d.CSRF = csrf.Token(a.SessionKey, csrfID(r))
 	d.CanAudit = Can(Role(d.Role), PermAuditRead)
 	d.CanUsers = Can(Role(d.Role), PermUsersManage)
-	d.Nav = nil
-	for _, n := range a.nav {
-		if Can(Role(d.Role), n.perm) {
-			d.Nav = append(d.Nav, NavLink{n.label, n.href})
-		}
+	d.Nav, d.NavSistema = a.menu(r.Context(), Role(d.Role), r.URL.Path)
+	if d.Role != "" {
+		d.NavSistema = sistemaFixos(d.NavSistema, Role(d.Role), r.URL.Path)
+	}
+	d.Tab = tabOf(r.URL.Path)
+	if d.Head.Title == "" {
+		d.Head.Title = d.Title
+	}
+	if d.Role != "" && d.Head.Chip == "" && d.Tab == "agenda" {
+		d.Head.Chip = hojeISO(a.now())
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)

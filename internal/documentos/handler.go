@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/platform/webx"
@@ -38,7 +39,7 @@ func page(name string) *template.Template {
 
 // Register declara as rotas, cada uma com a sua permissão.
 func (h *Handler) Register(rt *auth.Router) {
-	h.A.AddNav("Documentos", "/documentos", auth.PermDocRead)
+	h.A.AddNavSistema("Documentos", "/documentos", auth.PermDocRead)
 	rt.Handle("GET /documentos", auth.PermDocRead, h.list)
 	rt.Handle("GET /documentos/novo", auth.PermDocWrite, h.newForm)
 	rt.Handle("POST /documentos", auth.PermDocWrite, h.upload)
@@ -87,6 +88,15 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) 
 		return
 	}
 	pd := base(s, "Documentos")
+	pd.Head = auth.Head{Title: "Documentos", Sub: "Arquivos cifrados no servidor; cada leitura e cada envio ficam na auditoria."}
+	if d.CanWrite {
+		pd.Head.ActionLabel, pd.Head.ActionHref = "Enviar documento", "/documentos/novo"
+		if d.F.ProcessoID != "" {
+			pd.Head.ActionHref += "?processo=" + url.QueryEscape(d.F.ProcessoID)
+		} else if d.F.PessoaID != "" {
+			pd.Head.ActionHref += "?pessoa=" + url.QueryEscape(d.F.PessoaID)
+		}
+	}
 	pd.Data = d
 	h.A.Render(w, r, http.StatusOK, t, pd)
 }

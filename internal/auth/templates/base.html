@@ -6,25 +6,29 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="csrf-token" content="{{.CSRF}}">
 <meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false}'>
-<title>{{.Title}} · Painel Teodoro</title>
+<title>{{if .Role}}Teodoro Advocacia Estratégica — Painel Processual{{else}}{{.Title}} · Painel Teodoro{{end}}</title>
 <link rel="stylesheet" href="/static/painel.css">
 <link rel="stylesheet" href="/static/compat.css">
 <script src="/static/htmx.min.js" defer></script>
 <script src="/static/webauthn.js" defer></script>
+<script src="/static/mascaras.js" defer></script>
 <script src="/static/app.js" defer></script>
+<script src="/static/drawer.js" defer></script>
+<script src="/static/forms.js" defer></script>
 </head>
-<body>
-<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+<body{{if .Role}} data-tab="{{.Tab}}"{{end}}>
 {{if .Role}}
+<a class="skip-link" href="#content">Pular para o conteúdo</a>
 <div id="app">
   <aside class="sidebar">
-    <a class="brand" href="/" aria-label="Painel Teodoro — início"><img class="seal-logo" src="/static/logo.png" alt="" width="150" height="150"></a>
-    <nav class="tabs" aria-label="Principal">
-      <a href="/">Hoje</a>
-      {{range .Nav}}<a href="{{.Href}}">{{.Label}}</a>{{end}}
-      <a href="/conta">Minha conta</a>
-      {{if .CanUsers}}<a href="/admin/usuarios">Usuários</a>{{end}}
-      {{if .CanAudit}}<a href="/admin/auditoria">Auditoria</a>{{end}}
+    <div class="brand">
+      <img class="seal-logo" src="/static/logo.png" alt="Teodoro Advocacia Estratégica" width="150" height="150">
+    </div>
+    <nav class="tabs" id="navTabs" aria-label="Seções do painel">
+      {{range .Nav}}<a href="{{.Href}}"{{if .Active}} class="active" aria-current="page"{{end}}><span>{{.Label}}</span>{{if .HasCount}}<span class="count">{{.Count}}</span>{{end}}</a>{{end}}
+    </nav>
+    <nav class="tabs tabs-sistema" id="navSistema" aria-label="Sistema">
+      {{range .NavSistema}}<a href="{{.Href}}"{{if .Active}} class="active" aria-current="page"{{end}}><span>{{.Label}}</span></a>{{end}}
     </nav>
     <form method="post" action="/logout" class="sair">
       <input type="hidden" name="csrf_token" value="{{.CSRF}}">
@@ -32,20 +36,35 @@
       <button type="submit" class="secundario">Sair</button>
     </form>
   </aside>
-  <div class="main">
-    <main id="conteudo" class="pagina">
+
+  <main class="main">
+    {{range .Faixas}}<div class="notice" role="status"><strong>{{.Strong}}</strong> {{.Text}}{{if .Href}} <a href="{{.Href}}">{{.Link}}</a>{{end}}</div>{{end}}
+    <div class="topbar" id="topbar">
+      <div>
+        <div class="title-row"><h1>{{.Head.Title}}</h1>{{if .Head.Chip}}<time class="agenda-date-chip" datetime="{{.Head.Chip}}">{{.Head.ChipLabel}}</time>{{end}}</div>
+        {{if .Head.Sub}}<p class="sub">{{.Head.Sub}}</p>{{end}}
+      </div>
+      {{if .Head.ActionLabel}}<a class="btn btn-primary" href="{{.Head.ActionHref}}"{{if .Head.ActionDrawer}} data-drawer="{{.Head.ActionHref}}"{{end}}>{{.Head.ActionLabel}}</a>{{end}}
+    </div>
+    <div class="stats" id="stats">{{block "stats" .}}{{end}}</div>
+    <div id="content">
 {{template "content" .}}
-    </main>
-  </div>
+    </div>
+
+    <section id="syncStatus" class="sync-status" aria-label="Estado das coletas"><strong>Estado das coletas</strong><p>Nenhuma coleta configurada neste painel. Não presuma que houve atualização; confira as fontes oficiais.</p></section>
+  </main>
 </div>
-<aside id="drawer" class="drawer-overlay hidden" aria-hidden="true">
-  <div class="drawer" role="dialog" aria-labelledby="drawer-titulo" aria-modal="false" tabindex="-1">
-    <div id="drawer-corpo"></div>
-  </div>
-</aside>
-<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+<div id="idxTicker" class="idx-ticker" role="status" aria-label="Índices econômicos"><span class="idxt-status">Índices econômicos: não sincronizado</span></div>
+
+<div class="drawer-overlay hidden" id="drawerOverlay" aria-hidden="true">
+  <div class="drawer" id="drawer" role="dialog" aria-modal="false" aria-labelledby="drawerTitle" tabindex="-1"></div>
+</div>
+
+<div class="toast hidden" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 {{else}}
+<a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
 <main id="conteudo" class="cartao">
+<h1>{{.Title}}</h1>
 {{template "content" .}}
 </main>
 {{end}}

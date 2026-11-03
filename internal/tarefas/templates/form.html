@@ -1,5 +1,4 @@
 {{define "content"}}
-{{with .Data}}<h1>{{if .IsNew}}Nova tarefa{{else}}Editar tarefa{{end}}</h1>{{end}}
 {{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
 {{with .Data}}
 <p class="apoio">O vencimento é o que você informa: o sistema não calcula prazo processual.</p>

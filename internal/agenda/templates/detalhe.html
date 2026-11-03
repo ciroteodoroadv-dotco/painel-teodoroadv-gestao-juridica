@@ -1,8 +1,4 @@
 {{define "content"}}{{with .Data}}{{$e := .E}}
-<div class="cabeca">
-  <h1>{{$e.Titulo}}</h1>
-  {{if .CanWrite}}<a class="botao secundario" href="/agenda/{{$e.ID}}/editar">Editar</a>{{end}}
-</div>
 {{if .Aviso}}<p class="ok" role="status">Evento cadastrado.</p>{{end}}
 {{if .Erro}}<p class="erro" role="alert">Não foi possível adicionar o participante.</p>{{end}}
 <dl class="ficha">

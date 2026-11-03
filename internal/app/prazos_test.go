@@ -71,7 +71,7 @@ func TestPrazosRegraDeOuro(t *testing.T) {
 
 	// A tela "Hoje" avisa o que está a conferir e mostra o prazo próximo.
 	_, home := adv.get("/")
-	if !strings.Contains(home, "aguardando conferência") || !strings.Contains(home, "Recurso digitado pela assistente") {
+	if !strings.Contains(home, "prazo(s) a conferir") || !strings.Contains(home, "Recurso digitado pela assistente") {
 		t.Error("a tela Hoje deveria avisar sobre prazo a conferir")
 	}
 

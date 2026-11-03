@@ -1,8 +1,4 @@
 {{define "content"}}{{with .Data}}
-<div class="cabeca">
-  <h1>Documentos</h1>
-  {{if .CanWrite}}<a class="botao" href="/documentos/novo{{if .F.ProcessoID}}?processo={{.F.ProcessoID}}{{else if .F.PessoaID}}?pessoa={{.F.PessoaID}}{{end}}">Enviar documento</a>{{end}}
-</div>
 <p class="apoio">Arquivos ficam cifrados no servidor. Cada leitura e cada envio são registrados na auditoria.</p>
 <form method="get" action="/documentos" role="search" class="busca"
       hx-get="/documentos" hx-trigger="input changed delay:300ms from:#q, search from:#q"

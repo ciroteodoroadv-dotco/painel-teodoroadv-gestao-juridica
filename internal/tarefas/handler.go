@@ -27,7 +27,7 @@ func page(name string) *template.Template {
 
 // Register declara as rotas, cada uma com a sua permissão, e o bloco da tela "Hoje".
 func (h *Handler) Register(rt *auth.Router) {
-	h.A.AddNav("Tarefas", "/tarefas", auth.PermTarefaRead)
+	h.A.AddNavCount("Tarefas", "/tarefas", auth.PermTarefaRead, webx.ContarAtivos(h.S.Pool, "tarefas"))
 	h.A.AddWidget(h.widget)
 	rt.Handle("GET /tarefas", auth.PermTarefaRead, h.list)
 	rt.Handle("GET /tarefas/nova", auth.PermTarefaWrite, h.newForm)
@@ -92,6 +92,10 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) 
 		return
 	}
 	pd := base(s, "Tarefas")
+	pd.Head = auth.Head{Title: "Tarefas", Sub: "Tarefas do escritório, com o vencimento informado pelo advogado."}
+	if d.CanWrite {
+		pd.Head.ActionLabel, pd.Head.ActionHref = "Nova tarefa", "/tarefas/nova"
+	}
 	pd.Data = d
 	h.A.Render(w, r, http.StatusOK, t, pd)
 }
@@ -104,7 +108,10 @@ func (h *Handler) renderForm(w http.ResponseWriter, r *http.Request, s *auth.Ses
 			f.ProcessoNum = m[f.In.ProcessoID]
 		}
 	}
-	pd := base(s, "Tarefa")
+	pd := base(s, "Editar tarefa")
+	if f.IsNew {
+		pd.Title = "Nova tarefa"
+	}
 	pd.Data, pd.Error = f, msg
 	h.A.Render(w, r, status, page("form.html"), pd)
 }

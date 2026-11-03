@@ -1,5 +1,5 @@
 {{define "content"}}
-{{with .Data}}<h1>{{if .IsNew}}Novo prazo{{else}}Editar prazo{{end}}</h1>{{if .Aviso}}<p class="erro" role="status">{{.Aviso}}</p>{{end}}{{end}}
+{{with .Data}}{{if .Aviso}}<p class="erro" role="status">{{.Aviso}}</p>{{end}}{{end}}
 {{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
 {{with .Data}}
 <p class="apoio">Digite a <strong>data fatal</strong> como você a apurou (dias corridos; o sistema não calcula dia útil nem feriado forense). Indique o fundamento e a fonte para quem for conferir.</p>

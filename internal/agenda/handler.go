@@ -28,8 +28,9 @@ func page(name string) *template.Template {
 
 // Register declara as rotas, cada uma com a sua permissão, e o bloco da tela "Hoje".
 func (h *Handler) Register(rt *auth.Router) {
-	h.A.AddNav("Agenda", "/agenda", auth.PermAgendaRead)
+	h.A.AddNavCount("Agenda", "/agenda", auth.PermAgendaRead, webx.ContarAtivos(h.S.Pool, "agenda_eventos"))
 	h.A.AddWidget(h.widget)
+	h.A.HomeHead = func(s *auth.Session) auth.Head { return AgendaHead(auth.Can(s.Role, auth.PermAgendaWrite)) }
 	rt.Handle("GET /agenda", auth.PermAgendaRead, h.list)
 	rt.Handle("GET /agenda/novo", auth.PermAgendaWrite, h.newForm)
 	rt.Handle("POST /agenda", auth.PermAgendaWrite, h.create)
@@ -103,6 +104,7 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) 
 		return
 	}
 	pd := base(s, "Agenda")
+	pd.Head = AgendaHead(d.CanWrite)
 	pd.Data = d
 	h.A.Render(w, r, http.StatusOK, t, pd)
 }
@@ -115,7 +117,10 @@ func (h *Handler) renderForm(w http.ResponseWriter, r *http.Request, s *auth.Ses
 			f.ProcessoNum = m[f.In.ProcessoID]
 		}
 	}
-	pd := base(s, "Evento")
+	pd := base(s, "Editar evento")
+	if f.IsNew {
+		pd.Title = "Novo evento"
+	}
 	pd.Data, pd.Error = f, msg
 	h.A.Render(w, r, status, page("form.html"), pd)
 }
@@ -152,6 +157,9 @@ func (h *Handler) detail(w http.ResponseWriter, r *http.Request, s *auth.Session
 		return
 	}
 	pd := base(s, e.Titulo)
+	if auth.Can(s.Role, auth.PermAgendaWrite) {
+		pd.Head.ActionLabel, pd.Head.ActionHref = "Editar", "/agenda/"+e.ID+"/editar"
+	}
 	pd.Data = map[string]any{"E": e, "CanWrite": auth.Can(s.Role, auth.PermAgendaWrite),
 		"Aviso": r.URL.Query().Get("aviso") == "criado", "Erro": r.URL.Query().Get("erro") != ""}
 	h.A.Render(w, r, http.StatusOK, page("detalhe.html"), pd)
@@ -266,4 +274,13 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 	default:
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 	}
+}
+
+// AgendaHead é o cabeçalho da Agenda (a lista e a tela inicial usam o mesmo).
+func AgendaHead(canWrite bool) auth.Head {
+	h := auth.Head{Title: "Agenda", Sub: "Compromissos do escritório: audiências, reuniões, ligações, diligências e aulas."}
+	if canWrite {
+		h.ActionLabel, h.ActionHref = "Novo compromisso", "/agenda/novo"
+	}
+	return h
 }

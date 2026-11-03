@@ -1,8 +1,4 @@
 {{define "content"}}{{with .Data}}
-<div class="cabeca">
-  <h1>Processos</h1>
-  {{if .CanWrite}}<a class="botao" href="/processos/novo">Novo processo</a>{{end}}
-</div>
 <form method="get" action="/processos" role="search" class="busca linha"
       hx-get="/processos" hx-trigger="input changed delay:300ms from:#q, change from:#situacao, search from:#q"
       hx-target="#resultado" hx-push-url="true" hx-sync="this:replace">

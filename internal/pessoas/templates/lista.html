@@ -1,8 +1,4 @@
 {{define "content"}}{{with .Data}}
-<div class="cabeca">
-  <h1>Pessoas</h1>
-  {{if .CanWrite}}<a class="botao" href="/pessoas/nova">Nova pessoa</a>{{end}}
-</div>
 <form method="get" action="/pessoas" role="search" class="busca">
   <label for="q">Buscar por nome ou por CPF/CNPJ completo</label>
   <input id="q" name="q" type="search" value="{{.Q}}" autocomplete="off"

@@ -1,8 +1,4 @@
 {{define "content"}}{{with .Data}}
-<div class="cabeca">
-  <h1>Prazos</h1>
-  {{if .CanWrite}}<a class="botao" href="/prazos/novo">Novo prazo</a>{{end}}
-</div>
 <p class="apoio"><strong>Regra de ouro:</strong> o prazo só vale depois de confirmado por advogado. Os dias são <em>corridos</em>; o sistema ainda não calcula dias úteis nem feriados forenses. Confira sempre também no tribunal.</p>
 <form method="get" action="/prazos" role="search" class="busca linha"
       hx-get="/prazos" hx-trigger="input changed delay:300ms from:#q, change from:#situacao, change from:#quem, search from:#q"

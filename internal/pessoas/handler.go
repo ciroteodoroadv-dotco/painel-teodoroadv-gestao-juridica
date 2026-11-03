@@ -26,7 +26,7 @@ func page(name string) *template.Template {
 
 // Register declara as rotas, cada uma com a sua permissão.
 func (h *Handler) Register(rt *auth.Router) {
-	h.A.AddNav("Pessoas", "/pessoas", auth.PermPessoasRead)
+	h.A.AddNavCount("Pessoas", "/pessoas", auth.PermPessoasRead, webx.ContarAtivos(h.S.Pool, "pessoas"))
 	rt.Handle("GET /pessoas", auth.PermPessoasRead, h.list)
 	rt.Handle("GET /pessoas/nova", auth.PermPessoasWrite, h.newForm)
 	rt.Handle("POST /pessoas", auth.PermPessoasWrite, h.create)
@@ -81,13 +81,20 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) 
 		return
 	}
 	pd := base(s, "Pessoas")
+	pd.Head = auth.Head{Title: "Pessoas", Sub: "Cadastro de clientes, partes adversas e terceiros interessados — art. 319 do CPC."}
+	if d.CanWrite {
+		pd.Head.ActionLabel, pd.Head.ActionHref = "Nova pessoa", "/pessoas/nova"
+	}
 	pd.Data = d
 	h.A.Render(w, r, http.StatusOK, t, pd)
 }
 
 func (h *Handler) renderForm(w http.ResponseWriter, r *http.Request, s *auth.Session, status int, f formData, msg string) {
 	f.Papeis = Papeis
-	pd := base(s, "Pessoa")
+	pd := base(s, "Editar pessoa")
+	if f.IsNew {
+		pd.Title = "Nova pessoa"
+	}
 	pd.Data, pd.Error = f, msg
 	h.A.Render(w, r, status, page("form.html"), pd)
 }
@@ -127,6 +134,9 @@ func (h *Handler) detail(w http.ResponseWriter, r *http.Request, s *auth.Session
 		refs, _ = h.S.Processos.ProcessosDaPessoa(r.Context(), p.ID)
 	}
 	pd := base(s, p.Nome)
+	if auth.Can(s.Role, auth.PermPessoasWrite) {
+		pd.Head.ActionLabel, pd.Head.ActionHref = "Editar", "/pessoas/"+p.ID+"/editar"
+	}
 	pd.Data = map[string]any{"P": p, "Refs": refs, "CanWrite": auth.Can(s.Role, auth.PermPessoasWrite),
 		"Aviso": r.URL.Query().Get("aviso") == "criada"}
 	h.A.Render(w, r, http.StatusOK, page("detalhe.html"), pd)

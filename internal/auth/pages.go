@@ -6,14 +6,24 @@ import (
 	"painelteodoro/internal/audit"
 )
 
-// RegisterPages liga a tela inicial e a visão de auditoria (somente administrador).
+// RegisterPages liga a tela inicial (a Agenda) e a visão de auditoria (somente administrador).
 func (a *Auth) RegisterPages(rt *Router) {
 	rt.Handle("GET /{$}", PermHome, a.home)
 	rt.Handle("GET /admin/auditoria", PermAuditRead, a.auditPage)
 }
 
 func (a *Auth) home(w http.ResponseWriter, r *http.Request, s *Session) {
-	d := PageData{Title: "Hoje", Email: s.Email, Role: string(s.Role)}
+	d := PageData{Title: "Agenda", Email: s.Email, Role: string(s.Role)}
+	if a.HomeHead != nil {
+		d.Head = a.HomeHead(s)
+	}
+	for _, f := range a.faixas {
+		if fx, err := f(r.Context(), s); err == nil && (fx.Strong != "" || fx.Text != "") {
+			d.Faixas = append(d.Faixas, fx)
+		} else if err != nil {
+			a.Log.Error("faixa da tela inicial falhou")
+		}
+	}
 	for _, f := range a.widgets {
 		if wd, err := f(r.Context(), s); err == nil && wd.Body != "" {
 			d.Widgets = append(d.Widgets, wd)

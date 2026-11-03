@@ -1,8 +1,4 @@
 {{define "content"}}{{with .Data}}{{$p := .P}}
-<div class="cabeca">
-  <h1><code>{{$p.Numero}}</code></h1>
-  {{if .CanWrite}}<a class="botao secundario" href="/processos/{{$p.ID}}/editar">Editar</a>{{end}}
-</div>
 {{if .Aviso}}<p class="ok" role="status">Processo cadastrado. Agora adicione as partes.</p>{{end}}
 {{if .Erro}}<p class="erro" role="alert">Não foi possível adicionar a parte. Escolha uma pessoa e a qualidade.</p>{{end}}
 <dl class="ficha">

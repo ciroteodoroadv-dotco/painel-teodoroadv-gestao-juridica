@@ -1,5 +1,4 @@
 {{define "content"}}
-<h1>Códigos de recuperação</h1>
 <p class="apoio"><strong>Guarde estes códigos agora, em local seguro.</strong> Cada um vale uma vez e serve se você perder o aparelho ou a chave. Esta é a única vez em que aparecem; os códigos anteriores deixam de valer.</p>
 <ul class="codigos">{{range .Codes}}<li><code>{{.}}</code></li>{{end}}</ul>
 <p><a class="botao" href="{{if .Next}}{{.Next}}{{else}}/{{end}}">Já guardei, continuar</a></p>

@@ -1,5 +1,4 @@
 {{define "content"}}
-{{with .Data}}<h1>{{if .IsNew}}Novo processo{{else}}Editar processo{{end}}</h1>{{end}}
 {{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
 {{with .Data}}
 <form method="post" action="{{if .IsNew}}/processos{{else}}/processos/{{.ID}}{{end}}" data-protege class="grade">

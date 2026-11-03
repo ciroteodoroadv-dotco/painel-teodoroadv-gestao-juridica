@@ -1,5 +1,4 @@
 {{define "content"}}
-{{with .Data}}<h1>{{if .IsNew}}Novo evento{{else}}Editar evento{{end}}</h1>{{end}}
 {{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
 {{with .Data}}
 <p class="apoio">Data e hora no horário de Brasília. O sistema não calcula prazo: registre a data que você definiu.</p>

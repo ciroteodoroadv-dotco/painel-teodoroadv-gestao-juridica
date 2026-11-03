@@ -5,6 +5,7 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 
@@ -27,8 +28,9 @@ func page(name string) *template.Template {
 
 // Register declara as rotas e o bloco de prazos críticos da tela "Hoje".
 func (h *Handler) Register(rt *auth.Router) {
-	h.A.AddNav("Prazos", "/prazos", auth.PermPrazoRead)
+	h.A.AddNavSistema("Prazos", "/prazos", auth.PermPrazoRead)
 	h.A.AddWidget(h.widget)
+	h.A.AddFaixa(h.faixa)
 	rt.Handle("GET /prazos", auth.PermPrazoRead, h.list)
 	rt.Handle("GET /prazos/novo", auth.PermPrazoWrite, h.newForm)
 	rt.Handle("POST /prazos", auth.PermPrazoWrite, h.create)
@@ -94,6 +96,10 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) 
 		return
 	}
 	pd := base(s, "Prazos")
+	pd.Head = auth.Head{Title: "Prazos", Sub: "Prazos informados pelo advogado; só valem depois de confirmados."}
+	if d.CanWrite {
+		pd.Head.ActionLabel, pd.Head.ActionHref = "Novo prazo", "/prazos/novo"
+	}
 	pd.Data = d
 	h.A.Render(w, r, http.StatusOK, t, pd)
 }
@@ -109,7 +115,10 @@ func (h *Handler) renderForm(w http.ResponseWriter, r *http.Request, s *auth.Ses
 	if !auth.Can(s.Role, auth.PermPrazoConfirm) {
 		f.Aviso = "Você pode registrar o prazo, mas ele só passa a valer quando um advogado confirmar."
 	}
-	pd := base(s, "Prazo")
+	pd := base(s, "Editar prazo")
+	if f.IsNew {
+		pd.Title = "Novo prazo"
+	}
 	pd.Data, pd.Error = f, msg
 	h.A.Render(w, r, status, page("form.html"), pd)
 }
@@ -205,15 +214,14 @@ func (h *Handler) processoOptions(w http.ResponseWriter, r *http.Request, _ *aut
 	_ = template.Must(template.New("o").Parse(`<option value="">— sem processo —</option>{{range .}}<option value="{{.Valor}}">{{.Rotulo}}</option>{{end}}`)).Execute(w, opts)
 }
 
-// widget mostra, no topo da tela "Hoje", os prazos vencidos ou a vencer em 5 dias e quantos aguardam conferência.
+// widget mostra, na Agenda inicial, os prazos vencidos ou a vencer em 5 dias e quantos aguardam conferência.
 func (h *Handler) widget(ctx context.Context, _ *auth.Session) (auth.Widget, error) {
 	list, aConferir, err := h.S.Criticos(ctx, 5, 15)
 	if err != nil || (len(list) == 0 && aConferir == 0) {
 		return auth.Widget{}, err
 	}
 	var b bytes.Buffer
-	t := template.Must(template.New("w").Parse(`{{if .A}}<p class="aviso-prazo" role="status"><strong>{{.A}} prazo(s) aguardando conferência de advogado</strong> — só valem depois de confirmados.</p>{{end}}
-<ul class="lista">{{range .L}}<li class="nivel-{{.Nivel}}"><span><strong>{{.Rotulo}}</strong> {{.Descricao}}
+	t := template.Must(template.New("w").Parse(`<ul class="lista">{{range .L}}<li class="nivel-{{.Nivel}}"><span><strong>{{.Rotulo}}</strong> {{.Descricao}}
 {{if .ProcessoNumero}}<small class="apoio">· {{.ProcessoNumero}}</small>{{end}}{{if eq .Situacao "a_conferir"}} <span class="selo">a conferir</span>{{end}}</span>
 <small>{{.DataFatal.Format "02/01/2006"}} · {{.Texto}}</small></li>{{end}}</ul>
 <p><a href="/prazos">Abrir todos os prazos</a></p>`))
@@ -221,6 +229,17 @@ func (h *Handler) widget(ctx context.Context, _ *auth.Session) (auth.Widget, err
 		return auth.Widget{}, err
 	}
 	return auth.Widget{Title: "PRAZOS — vencidos ou a vencer em 5 dias", Body: template.HTML(b.String())}, nil // #nosec G203 -- saída do html/template
+}
+
+// faixa resume, na Agenda inicial, quantos prazos aguardam conferência e quantos vencem em até 5 dias.
+// Só conta o que já está registrado: nenhum cálculo novo.
+func (h *Handler) faixa(ctx context.Context, _ *auth.Session) (auth.Faixa, error) {
+	list, aConferir, err := h.S.Criticos(ctx, 5, 15)
+	if err != nil || (len(list) == 0 && aConferir == 0) {
+		return auth.Faixa{}, err
+	}
+	return auth.Faixa{Strong: fmt.Sprintf("%d prazo(s) a conferir", aConferir),
+		Text: fmt.Sprintf("· %d vencido(s) ou a vencer em até 5 dias —", len(list)), Href: "/prazos", Link: "ver Prazos"}, nil
 }
 
 func (h *Handler) fail(w http.ResponseWriter, err error) {

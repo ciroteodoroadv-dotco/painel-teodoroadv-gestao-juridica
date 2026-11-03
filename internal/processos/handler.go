@@ -25,7 +25,7 @@ func page(name string) *template.Template {
 
 // Register declara as rotas, cada uma com a sua permissão.
 func (h *Handler) Register(rt *auth.Router) {
-	h.A.AddNav("Processos", "/processos", auth.PermProcRead)
+	h.A.AddNavCount("Processos", "/processos", auth.PermProcRead, webx.ContarAtivos(h.S.Pool, "processos"))
 	rt.Handle("GET /processos", auth.PermProcRead, h.list)
 	rt.Handle("GET /processos/novo", auth.PermProcWrite, h.newForm)
 	rt.Handle("POST /processos", auth.PermProcWrite, h.create)
@@ -83,6 +83,10 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) 
 		return
 	}
 	pd := base(s, "Processos")
+	pd.Head = auth.Head{Title: "Processos", Sub: "Cadastro processual: partes, órgão, situação e responsável."}
+	if d.CanWrite {
+		pd.Head.ActionLabel, pd.Head.ActionHref = "Novo processo", "/processos/novo"
+	}
 	pd.Data = d
 	h.A.Render(w, r, http.StatusOK, t, pd)
 }
@@ -90,7 +94,10 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) 
 func (h *Handler) renderForm(w http.ResponseWriter, r *http.Request, s *auth.Session, status int, f formData, msg string) {
 	f.Situacoes = Situacoes
 	f.Responsaveis, _ = h.S.Users.Options(r.Context())
-	pd := base(s, "Processo")
+	pd := base(s, "Editar processo")
+	if f.IsNew {
+		pd.Title = "Novo processo"
+	}
 	pd.Data, pd.Error = f, msg
 	h.A.Render(w, r, status, page("form.html"), pd)
 }
@@ -125,6 +132,9 @@ func (h *Handler) detail(w http.ResponseWriter, r *http.Request, s *auth.Session
 		return
 	}
 	pd := base(s, p.Numero)
+	if auth.Can(s.Role, auth.PermProcWrite) {
+		pd.Head.ActionLabel, pd.Head.ActionHref = "Editar", "/processos/"+p.ID+"/editar"
+	}
 	pd.Data = map[string]any{"P": p, "Qualidades": Qualidades, "CanWrite": auth.Can(s.Role, auth.PermProcWrite),
 		"Aviso": r.URL.Query().Get("aviso") == "criado", "Erro": r.URL.Query().Get("erro") != ""}
 	h.A.Render(w, r, http.StatusOK, page("detalhe.html"), pd)

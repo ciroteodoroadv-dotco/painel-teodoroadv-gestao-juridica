@@ -1,8 +1,4 @@
 {{define "content"}}{{with .Data}}{{$p := .P}}
-<div class="cabeca">
-  <h1>{{$p.Nome}}</h1>
-  {{if .CanWrite}}<a class="botao secundario" href="/pessoas/{{$p.ID}}/editar">Editar</a>{{end}}
-</div>
 {{if .Aviso}}<p class="ok" role="status">Pessoa cadastrada.</p>{{end}}
 <dl class="ficha">
   <dt>Tipo</dt><dd>{{if eq $p.Tipo "PF"}}Pessoa física{{else}}Pessoa jurídica{{end}}</dd>
