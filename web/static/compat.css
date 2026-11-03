@@ -60,12 +60,15 @@ tbody tr:hover{background:#EEF2F1;}
 
 /* Menu lateral com links (o B usa botões): mesmas regras de nav.tabs button, trocando o seletor. */
 [hidden]{display:none!important;}
-nav.tabs a{cursor:pointer;padding:9px 12px;border-radius:var(--radius);font-size:13.5px;color:#C3CBD1;text-decoration:none;display:flex;align-items:center;justify-content:space-between;}
+nav.tabs a{box-sizing:content-box;cursor:pointer;padding:9px 12px;border-radius:var(--radius);font-size:13.5px;color:#C3CBD1;text-decoration:none;display:flex;align-items:center;justify-content:space-between;}
 nav.tabs a:hover{background:var(--ink-2);color:#fff;}
 nav.tabs a.active{background:var(--ink-2);color:#fff;box-shadow:inset 2px 0 0 var(--brass);}
 nav.tabs a .count{font-size:11px;color:#8B98A3;background:rgba(255,255,255,.06);padding:1px 6px;border-radius:10px;}
 nav.tabs a.active .count{color:#F1EFE9;}
 nav.tabs-sistema{margin-bottom:0;margin-top:14px;padding-top:10px;border-top:1px solid #262626;}
+/* No drawer valem as medidas do B (o h2 em negrito, o rótulo sem margem acima). */
+.drawer h2{font-weight:700;}
+.field label{margin-top:0;}
 /* Botões do topo feitos com <a>: o a:hover genérico não pode apagar a cor do texto. */
 a.btn-primary,a.btn-primary:hover{color:#fff;}
 a.btn-ghost,a.btn-ghost:hover{color:var(--text);}
