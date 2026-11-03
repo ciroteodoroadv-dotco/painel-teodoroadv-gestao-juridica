@@ -1,0 +1,19 @@
+{{define "editar"}}<h2>Editar diligência</h2>
+    <p class="drawer-sub">{{.D.Titulo}}</p>
+    <form data-drawer-form method="post" action="/diligencias/{{.D.ID}}">
+      <input type="hidden" name="version" value="{{.D.Version}}">
+      <div class="field"><label>Título *</label><input type="text" name="titulo" required value="{{.D.Titulo}}"></div>
+      <div class="field"><label>Processo vinculado</label><input type="text" name="processo" data-mask="cnj" value="{{.D.ProcessoNumero}}"></div>
+      <div class="field"><label>Cliente</label><select name="cliente"><option value="">—</option>{{$c := .D.ClienteID}}{{range .Pessoas}}<option value="{{.Valor}}"{{if eq .Valor $c}} selected{{end}}>{{.Rotulo}}</option>{{end}}</select></div>
+      <div class="row2">
+        <div class="field"><label>Data-limite *</label><input type="date" name="data_limite" required value="{{.D.DataISO}}"></div>
+        <div class="field"><label>Hora</label><input type="time" name="hora" value="{{.D.Hora}}"></div>
+      </div>
+      <div class="field"><label>Local</label><input type="text" name="local" value="{{.D.Local}}"></div>
+      <div class="field"><label>Responsável</label><input type="text" name="responsavel" value="{{.D.Responsavel}}"></div>
+      <div class="hint hint-bloco">Status não se edita por aqui.</div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar alterações</button>
+      </div>
+    </form>{{end}}

@@ -46,7 +46,10 @@ func newEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	_, _ = pool.Exec(ctx, `TRUNCATE pessoas, processos CASCADE`) // a migração 0008 só reverte com tabelas vazias; erro ignorado na 1ª execução
+	t.Cleanup(func() { // deixa o banco limpo: o Reset das migrações (0008/0009/0010) só reverte com tabelas vazias
+		_, _ = pool.Exec(context.Background(), `TRUNCATE pessoas, processos, atendimentos, agenda_compromissos, audiencias, diligencias CASCADE`)
+	})
+	_, _ = pool.Exec(ctx, `TRUNCATE pessoas, processos, atendimentos, agenda_compromissos, audiencias, diligencias CASCADE`) // a migração 0008 só reverte com tabelas vazias; erro ignorado na 1ª execução
 	if err := migrate.Reset(ctx, pool); err != nil {
 		t.Fatal(err)
 	}

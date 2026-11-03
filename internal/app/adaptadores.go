@@ -8,6 +8,7 @@ import (
 	"painelteodoro/internal/atendimentos"
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/documentos"
+	"painelteodoro/internal/pessoas"
 	"painelteodoro/internal/platform/webx"
 	"painelteodoro/internal/prazos"
 	"painelteodoro/internal/processos"
@@ -34,6 +35,7 @@ func (a prazoSync) Confirmar(ctx context.Context, ac webx.Actor, tarefaID string
 type vinculos struct {
 	ate  *atendimentos.Service
 	proc *processos.Service
+	pes  *pessoas.Service
 }
 
 func (v vinculos) Resumos(ctx context.Context, tipo string, ids []string) (map[string][2]string, error) {

@@ -169,42 +169,6 @@ func (s *Service) Listar(ctx context.Context, q string) ([]*Tarefa, error) {
 	return out, nil
 }
 
-// tronco reduz o subtítulo à forma comparável: sem acento, sem maiúsculas e sem plural ("ligações"→"ligacao", "aulas"→"aula").
-func tronco(s string) string {
-	s = strings.TrimSpace(webx.SemAcento(s))
-	switch {
-	case strings.HasSuffix(s, "oes"):
-		return strings.TrimSuffix(s, "oes") + "ao"
-	case strings.HasSuffix(s, "s"):
-		return strings.TrimSuffix(s, "s")
-	}
-	return s
-}
-
-// AbertasPorSubtitulo devolve as tarefas em aberto (nem concluídas, nem canceladas, nem excluídas) cujo subtítulo
-// é q, para a Agenda (Plano 4). Compara sem acento e sem plural: Ligação/ligações, Reunião/reuniões, Aula/aulas.
-func (s *Service) AbertasPorSubtitulo(ctx context.Context, q string, limite int) ([]Resumo, error) {
-	rows, err := s.Pool.Query(ctx, `SELECT id, codigo, titulo, subtitulo, estado, prazo, prazo_fatal FROM tarefas
-		WHERE excluido_em IS NULL AND subtitulo <> '' AND estado NOT IN ('concluidas-com-sucesso','concluidas-sem-sucesso','canceladas')
-		ORDER BY coalesce(prazo, prazo_fatal) NULLS LAST, codigo`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	alvo := tronco(q)
-	var out []Resumo
-	for rows.Next() {
-		var r Resumo
-		if err := rows.Scan(&r.ID, &r.Codigo, &r.Titulo, &r.Subtitulo, &r.Estado, &r.Prazo, &r.PrazoFatal); err != nil {
-			return nil, err
-		}
-		if tronco(r.Subtitulo) == alvo && (limite <= 0 || len(out) < limite) {
-			out = append(out, r)
-		}
-	}
-	return out, rows.Err()
-}
-
 // AbertosDoProcesso conta as tarefas em aberto ligadas ao processo (pede confirmação extra ao excluí-lo).
 func (s *Service) AbertosDoProcesso(ctx context.Context, processoID string) (int, error) {
 	var n int

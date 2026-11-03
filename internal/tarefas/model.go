@@ -79,12 +79,6 @@ func (t Tarefa) ResponsaveisTexto() string {
 	return s
 }
 
-// Resumo é a visão curta que a Agenda usa (Plano 4).
-type Resumo struct {
-	ID, Codigo, Titulo, Subtitulo, Estado string
-	Prazo, PrazoFatal                     *time.Time
-}
-
 // Input vem do formulário. Datas em AAAA-MM-DD; pessoas e vínculos são ids.
 type Input struct {
 	OrigemTipo, OrigemID, TarefaPai, Titulo, Subtitulo, Descricao string
@@ -106,6 +100,8 @@ type VinculoLookup interface {
 	Resumos(ctx context.Context, tipo string, ids []string) (map[string][2]string, error)
 	// Opcoes monta o seletor "Vínculo específico": "ATE. 0000001 · CLIENTE" / "PRO. 0000012 · CLIENTE".
 	Opcoes(ctx context.Context, tipo string) ([]Opcao, error)
+	// Clientes devolve id → clientes (nome e código PES) do atendimento/processo, para a tabela de tarefas da Agenda.
+	Clientes(ctx context.Context, tipo string, ids []string) (map[string][]Ref, error)
 }
 
 // PrazoSync espelha o prazo fatal da tarefa no domínio Prazos (o adaptador mora em internal/app).

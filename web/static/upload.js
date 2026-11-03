@@ -18,7 +18,7 @@
       credentials: "same-origin"
     }).then(function (r) {
       if (r.headers.get("X-Painel-Ok") !== null) {
-        window.PainelToast(r.headers.get("X-Painel-Ok"), false);
+        window.PainelToast(window.App.textoDoCabecalho(r.headers.get("X-Painel-Ok")), false);
         i.value = "";
         return null;
       }

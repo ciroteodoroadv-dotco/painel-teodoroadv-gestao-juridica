@@ -1,0 +1,32 @@
+{{define "opcoesVinculo"}}<option value="">Sem vínculo</option>{{$s := .Sel}}{{range .Opcoes}}<option value="{{.Valor}}"{{if eq .Valor $s}} selected{{end}}>{{.Rotulo}}</option>{{end}}{{end}}
+
+{{define "form"}}<h2>{{if .Novo}}Novo compromisso{{else}}Editar compromisso{{end}}</h2>
+    <p class="drawer-sub">{{if .Novo}}Audiência nunca é bloqueada por conflito de horário; os demais compromissos podem ser. Prazo fatal é campo da tarefa (aba Tarefas), não compromisso.{{else}}{{.C.Descricao}}{{end}}</p>
+    <form data-drawer-form method="post" action="{{if .Novo}}/agenda{{else}}/agenda/{{.C.ID}}{{end}}">{{if not .Novo}}
+      <input type="hidden" name="version" value="{{.C.Version}}">{{end}}
+      <div class="field"><label>Tipo *</label>
+        <select name="tipo"{{if .Novo}} data-mostra-quando="Diligência" data-mostra="#camposDiligencia"{{end}} data-oculta-quando="Diligência" data-oculta=".so-compromisso" required>{{if .Novo}}
+          <option value="">Selecione…</option>{{end}}{{$t := .C.Tipo}}{{range .Tipos}}
+          <option{{if eq . $t}} selected{{end}}>{{.}}</option>{{end}}
+        </select>
+      </div>
+      <div class="field"><label>Descrição *</label><input type="text" name="descricao" required value="{{.C.Descricao}}"></div>
+      <div class="row2">
+        <div class="field"><label>Data *</label><input type="date" name="data" required value="{{.C.DataISO}}"></div>
+        <div class="field"><label>Hora *</label><input type="time" name="hora" required value="{{.C.Hora}}"></div>
+      </div>
+      <div class="field"><label>Local ou link da aula/reunião</label><input type="text" name="local" value="{{.C.Local}}">{{if .Novo}}<p class="hint">Somente registro do local/link. Não inicia gravação, download ou transcrição.</p>{{end}}</div>{{if .Novo}}
+      <div id="camposDiligencia" hidden>
+        <div class="field" id="campoResponsavelDiligencia">
+          <label>Responsável pela diligência</label><input type="text" name="responsavel">
+        </div>
+      </div>{{end}}
+      <div class="field agenda-vinculos"><label>Cliente (opcional)</label><input type="search" aria-label="Buscar cliente do compromisso" placeholder="Buscar nome ou código PES…" data-filtra-opcoes><select name="cliente">{{template "opcoesVinculo" .Clientes}}</select></div>
+      <div class="field agenda-vinculos so-compromisso"><label>Atendimento vinculado (opcional)</label><input type="search" aria-label="Buscar atendimento do compromisso" placeholder="Buscar código ATE, cliente ou objeto…" data-filtra-opcoes><select name="atendimento">{{template "opcoesVinculo" .Atendimentos}}</select></div>
+      <div class="field agenda-vinculos"><label>Processo vinculado (opcional)</label><input type="search" aria-label="Buscar processo do compromisso" placeholder="Buscar código PRO, número ou título…" data-filtra-opcoes><select name="processo">{{template "opcoesVinculo" .Processos}}</select></div>
+      <div class="field so-compromisso"><label>Criado por</label><select name="criado_por"><option value="">Não informado</option>{{$c := .C.CriadoPorID}}{{range .Criadores}}<option value="{{.ID}}"{{if eq .ID $c}} selected{{end}}>{{.Rotulo}}</option>{{end}}</select><p class="hint">Pessoa que criou este registro. Não define quem executará a atividade.</p></div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">{{if .Novo}}Salvar compromisso{{else}}Salvar alterações{{end}}</button>
+      </div>
+    </form>{{end}}

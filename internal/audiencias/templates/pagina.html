@@ -1,0 +1,22 @@
+{{define "stats"}}{{with .Data}}<div class="acc-heads">{{range .Paineis}}
+    <button class="acc-head" data-acc="audiencias:{{.Ato.Chave}}"><span>{{.Ato.Rotulo}}</span><span class="count">{{len .Linhas}}</span></button>{{end}}</div>{{end}}{{end}}
+
+{{define "content"}}{{with .Data}}<div class="toolbar">
+    <label class="sr-only" for="buscaAudiencias">Buscar audiências</label>
+    <input id="buscaAudiencias" class="search" autocomplete="off" placeholder="Buscar por título, processo, cliente ou juízo…" data-filtro=".acc table">
+  </div>
+  <div class="acc">{{$w := .CanWrite}}{{$x := .CanCancel}}{{range .Paineis}}
+    <div class="acc-item" data-acc="audiencias:{{.Ato.Chave}}">
+      <div class="acc-body">{{if .Linhas}}<table><thead><tr><th>Tipo do ato</th><th>Código</th><th>Título</th><th>Data</th><th>Hora</th><th>Local</th><th>Processo</th><th></th></tr></thead>
+    <tbody>{{range .Linhas}}<tr data-busca="{{.Busca}}">
+    <td><span class="badge badge-danger">Audiência</span><div class="hint hint-tabela">{{.TipoRotulo}}</div></td>
+    <td>{{if .Codigo}}{{.Codigo}}{{else}}—{{end}}</td>
+    <td>{{.Titulo}}</td>
+    <td class="tabular">{{.Data}}</td>
+    <td class="tabular">{{if .Hora}}{{.Hora}}{{else}}—{{end}}</td>
+    <td>{{if .Local}}{{.Local}}{{else}}—{{end}}</td>
+    <td>{{if .Processo}}{{.Processo}}{{else}}—{{end}}</td>
+    <td class="row-actions">{{if .Cancelada}}<span class="badge badge-neutral">Cancelada</span>{{else}}{{if $w}}<button type="button" class="btn-text" data-drawer="/audiencias/{{.ID}}/editar">Editar</button>{{end}}{{if $x}}<button type="button" class="btn-danger-text" data-drawer="/audiencias/{{.ID}}/cancelar">Cancelar audiência</button>{{end}}{{end}}</td>
+  </tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhuma audiência em aberto nesta categoria.</p></div>{{else}}<div class="empty"><p>Nenhuma audiência em aberto nesta categoria.</p></div>{{end}}</div>
+    </div>{{end}}</div>
+{{end}}{{end}}

@@ -28,7 +28,7 @@ func TestInstantaneosParaParidade(t *testing.T) {
 	if err := copiaDir(filepath.Join("..", "..", "web", "static"), filepath.Join(out, "static")); err != nil {
 		t.Fatal(err)
 	}
-	paginas := map[string]string{"agenda.html": "/", "agenda-lista.html": "/agenda", "tarefas.html": "/tarefas",
+	paginas := map[string]string{"agenda.html": "/agenda", "audiencias.html": "/audiencias", "tarefas.html": "/tarefas",
 		"processos.html": "/processos", "pessoas.html": "/pessoas", "prazos.html": "/prazos", "atendimentos.html": "/atendimentos"}
 	var base string
 	for nome, caminho := range paginas {

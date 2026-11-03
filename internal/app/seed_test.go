@@ -17,7 +17,7 @@ func TestSeedDemo(t *testing.T) {
 	}
 	if e.count(`SELECT count(*) FROM pessoas`) != 4 || e.count(`SELECT count(*) FROM processos`) != 3 ||
 		e.count(`SELECT count(*) FROM tarefas`) != 6 || e.count(`SELECT count(*) FROM atendimentos`) != 3 ||
-		e.count(`SELECT count(*) FROM tarefas WHERE tarefa_pai_id IS NOT NULL`) != 1 || e.count(`SELECT count(*) FROM prazos WHERE tarefa_id IS NOT NULL AND situacao='a_conferir'`) != 1 || e.count(`SELECT count(*) FROM agenda_eventos`) != 1 || e.count(`SELECT count(*) FROM processo_partes`) != 6 {
+		e.count(`SELECT count(*) FROM tarefas WHERE tarefa_pai_id IS NOT NULL`) != 1 || e.count(`SELECT count(*) FROM prazos WHERE tarefa_id IS NOT NULL AND situacao='a_conferir'`) != 1 || e.count(`SELECT count(*) FROM agenda_compromissos`) != 3 || e.count(`SELECT count(*) FROM audiencias`) != 2 || e.count(`SELECT count(*) FROM audiencias WHERE cancelada`) != 1 || e.count(`SELECT count(*) FROM diligencias`) != 2 || e.count(`SELECT count(*) FROM processo_partes`) != 6 {
 		t.Fatal("quantidades inesperadas na demonstração")
 	}
 	if err := SeedDemo(ctx, e.pool, fieldKey, e.a.Store, id); err == nil {

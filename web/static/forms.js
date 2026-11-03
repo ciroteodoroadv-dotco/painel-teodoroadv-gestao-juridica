@@ -4,6 +4,12 @@
   "use strict";
   var App = (window.App = window.App || {});
 
+  // O servidor manda o texto do toast em %XX no cabeçalho (cabeçalho HTTP não carrega UTF-8); aqui se desfaz.
+  App.textoDoCabecalho = function (v) {
+    if (v === null) return null;
+    try { return decodeURIComponent(v); } catch (e) { return v; }
+  };
+  function normaliza(s) { return String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
   function el(alvo) { return alvo && alvo.closest ? alvo : (alvo && alvo.parentElement); }
 
   // ---- Formulário no drawer: <form data-drawer-form action="/x" method="post">
@@ -27,7 +33,7 @@
       headers: { "X-CSRF-Token": App.csrf ? App.csrf() : "", "HX-Request": "true" },
       credentials: "same-origin"
     }).then(function (r) {
-      var ok = r.headers.get("X-Painel-Ok");
+      var ok = App.textoDoCabecalho(r.headers.get("X-Painel-Ok"));
       var redir = r.headers.get("HX-Redirect");
       if (ok !== null && App.aposSalvar) {
         var tratado = App.aposSalvar(r, f); // ex.: pessoa criada de dentro do atendimento volta ao rascunho
@@ -176,10 +182,37 @@
     window.PainelToast("Consulta de CEP indisponível neste painel.", true);
   });
 
+  // ---- Esconde campos quando o select tem certo valor: <select data-oculta-quando="Diligência" data-oculta=".so-compromisso">
+  // (o oposto de data-mostra-quando). Campos escondidos ficam desabilitados e não vão no envio.
+  function aplicarOculta(sel) {
+    var esconder = sel.value === sel.getAttribute("data-oculta-quando");
+    var form = sel.form || document;
+    form.querySelectorAll(sel.getAttribute("data-oculta")).forEach(function (c) {
+      c.hidden = esconder;
+      c.querySelectorAll("input, select, textarea").forEach(function (i) { i.disabled = esconder; });
+    });
+  }
+  document.addEventListener("change", function (ev) {
+    if (ev.target.matches && ev.target.matches("select[data-oculta-quando]")) aplicarOculta(ev.target);
+  });
+  // ---- Busca dentro de um seletor: <input type="search" data-filtra-opcoes> filtra as <option> do <select> do mesmo campo.
+  document.addEventListener("input", function (ev) {
+    var i = ev.target;
+    if (!i.matches || !i.matches("input[data-filtra-opcoes]")) return;
+    var q = normaliza(i.value);
+    var campo = i.closest(".field");
+    if (campo) campo.querySelectorAll("option").forEach(function (o) {
+      o.hidden = !!o.value && !o.selected && normaliza(o.textContent).indexOf(q) < 0;
+    });
+  });
+  // ---- Botão que só avisa: <button data-toast-erro="texto"> (ex.: "Excluir" compromisso, que o B ainda não implementa).
+  document.addEventListener("click", function (ev) {
+    var e = el(ev.target), b = e && e.closest("[data-toast-erro]");
+    if (b) window.PainelToast(b.getAttribute("data-toast-erro"), true);
+  });
   // ---- Filtro de tabela no navegador: <input data-filtro="SELETOR"> (sem acento, sem maiúscula).
   // Casa com o atributo data-busca da linha, se houver; senão, com o texto dela. Dentro de um acordeão,
   // atualiza o número do botão do grupo e troca a tabela vazia pelo aviso <div data-vazio-filtro hidden>.
-  function normaliza(s) { return String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
   document.addEventListener("input", function (ev) {
     var i = ev.target;
     if (!i.matches || !i.matches("input[data-filtro]")) return;
@@ -195,7 +228,7 @@
       if (vazio) { vazio.hidden = visiveis > 0; if (!i.hasAttribute("data-manter-tabela")) tabela.hidden = visiveis === 0; }
       var item = tabela.closest("[data-acc]");
       var cont = item && document.querySelector('button.acc-head[data-acc="' + item.getAttribute("data-acc") + '"] .count');
-      if (cont) cont.textContent = String(visiveis);
+      if (cont) cont.textContent = String(item.querySelectorAll("tbody tr:not([hidden])").length); // várias tabelas no mesmo painel somam
     });
   });
 })();

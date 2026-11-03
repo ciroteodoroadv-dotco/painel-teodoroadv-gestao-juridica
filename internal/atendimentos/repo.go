@@ -202,3 +202,22 @@ func (s *Service) Resumos(ctx context.Context, ids []string) (map[string][2]stri
 	}
 	return out, nil
 }
+
+// OpcoesCompromisso monta o seletor "Atendimento vinculado" do Novo compromisso: "ATE. 0000001 · CLIENTE(S) · objeto" (B).
+func (s *Service) OpcoesCompromisso(ctx context.Context) ([]Opcao, error) {
+	l, err := s.Listar(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Opcao, len(l))
+	for i, a := range l {
+		var partes []string
+		for _, x := range []string{a.Codigo, a.NomesClientes(), a.Descricao} {
+			if x != "" {
+				partes = append(partes, x)
+			}
+		}
+		out[i] = Opcao{Valor: a.ID, Rotulo: strings.Join(partes, " · ")}
+	}
+	return out, nil
+}

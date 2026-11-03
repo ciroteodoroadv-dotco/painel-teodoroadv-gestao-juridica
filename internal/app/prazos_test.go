@@ -70,7 +70,7 @@ func TestPrazosRegraDeOuro(t *testing.T) {
 	}
 
 	// A tela "Hoje" avisa o que está a conferir e mostra o prazo próximo.
-	_, home := adv.get("/")
+	_, home := adv.get("/agenda")
 	if !strings.Contains(home, "prazo(s) a conferir") || !strings.Contains(home, "Recurso digitado pela assistente") {
 		t.Error("a tela Hoje deveria avisar sobre prazo a conferir")
 	}
@@ -163,7 +163,7 @@ func TestPrazosUrgenciaEValidacao(t *testing.T) {
 		t.Error("o texto de dias corridos deveria aparecer")
 	}
 	// Widget: só até 5 dias (e atrasados).
-	_, home := adv.get("/")
+	_, home := adv.get("/agenda")
 	for _, quer := range []string{"Vencido ontem", "Vence hoje", "Em três dias", "Em cinco dias"} {
 		if !strings.Contains(home, quer) {
 			t.Errorf("a tela Hoje deveria listar %q", quer)

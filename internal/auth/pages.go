@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 
 	"painelteodoro/internal/audit"
@@ -12,26 +13,28 @@ func (a *Auth) RegisterPages(rt *Router) {
 	rt.Handle("GET /admin/auditoria", PermAuditRead, a.auditPage)
 }
 
-func (a *Auth) home(w http.ResponseWriter, r *http.Request, s *Session) {
-	d := PageData{Title: "Agenda", Email: s.Email, Role: string(s.Role)}
-	if a.HomeHead != nil {
-		d.Head = a.HomeHead(s)
-	}
+// home leva à Agenda, que é a página inicial do painel (como no B).
+func (a *Auth) home(w http.ResponseWriter, r *http.Request, _ *Session) {
+	http.Redirect(w, r, "/agenda", http.StatusFound)
+}
+
+// HomeExtras reúne a faixa de aviso e os blocos (lista de prazos) que os domínios registraram para o topo da Agenda.
+func (a *Auth) HomeExtras(ctx context.Context, s *Session) (faixas []Faixa, widgets []Widget) {
 	for _, f := range a.faixas {
-		if fx, err := f(r.Context(), s); err == nil && (fx.Strong != "" || fx.Text != "") {
-			d.Faixas = append(d.Faixas, fx)
+		if fx, err := f(ctx, s); err == nil && (fx.Strong != "" || fx.Text != "") {
+			faixas = append(faixas, fx)
 		} else if err != nil {
 			a.Log.Error("faixa da tela inicial falhou")
 		}
 	}
 	for _, f := range a.widgets {
-		if wd, err := f(r.Context(), s); err == nil && wd.Body != "" {
-			d.Widgets = append(d.Widgets, wd)
+		if wd, err := f(ctx, s); err == nil && wd.Body != "" {
+			widgets = append(widgets, wd)
 		} else if err != nil {
 			a.Log.Error("widget da tela inicial falhou")
 		}
 	}
-	a.render(w, r, http.StatusOK, "home.html", d)
+	return faixas, widgets
 }
 
 func (a *Auth) auditPage(w http.ResponseWriter, r *http.Request, s *Session) {

@@ -9,7 +9,9 @@ import (
 
 	"painelteodoro/internal/agenda"
 	"painelteodoro/internal/atendimentos"
+	"painelteodoro/internal/audiencias"
 	"painelteodoro/internal/auth"
+	"painelteodoro/internal/diligencias"
 	"painelteodoro/internal/documentos"
 	"painelteodoro/internal/pessoas"
 	"painelteodoro/internal/platform/webx"
@@ -47,14 +49,17 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	ate := &atendimentos.Service{Pool: pool, Pessoas: pes}
 	proc.Atendimentos = ate
 
-	ag := &agenda.Service{Pool: pool, Processos: proc, Pessoas: pes, Users: users}
 	store, err := documentos.NewStore(docsDir, fieldKey)
 	if err != nil {
 		return err
 	}
 	doc := &documentos.Service{Pool: pool, Store: store, Processos: proc, Pessoas: pes, Atendimentos: ate}
-	tar := &tarefas.Service{Pool: pool, Pessoas: pes, Vinculos: vinculos{ate: ate, proc: proc}, Prazos: prazoSync{p: praz},
+	tar := &tarefas.Service{Pool: pool, Pessoas: pes, Vinculos: vinculos{ate: ate, proc: proc, pes: pes}, Prazos: prazoSync{p: praz},
 		Docs: docSink{d: doc}, Reauth: reauth{a: a}}
+	aud := &audiencias.Service{Pool: pool, Pessoas: pes, Processos: proc, Reauth: reauth{a: a}}
+	dil := &diligencias.Service{Pool: pool, Pessoas: pes, Processos: proc, Conflitos: diligenciaConflitos{s: aud}}
+	ag := &agenda.Service{Pool: pool, Pessoas: pes, Vinculos: agendaVinculos{ate: ate, proc: proc}, Audiencias: agendaAudiencias{s: aud},
+		Diligencias: agendaDiligencias{s: dil}, Tarefas: agendaTarefas{s: tar}}
 	proc.Vinculos = []processos.VinculosLookup{tar, praz}
 
 	(&prazos.Handler{A: a, S: praz}).Register(rt) // 1º: widget no topo de "Hoje"
@@ -63,6 +68,8 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	(&processos.Handler{A: a, S: proc}).Register(rt)
 	(&tarefas.Handler{A: a, S: tar}).Register(rt)
 	(&agenda.Handler{A: a, S: ag}).Register(rt)
+	(&audiencias.Handler{A: a, S: aud}).Register(rt)
+	(&diligencias.Handler{A: a, S: dil}).Register(rt)
 	(&documentos.Handler{A: a, S: doc}).Register(rt)
 	return nil
 }

@@ -43,15 +43,13 @@ type Auth struct {
 	RequireAccessEmail bool
 	Now                func() time.Time
 	// WA é nil quando a chave física está desligada (sem PAINEL_PUBLIC_URL válido).
-	WA     *webauthn.WebAuthn
-	cer    ceremonies
-	fl     flash
-	nav    []navItem
-	faixas []FaixaFunc
-	// HomeHead dá o cabeçalho da tela inicial (a Agenda); o domínio da agenda o preenche.
-	HomeHead func(s *Session) Head
-	widgets  []WidgetFunc
-	gate     denyGate
+	WA      *webauthn.WebAuthn
+	cer     ceremonies
+	fl      flash
+	nav     []navItem
+	faixas  []FaixaFunc
+	widgets []WidgetFunc
+	gate    denyGate
 }
 
 func (a *Auth) now() time.Time {

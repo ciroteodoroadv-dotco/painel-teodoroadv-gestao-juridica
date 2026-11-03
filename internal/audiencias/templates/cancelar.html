@@ -1,0 +1,11 @@
+{{define "cancelar"}}<h2>Cancelar audiência</h2>
+    <p class="drawer-sub">A ficha é preservada com o motivo do cancelamento. Confirme com a sua senha.</p>
+    <form data-drawer-form method="post" action="/audiencias/{{.ID}}/cancelar">
+      <input type="hidden" name="version" value="{{.Version}}">
+      <div class="field"><label>Motivo do cancelamento *</label><textarea name="motivo" required placeholder="Será preservado na ficha"></textarea></div>
+      <div class="field"><label>Senha *</label><input type="password" name="senha" autocomplete="current-password" required></div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Voltar</button>
+        <button type="submit" class="btn btn-primary">Cancelar audiência</button>
+      </div>
+    </form>{{end}}

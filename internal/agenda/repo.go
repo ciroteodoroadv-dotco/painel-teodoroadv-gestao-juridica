@@ -10,107 +10,50 @@ import (
 	"painelteodoro/internal/platform/webx"
 )
 
-const cols = `id, tipo, titulo, inicio, fim, local, coalesce(processo_id::text,''), coalesce(responsavel_id::text,''), version`
+const colsC = `id::text, tipo, descricao, data, to_char(hora,'HH24:MI'), local, coalesce(cliente_pessoa_id::text,''),
+	coalesce(atendimento_id::text,''), coalesce(processo_id::text,''), coalesce(criado_por_pessoa_id::text,''), version`
 
-func scan(row pgx.Row) (*Evento, error) {
-	var e Evento
-	err := row.Scan(&e.ID, &e.Tipo, &e.Titulo, &e.Inicio, &e.Fim, &e.Local, &e.ProcessoID, &e.ResponsavelID, &e.Version)
-	return &e, err
+func scanC(row pgx.Row) (*Compromisso, error) {
+	var c Compromisso
+	err := row.Scan(&c.ID, &c.Tipo, &c.Descricao, &c.Data, &c.Hora, &c.Local, &c.ClienteID, &c.AtendimentoID, &c.ProcessoID,
+		&c.CriadoPorID, &c.Version)
+	return &c, err
 }
 
-func (s *Service) enrich(ctx context.Context, list []Evento) {
-	var pids, uids []string
-	for _, e := range list {
-		if e.ProcessoID != "" {
-			pids = append(pids, e.ProcessoID)
-		}
-		if e.ResponsavelID != "" {
-			uids = append(uids, e.ResponsavelID)
-		}
+// Get devolve o compromisso não excluído.
+func (s *Service) Get(ctx context.Context, id string) (*Compromisso, error) {
+	if !webx.UUID(id) {
+		return nil, webx.ErrNotFound
 	}
-	pm, _ := s.Processos.Resumos(ctx, pids)
-	um, _ := s.Users.Emails(ctx, uids)
-	for i := range list {
-		list[i].ProcessoNumero, list[i].Responsavel = pm[list[i].ProcessoID], um[list[i].ResponsavelID]
-	}
-}
-
-// Filtro das listas. De/Ate em UTC; zero = sem limite.
-type Filtro struct {
-	Tipo     string
-	De, Ate  time.Time
-	Passados bool // inclui eventos anteriores a "De"
-}
-
-// List devolve eventos em ordem cronológica.
-func (s *Service) List(ctx context.Context, f Filtro, limit, offset int) ([]Evento, error) {
-	var de, ate *time.Time
-	if !f.De.IsZero() {
-		de = &f.De
-	}
-	if !f.Ate.IsZero() {
-		ate = &f.Ate
-	}
-	rows, err := s.Pool.Query(ctx, `SELECT `+cols+` FROM agenda_eventos
-		WHERE excluido_em IS NULL AND ($1 = '' OR tipo = $1)
-		  AND ($2::timestamptz IS NULL OR inicio >= $2) AND ($3::timestamptz IS NULL OR inicio < $3)
-		ORDER BY inicio, id LIMIT $4 OFFSET $5`, f.Tipo, de, ate, limit, offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var out []Evento
-	for rows.Next() {
-		e, err := scan(rows)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, *e)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	s.enrich(ctx, out)
-	return out, nil
-}
-
-// Get devolve o evento com os participantes.
-func (s *Service) Get(ctx context.Context, id string) (*Evento, error) {
-	e, err := scan(s.Pool.QueryRow(ctx, `SELECT `+cols+` FROM agenda_eventos WHERE id=$1 AND excluido_em IS NULL`, id))
+	c, err := scanC(s.Pool.QueryRow(ctx, `SELECT `+colsC+` FROM agenda_compromissos WHERE id=$1 AND excluido_em IS NULL`, id))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, webx.ErrNotFound
 	}
-	if err != nil {
-		return nil, err
-	}
-	rows, err := s.Pool.Query(ctx, `SELECT pessoa_id FROM agenda_participantes WHERE evento_id=$1 ORDER BY pessoa_id`, id)
+	return c, err
+}
+
+// EmAberto devolve os compromissos com data de hoje em diante, por data e hora (itensAgendaEmAberto do B).
+func (s *Service) EmAberto(ctx context.Context, hoje time.Time) ([]*Compromisso, error) {
+	rows, err := s.Pool.Query(ctx, `SELECT `+colsC+` FROM agenda_compromissos WHERE excluido_em IS NULL AND data >= $1
+		ORDER BY data, hora, id`, hoje)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var ids []string
+	var out []*Compromisso
 	for rows.Next() {
-		var pid string
-		if err := rows.Scan(&pid); err != nil {
+		c, err := scanC(rows)
+		if err != nil {
 			return nil, err
 		}
-		ids = append(ids, pid)
+		out = append(out, c)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	names, _ := s.Pessoas.Names(ctx, ids)
-	for _, pid := range ids {
-		e.Participantes = append(e.Participantes, Participante{PessoaID: pid, Nome: names[pid]})
-	}
-	l := []Evento{*e}
-	s.enrich(ctx, l)
-	l[0].Participantes = e.Participantes
-	return &l[0], nil
+	return out, rows.Err()
 }
 
-// Proximos devolve os eventos dos próximos dias (a partir de agora), para a tela "Hoje".
-func (s *Service) Proximos(ctx context.Context, dias, limit int) ([]Evento, error) {
-	now := time.Now()
-	return s.List(ctx, Filtro{De: now.Add(-2 * time.Hour), Ate: now.AddDate(0, 0, dias)}, limit, 0)
+// Contar conta os compromissos não excluídos.
+func (s *Service) Contar(ctx context.Context) (int, error) {
+	var n int
+	err := s.Pool.QueryRow(ctx, `SELECT count(*) FROM agenda_compromissos WHERE excluido_em IS NULL`).Scan(&n)
+	return n, err
 }

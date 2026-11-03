@@ -9,7 +9,9 @@ import (
 
 	"painelteodoro/internal/agenda"
 	"painelteodoro/internal/atendimentos"
+	"painelteodoro/internal/audiencias"
 	"painelteodoro/internal/auth"
+	"painelteodoro/internal/diligencias"
 	"painelteodoro/internal/pessoas"
 	"painelteodoro/internal/platform/br"
 	"painelteodoro/internal/platform/webx"
@@ -105,12 +107,6 @@ func SeedDemo(ctx context.Context, pool *pgxpool.Pool, fieldKey []byte, store *a
 	if err := proc.AtualizarFinanceiro(ctx, ac, p1, "Custas", "R$ 300,00", "Pago"); err != nil {
 		return err
 	}
-	ag := &agenda.Service{Pool: pool, Processos: proc, Pessoas: pes, Users: users}
-	amanha := time.Now().AddDate(0, 0, 1).In(webx.SP()).Format("2006-01-02") + "T14:00"
-	if _, err := ag.Create(ctx, ac, agenda.Input{Tipo: "audiencia", Titulo: "Exemplo: audiência de instrução", Inicio: amanha,
-		Local: "Fórum (exemplo), sala 3", ProcessoID: p1, ResponsavelID: actorID}); err != nil {
-		return err
-	}
 	// Atendimentos e tarefas fictícios (a mesma massa existe em tools/refb/atendimentos_tarefas.py).
 	var a1, a2 string
 	for _, a := range []struct {
@@ -153,6 +149,56 @@ func SeedDemo(ctx context.Context, pool *pgxpool.Pool, fieldKey []byte, store *a
 			Prioridade: "Normal", PrazoFatal: "2026-11-11", Partes: partes, Responsaveis: []string{ids["joao"]}}, true},
 	} {
 		if _, _, err := tar.Create(ctx, ac, t.in, t.confirmar); err != nil {
+			return err
+		}
+	}
+	return semearAgenda(ctx, pool, ac, pes, proc, ate, tar, ids, p1, p2, a2)
+}
+
+// semSenha aceita qualquer senha: só existe para o cancelamento de audiência da demonstração (SeedDemo roda só em dev).
+type semSenha struct{}
+
+func (semSenha) Confirmar(context.Context, webx.Actor, string) error { return nil }
+
+// semearAgenda cria compromissos, audiências e diligências fictícios (a mesma massa existe em tools/refb/agenda.py).
+func semearAgenda(ctx context.Context, pool *pgxpool.Pool, ac webx.Actor, pes *pessoas.Service, proc *processos.Service,
+	ate *atendimentos.Service, tar *tarefas.Service, ids map[string]string, p1, p2, a2 string) error {
+	aud := &audiencias.Service{Pool: pool, Pessoas: pes, Processos: proc, Reauth: semSenha{}}
+	dil := &diligencias.Service{Pool: pool, Pessoas: pes, Processos: proc, Conflitos: diligenciaConflitos{s: aud}}
+	ag := &agenda.Service{Pool: pool, Pessoas: pes, Vinculos: agendaVinculos{ate: ate, proc: proc}, Audiencias: agendaAudiencias{s: aud},
+		Diligencias: agendaDiligencias{s: dil}, Tarefas: agendaTarefas{s: tar}}
+	for _, c := range []agenda.Input{
+		{Tipo: "Reunião", Descricao: "Reunião de alinhamento com a cliente (exemplo)", Data: "2026-11-10", Hora: "14:00", Local: "Escritório (exemplo)",
+			ClienteID: ids["maria"], ProcessoID: p1, CriadoPorID: ids["joao"]},
+		{Tipo: "Ligação", Descricao: "Ligação de retorno ao cliente (exemplo)", Data: "2026-11-11", Hora: "10:30", Local: "Telefone (exemplo)", AtendimentoID: a2},
+		{Tipo: "Aula", Descricao: "Aula sobre processo civil (exemplo)", Data: "2026-11-12", Hora: "19:00", Local: "Sala virtual (exemplo)"},
+	} {
+		if _, err := ag.CriarCompromisso(ctx, ac, c); err != nil {
+			return err
+		}
+	}
+	num := br.MakeCNJ("0000101", "2025", "8", "26", "0100")
+	if _, _, err := aud.Create(ctx, ac, audiencias.Input{Tipo: "instrucao-e-julgamento", Titulo: "Audiência de instrução — Maria Exemplo x Banco de Teste",
+		Processo: num, ClienteID: ids["maria"], Data: "2026-11-13", Hora: "09:30", Juizo: "1ª Vara Cível de Exemplo", Local: "Fórum (exemplo), sala 3",
+		Descricao: "Levar a procuração (exemplo)."}); err != nil {
+		return err
+	}
+	if _, _, err := aud.Create(ctx, ac, audiencias.Input{Tipo: "sustentacao-oral", Titulo: "Sustentação oral no recurso (exemplo)",
+		ClienteID: ids["empresa"], Data: "2026-11-18", Hora: "14:00", Juizo: "Câmara de Exemplo", Local: "Tribunal (exemplo)"}); err != nil {
+		return err
+	}
+	var cancelada string
+	if err := pool.QueryRow(ctx, `SELECT id::text FROM audiencias WHERE codigo='AUD. 0000002'`).Scan(&cancelada); err != nil {
+		return err
+	}
+	if err := aud.Cancelar(ctx, ac, cancelada, 1, "Remarcada pelo juízo (exemplo)", ""); err != nil {
+		return err
+	}
+	for _, d := range []agenda.DiligenciaNova{
+		{Titulo: "Protocolo presencial no fórum (exemplo)", ProcessoID: p1, ClienteID: ids["maria"], Local: "Fórum (exemplo)", DataLimite: "2026-11-14", Hora: "11:00", Responsavel: "Fulano Exemplo"},
+		{Titulo: "Vistoria no imóvel (exemplo)", ProcessoID: p2, Local: "Imóvel (exemplo)", DataLimite: "2026-11-20", Hora: "15:00", Responsavel: "Beltrano Fictício"},
+	} {
+		if _, err := (agendaDiligencias{s: dil}).Criar(ctx, ac, d); err != nil {
 			return err
 		}
 	}

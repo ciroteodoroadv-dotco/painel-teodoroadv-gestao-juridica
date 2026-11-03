@@ -175,8 +175,8 @@ func TestChaveDeSegurancaDePontaAPonta(t *testing.T) {
 	if r, _ := b.do("GET", "/2fa/recovery", nil); r.StatusCode != 303 {
 		t.Error("os códigos só podem ser vistos uma vez")
 	}
-	if r, _ := b.do("GET", "/", nil); r.StatusCode != 200 {
-		t.Fatalf("home após cadastrar a chave = %d", r.StatusCode)
+	if r, _ := b.do("GET", "/", nil); r.StatusCode != 302 || r.Header.Get("Location") != "/agenda" {
+		t.Fatalf("home após cadastrar a chave = %d (a página inicial é a Agenda)", r.StatusCode)
 	}
 	// Com fator cadastrado, sessão PENDENTE não pode cadastrar outro (só a sessão com 2FA completo).
 	b2 := e.browser()
@@ -196,7 +196,7 @@ func TestChaveDeSegurancaDePontaAPonta(t *testing.T) {
 	if r.StatusCode != 200 || !strings.Contains(body, `"redirect":"/"`) {
 		t.Fatalf("login com chave: %d %s", r.StatusCode, body)
 	}
-	if r, _ := b2.do("GET", "/", nil); r.StatusCode != 200 {
+	if r, _ := b2.do("GET", "/", nil); r.StatusCode != 302 {
 		t.Fatalf("home após login com chave = %d", r.StatusCode)
 	}
 

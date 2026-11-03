@@ -312,7 +312,7 @@ func TestTarefasValidacoesMoverEExcluir(t *testing.T) {
 		t.Fatal("senha errada não pode excluir")
 	}
 	if r, _ := c.adv.post("/tarefas/"+id+"/excluir", url.Values{"senha": {"cavalo-bateria-grampo-7"}, "version": {"3"}}); r.StatusCode != 200 ||
-		r.Header.Get("X-Painel-Ok") != "Tarefa excluída." {
+		r.Header.Get("X-Painel-Ok") != "Tarefa exclu%C3%ADda." { // o texto vai em %XX: cabeçalho HTTP não carrega UTF-8
 		t.Fatalf("senha certa = %d %q", r.StatusCode, r.Header.Get("X-Painel-Ok"))
 	}
 	if _, pg := c.adv.get("/tarefas"); strings.Contains(pg, "Automática (editada)") {

@@ -188,15 +188,15 @@ func TestFluxoCompletoLoginEMFA(t *testing.T) {
 	if r.StatusCode != 200 || len(codes) != 8 {
 		t.Fatalf("cadastro: status=%d códigos=%d", r.StatusCode, len(codes))
 	}
-	if r, _ := b.do("GET", "/", nil); r.StatusCode != 200 {
-		t.Fatalf("home após 2FA = %d", r.StatusCode)
+	if r, _ := b.do("GET", "/", nil); r.StatusCode != 302 || r.Header.Get("Location") != "/agenda" {
+		t.Fatalf("home após 2FA = %d (a página inicial é a Agenda)", r.StatusCode)
 	}
 
 	// Logout exige CSRF; e depois a sessão acaba.
 	if r, _ := b.do("POST", "/logout", url.Values{}); r.StatusCode != 403 {
 		t.Fatalf("logout sem CSRF = %d", r.StatusCode)
 	}
-	b.do("POST", "/logout", url.Values{"csrf_token": {b.csrfFrom("/")}})
+	b.do("POST", "/logout", url.Values{"csrf_token": {b.csrfFrom("/conta")}})
 	if r, _ := b.do("GET", "/", nil); r.StatusCode != 303 {
 		t.Fatalf("após logout a home deveria redirecionar: %d", r.StatusCode)
 	}

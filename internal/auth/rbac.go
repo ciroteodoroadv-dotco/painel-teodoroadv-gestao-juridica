@@ -33,6 +33,11 @@ const (
 	PermAtendimentoWrite Perm = "atendimentos:escrever"
 	PermAgendaRead       Perm = "agenda:ler"
 	PermAgendaWrite      Perm = "agenda:escrever"
+	PermAudienciaRead    Perm = "audiencias:ler"
+	PermAudienciaWrite   Perm = "audiencias:escrever"
+	PermAudienciaCancel  Perm = "audiencias:cancelar" // cancelar com reautenticação: SÓ advogado
+	PermDiligenciaRead   Perm = "diligencias:ler"
+	PermDiligenciaWrite  Perm = "diligencias:escrever"
 	PermDocRead          Perm = "documentos:ler"
 	PermDocWrite         Perm = "documentos:escrever"
 	PermPrazoRead        Perm = "prazos:ler"
@@ -40,7 +45,7 @@ const (
 	PermPrazoConfirm     Perm = "prazos:confirmar" // confirmar, cumprir, cancelar, excluir: SÓ advogado
 )
 
-var leitura = []Perm{PermHome, PermPessoasRead, PermProcRead, PermTarefaRead, PermAtendimentoRead, PermAgendaRead, PermDocRead, PermPrazoRead}
+var leitura = []Perm{PermHome, PermPessoasRead, PermProcRead, PermTarefaRead, PermAtendimentoRead, PermAgendaRead, PermAudienciaRead, PermDiligenciaRead, PermDocRead, PermPrazoRead}
 
 // matrix: negar por padrão. Administrador gere usuários e vê auditoria (não mexe em processos);
 // advogado lê e escreve nos domínios; assistente lê tudo e escreve só em tarefas e agenda.
@@ -52,10 +57,10 @@ var matrix = func() map[Role]map[Perm]bool {
 	for _, p := range []Perm{PermUsersManage, PermAuditRead, PermTarefaDelete} {
 		m[Administrador][p] = true
 	}
-	for _, p := range []Perm{PermPessoasWrite, PermProcWrite, PermTarefaWrite, PermTarefaDelete, PermAtendimentoWrite, PermAgendaWrite, PermDocWrite, PermPrazoWrite, PermPrazoConfirm} {
+	for _, p := range []Perm{PermPessoasWrite, PermProcWrite, PermTarefaWrite, PermTarefaDelete, PermAtendimentoWrite, PermAgendaWrite, PermAudienciaWrite, PermAudienciaCancel, PermDiligenciaWrite, PermDocWrite, PermPrazoWrite, PermPrazoConfirm} {
 		m[Advogado][p] = true
 	}
-	for _, p := range []Perm{PermTarefaWrite, PermAtendimentoWrite, PermAgendaWrite, PermPrazoWrite} {
+	for _, p := range []Perm{PermTarefaWrite, PermAtendimentoWrite, PermAgendaWrite, PermAudienciaWrite, PermDiligenciaWrite, PermPrazoWrite} {
 		m[Assistente][p] = true
 	}
 	return m

@@ -1,0 +1,26 @@
+{{define "form"}}<h2>{{if .Novo}}Nova audiência{{else}}Editar audiência{{end}}</h2>
+    <p class="drawer-sub">{{if .Novo}}Audiência é item crítico: nunca é bloqueada por conflito de horário, só avisa se coincidir com outro item crítico.{{else}}{{.A.Titulo}}{{end}}</p>
+    <form data-drawer-form method="post" action="{{if .Novo}}/audiencias{{else}}/audiencias/{{.A.ID}}{{end}}">{{if not .Novo}}
+      <input type="hidden" name="version" value="{{.A.Version}}">{{end}}
+      <div class="field"><label>Tipo do ato{{if .Novo}} *{{end}}</label>{{if .Novo}}
+        <select name="tipo" required>
+          <option value="">Selecione…</option>{{range .Atos}}
+          <option value="{{.Chave}}">{{.Rotulo}}</option>{{end}}
+        </select>{{else}}<input type="text" value="{{.A.RotuloTipo}}" disabled>{{end}}
+      </div>
+      <div class="field"><label>Título *</label><input type="text" name="titulo" required{{if .Novo}} placeholder="Ex.: Audiência de instrução — fulano x banco"{{end}} value="{{.A.Titulo}}"></div>
+      <div class="field"><label>Processo vinculado</label><input type="text" name="processo" data-mask="cnj" value="{{.A.ProcessoNumero}}"></div>
+      <div class="field"><label>Cliente</label><select name="cliente"><option value="">—</option>{{$c := .ClienteS}}{{range .Pessoas}}<option value="{{.Valor}}"{{if eq .Valor $c}} selected{{end}}>{{.Rotulo}}</option>{{end}}</select></div>
+      <div class="row2">
+        <div class="field"><label>Data *</label><input type="date" name="data" required value="{{.A.DataISO}}"></div>
+        <div class="field"><label>Hora *</label><input type="time" name="hora" required value="{{.A.Hora}}"></div>
+      </div>
+      <div class="field"><label>Juízo</label><input type="text" name="juizo" value="{{.A.Juizo}}"></div>
+      <div class="field"><label>Local ou link da aula/reunião</label><input type="text" name="local" value="{{.A.Local}}">{{if .Novo}}<p class="hint">Somente registro do local/link. Não inicia gravação, download ou transcrição.</p>{{end}}</div>{{if .Novo}}
+      <div class="field"><label>Observações</label><textarea name="descricao" rows="3"></textarea></div>{{else}}
+      <div class="hint hint-bloco">Tipo do ato não se edita aqui (é a pasta da ficha).</div>{{end}}
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">{{if .Novo}}Salvar audiência{{else}}Salvar alterações{{end}}</button>
+      </div>
+    </form>{{end}}

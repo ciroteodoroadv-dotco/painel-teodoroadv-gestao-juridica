@@ -1,0 +1,77 @@
+{{define "stats"}}{{with .Data}}<div class="acc-heads">{{range .Cats}}
+    <button class="acc-head" data-acc="agenda:{{.Chave}}"><span>{{.Rotulo}}</span><span class="count">{{.Count}}</span></button>{{end}}</div>{{end}}{{end}}
+
+{{define "content"}}{{with .Data}}{{range $.Widgets}}<section class="bloco"><h2>{{.Title}}</h2>{{.Body}}</section>
+{{end}}<label class="sr-only" for="buscaAgenda">Buscar agenda</label>
+  <input id="buscaAgenda" class="search" autocomplete="off" placeholder="Buscar por título, tipo, cliente ou responsável…" data-filtro=".acc table">
+  <div id="agendaResultados"><div class="acc">{{range .Cats}}
+    <div class="acc-item" data-acc="agenda:{{.Chave}}">
+      <div class="acc-body">{{template "corpo" .}}</div>
+    </div>{{end}}</div></div>
+{{end}}{{end}}
+
+{{define "corpo"}}{{if eq .Chave "tarefas"}}{{template "tabTarefas" .Tarefas}}{{if not .Tarefas}}<div class="empty"><p>Nenhuma tarefa em aberto.</p></div>{{end}}
+{{else if eq .Chave "intimacoes"}}{{template "tabIntimacoes" .}}
+{{else if eq .Chave "audiencias"}}{{template "tabAudiencias" .}}
+{{else if eq .Chave "diligencias"}}{{template "tabDiligencias" .}}
+{{else}}{{if .Compromissos}}{{template "tabCompromissos" .}}{{end}}{{template "tabTarefas" .Tarefas}}{{if not .Count}}<div class="empty"><p>Nenhum item em aberto nesta categoria.</p></div>{{end}}{{end}}{{end}}
+
+{{define "tabTarefas"}}{{if .}}<div class="agenda-table-scroll"><table class="agenda-tarefas"><thead><tr><th>Código</th><th>Tarefa</th><th>Cliente(s) / PES</th><th>Criado por</th><th>Prazo de entrega</th><th>Prazo fatal</th><th>Status</th></tr></thead><tbody>{{range .}}<tr data-busca="{{.Busca}}">
+ <td class="tabular">{{if .Codigo}}{{.Codigo}}{{else}}—{{end}}</td>
+ <td><strong>{{.Titulo}}</strong></td>
+ <td>{{range $i, $c := .Clientes}}{{if $i}}<br>{{end}}<span>{{$c.Rotulo}}</span>{{else}}—{{end}}</td>
+ <td>{{if .CriadoPor}}{{.CriadoPor}}{{else}}—{{end}}</td>
+ <td class="tabular">{{.Prazo}}</td>
+ <td class="tabular">{{.PrazoFatal}}{{if .FatalAConferir}} <span class="badge badge-warn">A CONFERIR</span>{{end}}</td>
+ <td><span class="badge {{.StatusClasse}}">{{.StatusRotulo}}</span></td></tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhuma tarefa em aberto.</p></div></div>{{end}}{{end}}
+
+{{define "tabCompromissos"}}<table><thead><tr><th>Tipo</th><th>Descrição</th><th>Data</th><th>Hora</th><th>Local</th><th>Processo</th><th></th></tr></thead>
+    <tbody>{{$w := .CanWrite}}{{range .Compromissos}}<tr data-busca="{{.Busca}}">
+    <td><span class="badge badge-neutral">{{.Tipo}}</span></td>
+    <td>{{.Descricao}}{{if .CriadoPor}}<div class="hint">Criado por: {{.CriadoPor}}</div>{{end}}{{if .Cliente}}<div class="hint">{{.Cliente}}</div>{{end}}{{if .Atendimento}}<div class="hint">{{.Atendimento}}</div>{{end}}</td>
+    <td class="tabular">{{.Data}}</td>
+    <td class="tabular">{{if .Hora}}{{.Hora}}{{else}}—{{end}}</td>
+    <td>{{if .Local}}{{.Local}}{{else}}—{{end}}</td>
+    <td>{{if .Processo}}{{.Processo}}{{else}}—{{end}}</td>
+    <td class="row-actions">{{if $w}}
+      <button type="button" class="btn-text" data-drawer="/agenda/{{.ID}}/editar">Editar</button>
+      <button type="button" class="btn-danger-text" data-toast-erro="Ainda não implementado nesta fase do painel.">Excluir</button>{{end}}
+    </td>
+  </tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhum item em aberto nesta categoria.</p></div>{{end}}
+
+{{define "tabAudiencias"}}{{if not .Audiencias}}<div class="empty"><p>Nenhuma audiência em aberto nesta categoria.</p></div>{{else}}{{template "tabAud" .}}{{end}}{{end}}
+
+{{define "tabAud"}}<table><thead><tr><th>Tipo do ato</th><th>Código</th><th>Título</th><th>Data</th><th>Hora</th><th>Local</th><th>Processo</th><th></th></tr></thead>
+    <tbody>{{$w := .CanAudWrite}}{{$x := .CanAudCancel}}{{range .Audiencias}}<tr data-busca="{{.Busca}}">
+    <td><span class="badge badge-danger">Audiência</span><div class="hint hint-tabela">{{.TipoRotulo}}</div></td>
+    <td>{{if .Codigo}}{{.Codigo}}{{else}}—{{end}}</td>
+    <td>{{.Titulo}}</td>
+    <td class="tabular">{{.Data}}</td>
+    <td class="tabular">{{if .Hora}}{{.Hora}}{{else}}—{{end}}</td>
+    <td>{{if .Local}}{{.Local}}{{else}}—{{end}}</td>
+    <td>{{if .Processo}}{{.Processo}}{{else}}—{{end}}</td>
+    <td class="row-actions">{{if .Cancelada}}<span class="badge badge-neutral">Cancelada</span>{{else}}{{if $w}}<button type="button" class="btn-text" data-drawer="/audiencias/{{.ID}}/editar">Editar</button>{{end}}{{if $x}}<button type="button" class="btn-danger-text" data-drawer="/audiencias/{{.ID}}/cancelar">Cancelar audiência</button>{{end}}{{end}}</td>
+  </tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhuma audiência em aberto nesta categoria.</p></div>{{end}}
+
+{{define "tabDiligencias"}}{{if not .Diligencias}}<div class="empty"><p>Nenhuma diligência em aberto.</p></div>{{else}}<table><thead><tr><th>Código</th><th>Título</th><th>Data-limite</th><th>Hora</th><th>Local</th><th>Responsável</th><th>Status</th><th>Processo</th><th></th></tr></thead>
+    <tbody>{{$w := .CanDilWrite}}{{range .Diligencias}}<tr data-busca="{{.Busca}}">
+    <td>{{if .Codigo}}{{.Codigo}}{{else}}—{{end}}</td>
+    <td>{{.Titulo}}</td>
+    <td class="tabular">{{.DataLimite}}</td>
+    <td class="tabular">{{if .Hora}}{{.Hora}}{{else}}—{{end}}</td>
+    <td>{{if .Local}}{{.Local}}{{else}}—{{end}}</td>
+    <td>{{if .Responsavel}}{{.Responsavel}}{{else}}—{{end}}</td>
+    <td>{{if .Status}}{{.Status}}{{else}}—{{end}}</td>
+    <td>{{if .Processo}}{{.Processo}}{{else}}—{{end}}</td>
+    <td class="row-actions">{{if $w}}<button type="button" class="btn-text" data-drawer="/diligencias/{{.ID}}/editar">Editar</button>{{end}}</td>
+  </tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhuma diligência em aberto.</p></div>{{end}}{{end}}
+
+{{define "tabIntimacoes"}}{{if not .IntimOK}}<div class="form-block"><strong>Intimações indisponíveis.</strong><br>{{.IntimMsg}}</div>{{else if not .Intimacoes}}<div class="empty"><p>Nenhuma intimação registrada no histórico.</p></div>{{else}}<table><thead><tr><th>Origem</th><th>Processo</th><th>Data</th><th>Status</th><th>Tarefa de análise</th><th></th></tr></thead>
+    <tbody>{{range .Intimacoes}}<tr data-busca="{{.Busca}}">
+      <td>{{if .Origem}}{{.Origem}}{{else}}—{{end}}</td>
+      <td>{{if .Processo}}{{.Processo}}{{else}}—{{end}}</td>
+      <td class="tabular">{{.Data}}</td>
+      <td><span class="badge {{.StatusClasse}}">{{.StatusRotulo}}</span></td>
+      <td>{{if .Tarefa}}<strong>{{.Tarefa}}</strong><div class="hint">{{.TarefaEstado}}</div>{{else}}<span class="hint">Tarefa não localizada</span>{{end}}</td>
+      <td class="row-actions">—</td>
+    </tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhuma intimação registrada no histórico.</p></div>{{end}}{{end}}

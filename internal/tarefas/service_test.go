@@ -36,6 +36,15 @@ func (f falsoVinculos) Resumos(_ context.Context, tipo string, ids []string) (ma
 	}
 	return out, nil
 }
+func (f falsoVinculos) Clientes(_ context.Context, tipo string, ids []string) (map[string][]Ref, error) {
+	out := map[string][]Ref{}
+	for _, id := range ids {
+		if v, ok := f.tab(tipo)[id]; ok {
+			out[id] = []Ref{{ID: "p-" + id, Codigo: "PES. 0000009", Nome: v[1]}}
+		}
+	}
+	return out, nil
+}
 func (f falsoVinculos) Opcoes(_ context.Context, tipo string) ([]Opcao, error) {
 	var out []Opcao
 	for id, v := range f.tab(tipo) {
@@ -415,34 +424,62 @@ func TestBuscaSemAcento(t *testing.T) {
 	}
 }
 
-func TestAbertasPorSubtitulo(t *testing.T) {
+func TestAgendaTarefas(t *testing.T) {
 	a := novoAmb(t)
 	ctx := context.Background()
-	mk := func(titulo, sub, estado string) string {
+	hoje := webx.Hoje(time.Date(2026, 11, 3, 12, 0, 0, 0, time.UTC))
+	mk := func(titulo, sub, estado, prazo string) string {
 		in := a.in(titulo)
-		in.Subtitulo, in.Estado = sub, estado
+		in.Subtitulo, in.Estado, in.Prazo = sub, estado, prazo
 		return a.criar(t, in, true)
 	}
-	mk("L1", "Ligação", "pendente")
-	mk("L2", "ligacoes", "revisao")
-	mk("L3", "Ligação", "concluidas-com-sucesso")
-	mk("L4", "Ligação", "canceladas")
-	mk("R1", "Reunião", "em-execucao")
-	mk("R2", "REUNIOES", "a-confirmar")
-	mk("A1", "Aula", "pendente")
-	mk("A2", "aulas", "pendente")
-	excl := mk("L5", "Ligação", "pendente")
+	mk("L1", "Ligação", "pendente", "2026-11-10")
+	mk("L2", "ligacoes", "revisao", "2026-11-05")
+	mk("L3", "Ligação", "concluidas-com-sucesso", "")
+	mk("L4", "Ligação", "canceladas", "")
+	mk("R1", "Reunião", "em-execucao", "2026-11-03")
+	mk("R2", "REUNIOES", "a-confirmar", "")
+	mk("A1", "Aula", "pendente", "2026-10-01")
+	mk("A2", "aulas", "pendente", "")
+	excl := mk("L5", "Ligação", "pendente", "")
 	if err := a.s.Excluir(ctx, a.ac, excl, 1, "segredo-ok"); err != nil {
 		t.Fatal(err)
 	}
-	for q, want := range map[string]int{"Ligação": 2, "ligacao": 2, "ligacoes": 2, "Reunião": 2, "reunioes": 2, "aula": 2, "Aulas": 2, "Monitoramento": 0} {
-		l, err := a.s.AbertasPorSubtitulo(ctx, q, 50)
-		if err != nil || len(l) != want {
-			t.Errorf("AbertasPorSubtitulo(%q) = %d (%v), esperado %d", q, len(l), err, want)
+	for _, c := range []struct {
+		norm []string
+		want int
+	}{{[]string{"ligacao", "ligacoes"}, 2}, {[]string{"reuniao", "reunioes"}, 2}, {[]string{"aula", "aulas"}, 2}, {[]string{"monitoramento"}, 0}} {
+		l, err := a.s.AgendaPorSubtitulo(ctx, hoje, c.norm)
+		if err != nil || len(l) != c.want {
+			t.Errorf("AgendaPorSubtitulo(%v) = %d (%v), esperado %d", c.norm, len(l), err, c.want)
 		}
 	}
-	if l, _ := a.s.AbertasPorSubtitulo(ctx, "aula", 1); len(l) != 1 {
-		t.Error("o limite deveria valer")
+	// Ordem por prazo (L2 antes de L1) e dados da linha: cliente com PES, selo e prazo.
+	l, _ := a.s.AgendaPorSubtitulo(ctx, hoje, []string{"ligacao", "ligacoes"})
+	if l[0].Titulo != "L2" || l[0].Prazo != "05/11/2026" || l[0].PrazoFatal != "—" || len(l[0].Clientes) != 1 || l[0].Clientes[0].Rotulo() != "MARIA EXEMPLO · PES. 0000009" {
+		t.Errorf("linha da agenda = %+v", l[0])
+	}
+	if l[0].StatusRotulo != "Revisão" || l[0].StatusClasse != "badge-neutral" {
+		t.Errorf("selo = %q %q", l[0].StatusRotulo, l[0].StatusClasse)
+	}
+	// Atrasada: prazo anterior a hoje e ainda aberta.
+	al, _ := a.s.AgendaPorSubtitulo(ctx, hoje, []string{"aula", "aulas"})
+	var atrasada AgendaLinha
+	for _, x := range al {
+		if x.Titulo == "A1" {
+			atrasada = x
+		}
+	}
+	if atrasada.StatusRotulo != "Pendente · atrasada" || atrasada.StatusClasse != "badge-danger" {
+		t.Errorf("atrasada = %q %q", atrasada.StatusRotulo, atrasada.StatusClasse)
+	}
+	// Categoria Tarefas = todas em aberto (L1, L2, R1, R2, A1, A2).
+	if tl, err := a.s.AgendaEmAberto(ctx, hoje); err != nil || len(tl) != 6 {
+		t.Errorf("AgendaEmAberto = %d (%v), esperado 6", len(tl), err)
+	}
+	// Aviso de mesmo dia: só tarefas abertas com esse prazo.
+	if ts, _ := a.s.TitulosComPrazoEm(ctx, hoje); len(ts) != 1 || ts[0] != "R1" {
+		t.Errorf("TitulosComPrazoEm = %v", ts)
 	}
 }
 

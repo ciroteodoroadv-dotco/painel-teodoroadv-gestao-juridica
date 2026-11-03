@@ -2,7 +2,8 @@ package agenda
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -11,48 +12,105 @@ import (
 	"painelteodoro/internal/platform/webx"
 )
 
-// Service concentra as regras da agenda. Só toca nas próprias tabelas.
+// Service concentra as regras dos compromissos e monta a página. Só toca na própria tabela; os outros domínios
+// entram por interfaces (ligadas em internal/app).
 type Service struct {
-	Pool      *pgxpool.Pool
-	Processos ProcessoLookup
-	Pessoas   PessoaLookup
-	Users     UserLookup
+	Pool        *pgxpool.Pool
+	Pessoas     PessoaLookup
+	Vinculos    VinculoLookup
+	Audiencias  AudienciaLookup
+	Diligencias DiligenciaLookup
+	Tarefas     TarefaLookup
+	Intimacoes  IntimacaoLookup
+	Now         func() time.Time
 }
 
-func (s *Service) record(ctx context.Context, tx pgx.Tx, ac webx.Actor, action, id string, meta map[string]string) error {
-	return audit.Record(ctx, tx, audit.Event{Actor: ac.UserID, Action: action, TargetType: "evento",
-		TargetID: id, Result: audit.OK, RequestID: ac.RequestID, Meta: meta})
+func (s *Service) now() time.Time {
+	if s.Now != nil {
+		return s.Now()
+	}
+	return time.Now()
 }
 
-func (s *Service) checkRefs(ctx context.Context, n normalized) error {
-	if n.processo != "" {
-		ok, err := s.Processos.Existe(ctx, n.processo)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return webx.Invalidf("Processo não encontrado.")
+func (s *Service) record(ctx context.Context, tx pgx.Tx, ac webx.Actor, action, id, tipo string) error {
+	return audit.Record(ctx, tx, audit.Event{Actor: ac.UserID, Action: action, TargetType: "compromisso", TargetID: id,
+		Result: audit.OK, RequestID: ac.RequestID, Meta: map[string]string{"tipo": tipo}})
+}
+
+// checarRefs confere que cliente, atendimento, processo e "criado por" existem (vínculo inexistente é recusado).
+func (s *Service) checarRefs(ctx context.Context, n normalized) error {
+	var pessoas []string
+	for _, id := range []string{n.cliente, n.criadoPor} {
+		if id != "" {
+			if !webx.UUID(id) {
+				return webx.Invalidf("Pessoa não encontrada.")
+			}
+			pessoas = append(pessoas, id)
 		}
 	}
-	if n.responsavel != "" {
-		m, err := s.Users.Emails(ctx, []string{n.responsavel})
+	if len(pessoas) > 0 {
+		ok, err := s.Pessoas.Exist(ctx, pessoas)
 		if err != nil {
 			return err
 		}
-		if _, ok := m[n.responsavel]; !ok {
-			return webx.Invalidf("Responsável inválido.")
+		for _, id := range pessoas {
+			if !ok[id] {
+				return webx.Invalidf("Pessoa não encontrada.")
+			}
+		}
+	}
+	for tipo, id := range map[string]string{"atendimento": n.atend, "processo": n.proc} {
+		if id == "" {
+			continue
+		}
+		existe := webx.UUID(id)
+		if existe {
+			var err error
+			if existe, err = s.Vinculos.Existe(ctx, tipo, id); err != nil {
+				return err
+			}
+		}
+		if !existe {
+			return webx.Invalidf(map[string]string{"atendimento": "Atendimento não encontrado.", "processo": "Processo vinculado não encontrado."}[tipo])
 		}
 	}
 	return nil
 }
 
-// Create cadastra o evento.
-func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input) (string, error) {
+// bloqueio é a regra de conflito de horário do B: compromisso (flexível) é recusado quando cai no mesmo dia e na
+// mesma hora exata de uma audiência (item crítico). A audiência nunca é bloqueada.
+func (s *Service) bloqueio(ctx context.Context, data time.Time, hora string) error {
+	cs, err := s.Audiencias.NoHorario(ctx, data, hora)
+	if err != nil || len(cs) == 0 {
+		return err
+	}
+	c := cs[0]
+	return webx.Invalidf(fmt.Sprintf("Bloqueado: conflito de horário com Audiência \"%s\" em %s às %s.", c.Titulo, c.Data, c.Hora))
+}
+
+// aviso é o aviso não bloqueante do B: há tarefa com prazo de entrega no mesmo dia.
+func (s *Service) aviso(ctx context.Context, data time.Time) string {
+	ts, err := s.Tarefas.TitulosComPrazoEm(ctx, data)
+	if err != nil || len(ts) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("Atenção: há uma tarefa com prazo no mesmo dia (\"%s\").", ts[0])
+}
+
+// CriarCompromisso cadastra Reunião, Ligação ou Aula e devolve o aviso do B (vazio se não houver). Diligência não passa
+// por aqui: tem ficha própria (CriarDiligencia).
+func (s *Service) CriarCompromisso(ctx context.Context, ac webx.Actor, in Input) (aviso string, err error) {
 	n, err := in.normalize()
 	if err != nil {
 		return "", err
 	}
-	if err := s.checkRefs(ctx, n); err != nil {
+	if n.tipo == TipoDiligencia {
+		return "", webx.Invalidf("Diligência tem ficha própria — use Novo compromisso.")
+	}
+	if err = s.checarRefs(ctx, n); err != nil {
+		return "", err
+	}
+	if err = s.bloqueio(ctx, n.data, n.hora); err != nil {
 		return "", err
 	}
 	tx, err := s.Pool.Begin(ctx)
@@ -61,112 +119,75 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input) (string, 
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	var id string
-	err = tx.QueryRow(ctx, `INSERT INTO agenda_eventos (tipo, titulo, inicio, fim, local, processo_id, responsavel_id, created_by, updated_by)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8) RETURNING id`, n.tipo, n.titulo, n.inicio, n.fim, n.local,
-		webx.Nullable(n.processo), webx.Nullable(n.responsavel), ac.UserID).Scan(&id)
+	err = tx.QueryRow(ctx, `INSERT INTO agenda_compromissos (tipo, descricao, data, hora, local, cliente_pessoa_id, atendimento_id,
+		processo_id, criado_por_pessoa_id, created_by, updated_by)
+		VALUES ($1,$2,$3,$4::time,$5,$6::uuid,$7::uuid,$8::uuid,$9::uuid,$10,$10) RETURNING id::text`,
+		n.tipo, n.descricao, n.data, n.hora, n.local, webx.Nullable(n.cliente), webx.Nullable(n.atend), webx.Nullable(n.proc),
+		webx.Nullable(n.criadoPor), ac.UserID).Scan(&id)
 	if err == nil {
-		err = s.record(ctx, tx, ac, "evento.criado", id, map[string]string{"papel": n.tipo})
+		err = s.record(ctx, tx, ac, "compromisso.criado", id, n.tipo)
 	}
 	if err == nil {
 		err = tx.Commit(ctx)
 	}
-	return id, err
+	if err != nil {
+		return "", err
+	}
+	return s.aviso(ctx, n.data), nil
 }
 
-// Update altera com concorrência otimista.
-func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version int, in Input) error {
+// AtualizarCompromisso altera com concorrência otimista (version).
+func (s *Service) AtualizarCompromisso(ctx context.Context, ac webx.Actor, id string, version int, in Input) error {
+	atual, err := s.Get(ctx, id)
+	if err != nil {
+		return err
+	}
 	n, err := in.normalize()
 	if err != nil {
 		return err
 	}
-	if err := s.checkRefs(ctx, n); err != nil {
+	if n.tipo == TipoDiligencia {
+		return webx.Invalidf("Diligência tem ficha própria — use Novo compromisso.")
+	}
+	if err = s.checarRefs(ctx, n); err != nil {
 		return err
 	}
-	return s.write(ctx, ac, id, "evento.alterado", `UPDATE agenda_eventos SET tipo=$3, titulo=$4, inicio=$5, fim=$6, local=$7,
-		processo_id=$8, responsavel_id=$9, updated_at=now(), updated_by=$10, version=version+1
-		WHERE id=$1 AND version=$2 AND excluido_em IS NULL`, id, version, n.tipo, n.titulo, n.inicio, n.fim, n.local,
-		webx.Nullable(n.processo), webx.Nullable(n.responsavel), ac.UserID)
-}
-
-// Delete marca como excluído (sem apagar).
-func (s *Service) Delete(ctx context.Context, ac webx.Actor, id string, version int) error {
-	return s.write(ctx, ac, id, "evento.excluido", `UPDATE agenda_eventos SET excluido_em=now(), updated_at=now(),
-		updated_by=$3, version=version+1 WHERE id=$1 AND version=$2 AND excluido_em IS NULL`, id, version, ac.UserID)
-}
-
-func (s *Service) write(ctx context.Context, ac webx.Actor, id, action, sql string, args ...any) error {
+	if err = s.bloqueio(ctx, n.data, n.hora); err != nil {
+		return err
+	}
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	tag, err := tx.Exec(ctx, sql, args...)
+	tag, err := tx.Exec(ctx, `UPDATE agenda_compromissos SET tipo=$3, descricao=$4, data=$5, hora=$6::time, local=$7,
+		cliente_pessoa_id=$8::uuid, atendimento_id=$9::uuid, processo_id=$10::uuid, criado_por_pessoa_id=$11::uuid,
+		updated_at=now(), updated_by=$12, version=version+1
+		WHERE id=$1 AND version=$2 AND excluido_em IS NULL`, atual.ID, version, n.tipo, n.descricao, n.data, n.hora, n.local,
+		webx.Nullable(n.cliente), webx.Nullable(n.atend), webx.Nullable(n.proc), webx.Nullable(n.criadoPor), ac.UserID)
 	if err != nil {
 		return err
 	}
 	if tag.RowsAffected() == 0 {
-		var one int
-		e := s.Pool.QueryRow(ctx, `SELECT 1 FROM agenda_eventos WHERE id=$1 AND excluido_em IS NULL`, id).Scan(&one)
-		if errors.Is(e, pgx.ErrNoRows) {
-			return webx.ErrNotFound
-		}
-		if e != nil {
-			return e
-		}
 		return webx.ErrConflict
 	}
-	if err = s.record(ctx, tx, ac, action, id, nil); err != nil {
+	if err = s.record(ctx, tx, ac, "compromisso.atualizado", atual.ID, n.tipo); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
 }
 
-// AddParticipante convoca uma pessoa (escrita + auditoria na mesma transação).
-func (s *Service) AddParticipante(ctx context.Context, ac webx.Actor, eventoID, pessoaID string) error {
-	ok, err := s.Pessoas.Exist(ctx, []string{pessoaID})
+// CriarDiligencia cria a diligência a partir do "Novo compromisso" com tipo Diligência (Descrição vira Título, Data vira
+// Data-limite). Devolve o código DIL. 0000001. Atendimento e "Criado por" não valem para diligência, como no B.
+func (s *Service) CriarDiligencia(ctx context.Context, ac webx.Actor, in Input) (string, error) {
+	n, err := in.normalize()
 	if err != nil {
-		return err
+		return "", err
 	}
-	if !ok[pessoaID] {
-		return webx.Invalidf("Pessoa não encontrada.")
+	n.atend, n.criadoPor = "", ""
+	if err = s.checarRefs(ctx, n); err != nil {
+		return "", err
 	}
-	tx, err := s.Pool.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	var one int
-	if err := tx.QueryRow(ctx, `SELECT 1 FROM agenda_eventos WHERE id=$1 AND excluido_em IS NULL FOR UPDATE`, eventoID).Scan(&one); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return webx.ErrNotFound
-		}
-		return err
-	}
-	if _, err = tx.Exec(ctx, `INSERT INTO agenda_participantes (evento_id, pessoa_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, eventoID, pessoaID); err != nil {
-		return err
-	}
-	if err = s.record(ctx, tx, ac, "evento.participante_adicionado", eventoID, nil); err != nil {
-		return err
-	}
-	return tx.Commit(ctx)
-}
-
-// RemoveParticipante retira a pessoa do evento.
-func (s *Service) RemoveParticipante(ctx context.Context, ac webx.Actor, eventoID, pessoaID string) error {
-	tx, err := s.Pool.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	tag, err := tx.Exec(ctx, `DELETE FROM agenda_participantes WHERE evento_id=$1 AND pessoa_id=$2`, eventoID, pessoaID)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() == 0 {
-		return webx.ErrNotFound
-	}
-	if err = s.record(ctx, tx, ac, "evento.participante_removido", eventoID, nil); err != nil {
-		return err
-	}
-	return tx.Commit(ctx)
+	return s.Diligencias.Criar(ctx, ac, DiligenciaNova{Titulo: n.descricao, ProcessoID: n.proc, ClienteID: n.cliente, Local: n.local,
+		DataLimite: n.data.Format("2006-01-02"), Hora: n.hora, Responsavel: in.Responsavel})
 }

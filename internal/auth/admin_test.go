@@ -18,7 +18,7 @@ func TestGestaoDeUsuariosESenhaProvisoria(t *testing.T) {
 	tok := adm.csrfFrom("/admin/usuarios")
 
 	// Quem não é administrador não gere usuários.
-	if r, _ := adv.do("POST", "/admin/usuarios", url.Values{"csrf_token": {adv.csrfFrom("/")}, "email": {"x@exemplo.test"},
+	if r, _ := adv.do("POST", "/admin/usuarios", url.Values{"csrf_token": {adv.csrfFrom("/conta")}, "email": {"x@exemplo.test"},
 		"papel": {"assistente"}, "senha": {senhaBoa}}); r.StatusCode != 403 {
 		t.Fatalf("advogado criando usuário = %d, esperado 403", r.StatusCode)
 	}
@@ -50,7 +50,7 @@ func TestGestaoDeUsuariosESenhaProvisoria(t *testing.T) {
 		"nova": {"outra-frase-bem-longa-9"}, "confirmar": {"outra-frase-bem-longa-9"}}); r.StatusCode != 303 {
 		t.Fatalf("troca válida = %d", r.StatusCode)
 	}
-	if r, _ := novo.do("GET", "/", nil); r.StatusCode != 200 {
+	if r, _ := novo.do("GET", "/", nil); r.StatusCode != 302 {
 		t.Fatalf("após trocar a senha a home deveria abrir: %d", r.StatusCode)
 	}
 

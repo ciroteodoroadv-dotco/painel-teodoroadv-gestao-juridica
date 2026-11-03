@@ -34,7 +34,7 @@ func TestCascaDoPainelB(t *testing.T) {
 		t.Fatalf("criar prazo = %d", r.StatusCode)
 	}
 
-	for _, caminho := range []string{"/agenda", "/pessoas", "/tarefas", "/processos", "/prazos", "/conta", "/"} {
+	for _, caminho := range []string{"/agenda", "/pessoas", "/tarefas", "/processos", "/prazos", "/conta"} {
 		_, html := adv.get(caminho)
 		ordem(t, caminho, html, `id="app"`, `class="sidebar"`, `id="navTabs"`, `class="topbar"`, `id="stats"`,
 			`id="content"`, `id="syncStatus"`, `id="idxTicker"`, `id="drawerOverlay"`, `id="drawer"`, `id="toast"`)
@@ -71,7 +71,10 @@ func TestCascaDoPainelB(t *testing.T) {
 	}
 
 	// Home = Agenda, com a faixa honesta de prazos (sem cálculo novo).
-	_, home := adv.get("/")
+	if r, _ := adv.get("/"); r.StatusCode != 302 || r.Header.Get("Location") != "/agenda" {
+		t.Errorf("a página inicial deveria redirecionar para a Agenda: %d %q", r.StatusCode, r.Header.Get("Location"))
+	}
+	_, home := adv.get("/agenda")
 	if !strings.Contains(home, `<h1>Agenda</h1>`) || !strings.Contains(home, `class="notice"`) ||
 		!strings.Contains(home, "1 prazo(s) a conferir") || !strings.Contains(home, `href="/prazos"`) {
 		t.Error("a Agenda inicial deveria trazer a faixa de prazos a conferir")
