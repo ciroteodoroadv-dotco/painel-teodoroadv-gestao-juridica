@@ -36,3 +36,10 @@
 | "Novo cliente" dentro do atendimento (volta ao rascunho) | código pronto (`atendimento.js`); **não exercitado no Chrome** |
 | Capturas 1440/400 e do B | **não feito** |
 | Conferência do advogado na tela real | pendente |
+
+## Plano 4 — Agenda, Audiências, Diligências (03/11/2026)
+| Item | Estado |
+|---|---|
+| Estrutura/textos/ordem dos drawers e das 7 pílulas | coberto por testes HTTP e `textos4.py` |
+| Estilo computado B x v2 | **não feito** |
+| JS novo no navegador, capturas, conferência do advogado | **não feito / pendente** |
