@@ -40,6 +40,27 @@ func TestInstantaneosParaParidade(t *testing.T) {
 			base = html
 		}
 	}
+	// Plano 2: fragmentos dos drawers de Pessoas e Processos, gravados no mesmo caminho em que a página os
+	// pede (data-drawer), para o JS do v2 abri-los a partir do servidor estático do instantâneo.
+	var pAna, pPro1 string
+	if err := e.pool.QueryRow(context.Background(), `SELECT id FROM pessoas WHERE codigo='PES. 0000001'`).Scan(&pAna); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.pool.QueryRow(context.Background(), `SELECT id FROM processos WHERE codigo='PRO. 0000001'`).Scan(&pPro1); err != nil {
+		t.Fatal(err)
+	}
+	for _, caminho := range []string{"/pessoas/nova", "/pessoas/" + pAna + "/editar", "/processos/novo",
+		"/processos/" + pPro1 + "/editar", "/processos/" + pPro1 + "/estado", "/processos/" + pPro1 + "/andamento",
+		"/processos/" + pPro1 + "/financeiro", "/processos/" + pPro1 + "/providencia", "/processos/" + pPro1 + "/excluir"} {
+		_, frag := adv.do("GET", caminho, nil, map[string]string{"HX-Request": "true"})
+		alvo := filepath.Join(out, filepath.FromSlash(strings.TrimPrefix(caminho, "/")))
+		if err := os.MkdirAll(filepath.Dir(alvo), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(alvo, []byte(frag), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
 	// Página de componentes: a mesma casca, com o miolo do painel B (acordeão, drawer, máscaras…).
 	// Os links de CSS/JS já são absolutos (/static/…).
 	ini := strings.Index(base, `<div class="stats" id="stats">`)

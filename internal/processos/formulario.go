@@ -162,7 +162,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request, s *auth.Session
 		return
 	}
 	id, _, err := h.S.Create(r.Context(), webx.ActorOf(w, s.UserID), in)
-	if h.falha(w, err) {
+	if h.falha(w, err, "Falha ao criar o processo.") {
 		return
 	}
 	w.Header().Set("X-Painel-Id", id)
@@ -176,7 +176,7 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request, s *auth.Session
 		return
 	}
 	err := h.S.Update(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"), webx.Int(r.PostFormValue("version")), in)
-	if h.falha(w, err) {
+	if h.falha(w, err, "Falha ao atualizar o processo.") {
 		return
 	}
 	ok(w, "Processo atualizado.")

@@ -59,7 +59,7 @@ func (h *Handler) removeForm(w http.ResponseWriter, r *http.Request, _ *auth.Ses
 func (h *Handler) estado(w http.ResponseWriter, r *http.Request, s *auth.Session) {
 	err := h.S.MoverEstado(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"),
 		webx.Int(r.PostFormValue("version")), r.PostFormValue("novo_estado"), r.PostFormValue("motivo"))
-	if h.falha(w, err) {
+	if h.falha(w, err, "Falha ao mover o estado do processo.") {
 		return
 	}
 	ok(w, "Estado do processo atualizado.")
@@ -88,7 +88,7 @@ func (h *Handler) andamento(w http.ResponseWriter, r *http.Request, s *auth.Sess
 	}
 	err = h.S.RegistrarAndamento(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"), dia,
 		r.PostFormValue("o_que"), r.PostFormValue("documento"))
-	if h.falha(w, err) {
+	if h.falha(w, err, "Falha ao registrar o andamento.") {
 		return
 	}
 	ok(w, "Andamento registrado.")
@@ -97,7 +97,7 @@ func (h *Handler) andamento(w http.ResponseWriter, r *http.Request, s *auth.Sess
 func (h *Handler) financeiro(w http.ResponseWriter, r *http.Request, s *auth.Session) {
 	err := h.S.AtualizarFinanceiro(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"),
 		r.PostFormValue("item"), r.PostFormValue("valor"), r.PostFormValue("situacao"))
-	if h.falha(w, err) {
+	if h.falha(w, err, "Falha ao atualizar o financeiro.") {
 		return
 	}
 	ok(w, "Dado financeiro atualizado.")
@@ -110,7 +110,7 @@ func (h *Handler) providencia(w http.ResponseWriter, r *http.Request, s *auth.Se
 	}
 	err = h.S.ProximaProvidencia(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"),
 		r.PostFormValue("o_que"), d, r.PostFormValue("quem"))
-	if h.falha(w, err) {
+	if h.falha(w, err, "Falha ao registrar a próxima providência.") {
 		return
 	}
 	ok(w, "Próxima providência registrada.")
@@ -119,7 +119,7 @@ func (h *Handler) providencia(w http.ResponseWriter, r *http.Request, s *auth.Se
 func (h *Handler) remove(w http.ResponseWriter, r *http.Request, s *auth.Session) {
 	err := h.S.Delete(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"),
 		webx.Int(r.PostFormValue("version")), r.PostFormValue("confirmo") == "1")
-	if h.falha(w, err) {
+	if h.falha(w, err, "Falha ao excluir o processo.") {
 		return
 	}
 	ok(w, "Processo excluído.")

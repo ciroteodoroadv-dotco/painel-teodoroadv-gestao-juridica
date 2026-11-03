@@ -131,7 +131,7 @@ func ok(w http.ResponseWriter, msg string) {
 }
 
 // falha traduz o erro em texto simples (o JS do drawer mostra como toast de erro, como o showToast(..., true) do B).
-func (h *Handler) falha(w http.ResponseWriter, err error) bool {
+func (h *Handler) falha(w http.ResponseWriter, err error, msgFalha ...string) bool {
 	if err == nil {
 		return false
 	}
@@ -144,7 +144,11 @@ func (h *Handler) falha(w http.ResponseWriter, err error) bool {
 	case errors.Is(err, webx.ErrConflict):
 		http.Error(w, "Este registro foi alterado por outra pessoa. Feche, recarregue a página e refaça a alteração.", http.StatusConflict)
 	default:
-		http.Error(w, "Erro interno.", http.StatusInternalServerError)
+		msg := "Erro interno."
+		if len(msgFalha) > 0 {
+			msg = msgFalha[0] // texto de falha do painel B
+		}
+		http.Error(w, msg, http.StatusInternalServerError)
 	}
 	return true
 }

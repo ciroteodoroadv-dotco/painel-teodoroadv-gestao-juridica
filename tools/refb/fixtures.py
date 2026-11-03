@@ -10,45 +10,7 @@ def _d(delta):
     return (date.today() + timedelta(days=delta)).isoformat()
 
 
-PESSOAS = [
-    {"arquivo": "maria-exemplo.md", "codigo": "PES.0001", "tipoPessoa": "Pessoa Física",
-     "nomeCompleto": "Maria Exemplo", "cpf": "529.982.247-25", "estadoCivil": "Solteiro(a)",
-     "profissao": "Professora", "nacionalidade": "brasileira", "email": "maria@exemplo.test",
-     "telefone": "(11) 91234-5678", "cidade": "São Paulo", "uf": "SP", "criado": _d(-30)},
-    {"arquivo": "joao-ficticio.md", "codigo": "PES.0002", "tipoPessoa": "Pessoa Física",
-     "nomeCompleto": "João Fictício", "cpf": "111.444.777-35", "email": "joao@exemplo.test",
-     "telefone": "(21) 98888-7777", "cidade": "Rio de Janeiro", "uf": "RJ", "criado": _d(-25)},
-    {"arquivo": "empresa-modelo-ltda.md", "codigo": "PES.0003", "tipoPessoa": "Pessoa Jurídica",
-     "razaoSocial": "Empresa Modelo Ltda", "nomeFantasia": "Modelo", "cnpj": "11.222.333/0001-81",
-     "representanteNome": "Ana Representante", "email": "contato@modelo.test",
-     "telefone": "(11) 3333-4444", "cidade": "Campinas", "uf": "SP", "criado": _d(-20)},
-    {"arquivo": "banco-de-teste-sa.md", "codigo": "PES.0004", "tipoPessoa": "Pessoa Jurídica",
-     "razaoSocial": "Banco de Teste S.A.", "cnpj": "22.333.444/0001-55", "cidade": "Brasília",
-     "uf": "DF", "criado": _d(-18)},
-]
-
-PROCESSOS = [
-    {"arquivo": "ativo/proc-0001.md", "codigo": "PRO.0001", "title": "Maria Exemplo x Banco de Teste",
-     "numero_processo": "0000000-00.2026.8.26.0000", "sistema": "PJe", "instancia": "1º Grau",
-     "juizo": "1ª Vara Cível de Exemplo", "comarca": "São Paulo", "classe": "Procedimento Comum Cível",
-     "ramo": "Consumidor", "polo": "Ativo", "valor_causa": "R$ 10.000,00", "distribuido_em": _d(-40),
-     "estado": "ativo", "proximo_prazo": _d(6),
-     "partes": [{"pessoa": "Maria Exemplo", "papel": "cliente", "cliente": True},
-                {"pessoa": "Banco de Teste S.A.", "papel": "parte_contraria", "cliente": False}]},
-    {"arquivo": "ativo/proc-0002.md", "codigo": "PRO.0002", "title": "Empresa Modelo – execução",
-     "numero_processo": "0000001-01.2026.8.26.0001", "sistema": "e-SAJ", "instancia": "1º Grau",
-     "juizo": "2ª Vara de Exemplo", "comarca": "Campinas", "classe": "Execução de Título Extrajudicial",
-     "ramo": "Empresarial", "polo": "Ativo", "valor_causa": "R$ 50.000,00", "distribuido_em": _d(-15),
-     "estado": "ativo",
-     "partes": [{"pessoa": "Empresa Modelo Ltda", "papel": "cliente", "cliente": True},
-                {"pessoa": "João Fictício", "papel": "parte_contraria", "cliente": False}]},
-    {"arquivo": "sobrestado/proc-0003.md", "codigo": "PRO.0003", "title": "João Fictício – inventário",
-     "numero_processo": "0000002-02.2025.8.19.0002", "sistema": "Projudi", "instancia": "1º Grau",
-     "juizo": "Vara de Sucessões de Exemplo", "comarca": "Rio de Janeiro",
-     "classe": "Outra (especificar)", "ramo": "Sucessões e Família", "polo": "Ativo",
-     "valor_causa": "R$ 120.000,00", "distribuido_em": _d(-200), "estado": "sobrestado",
-     "partes": [{"pessoa": "João Fictício", "papel": "cliente", "cliente": True}]},
-]
+from pessoas_processos import PESSOAS, PROCESSOS  # noqa: E402 (dados do Plano 2, iguais ao seed do v2)
 
 ATENDIMENTOS = [
     {"arquivo": "ate-0001.md", "codigo": "ATE.0001", "title": "Consulta sobre contrato bancário",

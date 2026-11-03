@@ -121,7 +121,7 @@ func ok(w http.ResponseWriter, msg string) {
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request, s *auth.Session) {
 	id, codigo, err := h.S.Create(r.Context(), webx.ActorOf(w, s.UserID), inputFrom(r))
-	if h.falha(w, err) {
+	if h.falha(w, err, "Falha ao criar a pessoa.") {
 		return
 	}
 	w.Header().Set("X-Painel-Id", id)
@@ -138,7 +138,7 @@ func (h *Handler) editForm(w http.ResponseWriter, r *http.Request, s *auth.Sessi
 
 func (h *Handler) update(w http.ResponseWriter, r *http.Request, s *auth.Session) {
 	err := h.S.Update(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"), webx.Int(r.PostFormValue("version")), inputFrom(r))
-	if h.falha(w, err) {
+	if h.falha(w, err, "Falha ao atualizar a pessoa.") {
 		return
 	}
 	ok(w, "Pessoa atualizada.")
@@ -217,7 +217,7 @@ func (h *Handler) relatorio(w http.ResponseWriter, r *http.Request, s *auth.Sess
 
 // falha traduz o erro em resposta de texto simples (o JS do drawer a mostra como toast de erro,
 // como o showToast(..., true) do B). Devolve true se respondeu.
-func (h *Handler) falha(w http.ResponseWriter, err error) bool {
+func (h *Handler) falha(w http.ResponseWriter, err error, msgFalha ...string) bool {
 	if err == nil {
 		return false
 	}
@@ -230,7 +230,11 @@ func (h *Handler) falha(w http.ResponseWriter, err error) bool {
 	case errors.Is(err, webx.ErrConflict):
 		http.Error(w, "Este registro foi alterado por outra pessoa. Feche, recarregue a página e refaça a alteração.", http.StatusConflict)
 	default:
-		http.Error(w, "Erro interno.", http.StatusInternalServerError)
+		msg := "Erro interno."
+		if len(msgFalha) > 0 {
+			msg = msgFalha[0] // texto de falha do painel B
+		}
+		http.Error(w, msg, http.StatusInternalServerError)
 	}
 	return true
 }

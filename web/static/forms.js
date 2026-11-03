@@ -30,7 +30,13 @@
         App.drawerStack.length = 0;
         App.closeDrawer();
         window.PainelToast(ok || "Salvo.", false);
-        return App.recarregarConteudo();
+        return App.recarregarConteudo().catch(function () {
+          var falhas = {
+            pessoas: "Ação registrada, mas houve falha ao recarregar a lista de pessoas.",
+            processos: "Ação registrada, mas houve falha ao recarregar a lista de processos."
+          };
+          window.PainelToast(falhas[document.body.getAttribute("data-tab")] || "Ação registrada, mas houve falha ao recarregar a lista.", true);
+        });
       }
       var html = (r.headers.get("Content-Type") || "").indexOf("text/html") === 0;
       return r.text().then(function (t) {
