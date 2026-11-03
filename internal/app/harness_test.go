@@ -46,6 +46,7 @@ func newEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
+	_, _ = pool.Exec(ctx, `TRUNCATE pessoas, processos CASCADE`) // a migração 0008 só reverte com tabelas vazias; erro ignorado na 1ª execução
 	if err := migrate.Reset(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
