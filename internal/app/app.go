@@ -44,7 +44,7 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	pes.Processos = proc
 	tar := &tarefas.Service{Pool: pool, Processos: proc, Users: users}
 
-	ag := &agenda.Service{Pool: pool, Processos: proc, Pessoas: pes, Users: users, Tarefas: tarefasParaAgenda{s: tar}}
+	ag := &agenda.Service{Pool: pool, Processos: proc, Pessoas: pes, Users: users}
 	store, err := documentos.NewStore(docsDir, fieldKey)
 	if err != nil {
 		return err
@@ -58,22 +58,4 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	(&agenda.Handler{A: a, S: ag}).Register(rt)
 	(&documentos.Handler{A: a, S: doc}).Register(rt)
 	return nil
-}
-
-// tarefasParaAgenda adapta o domínio de tarefas à interface que a Agenda exige (agenda.TarefaLookup).
-// A Agenda nunca importa tarefas: só este ponto de composição conhece os dois.
-type tarefasParaAgenda struct{ s *tarefas.Service }
-
-func (a tarefasParaAgenda) AbertasPorSubtitulo(ctx context.Context, q string, limite int) ([]agenda.TarefaResumo, error) {
-	list, err := a.s.AbertasPorSubtitulo(ctx, q, limite)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]agenda.TarefaResumo, len(list))
-	for i, t := range list {
-		out[i] = agenda.TarefaResumo{ID: t.ID, Titulo: t.Titulo, Subtitulo: t.Subtitulo, Prioridade: t.Prioridade,
-			PrioridadeRotulo: t.PrioridadeRotulo(), ProcessoNumero: t.ProcessoNumero, Responsavel: t.Responsavel,
-			Status: t.StatusRotulo(), Vencimento: t.Vencimento, AConferir: t.AConferir()}
-	}
-	return out, nil
 }

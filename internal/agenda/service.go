@@ -17,28 +17,11 @@ type Service struct {
 	Processos ProcessoLookup
 	Pessoas   PessoaLookup
 	Users     UserLookup
-	Tarefas   TarefaLookup // opcional: tarefas em aberto para as categorias da Agenda
 }
 
 func (s *Service) record(ctx context.Context, tx pgx.Tx, ac webx.Actor, action, id string, meta map[string]string) error {
 	return audit.Record(ctx, tx, audit.Event{Actor: ac.UserID, Action: action, TargetType: "evento",
 		TargetID: id, Result: audit.OK, RequestID: ac.RequestID, Meta: meta})
-}
-
-// checkConflito barra compromisso (exceto audiência) no mesmo instante e responsável. Audiência nunca é
-// bloqueada: o conflito dela vira só aviso no detalhe.
-func (s *Service) checkConflito(ctx context.Context, n normalized, ignorarID string) error {
-	if n.tipo == "audiencia" {
-		return nil
-	}
-	com, err := s.ExisteNoInstante(ctx, n.inicio, n.responsavel, ignorarID)
-	if err != nil {
-		return err
-	}
-	if com != "" {
-		return ErrConflito{Com: com}
-	}
-	return nil
 }
 
 func (s *Service) checkRefs(ctx context.Context, n normalized) error {
@@ -72,9 +55,6 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input) (string, 
 	if err := s.checkRefs(ctx, n); err != nil {
 		return "", err
 	}
-	if err := s.checkConflito(ctx, n, ""); err != nil {
-		return "", err
-	}
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return "", err
@@ -100,9 +80,6 @@ func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version 
 		return err
 	}
 	if err := s.checkRefs(ctx, n); err != nil {
-		return err
-	}
-	if err := s.checkConflito(ctx, n, id); err != nil {
 		return err
 	}
 	return s.write(ctx, ac, id, "evento.alterado", `UPDATE agenda_eventos SET tipo=$3, titulo=$4, inicio=$5, fim=$6, local=$7,

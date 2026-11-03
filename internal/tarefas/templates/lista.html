@@ -1,7 +1,7 @@
 {{define "content"}}{{with .Data}}
 <div class="cabeca">
   <h1>Tarefas</h1>
-  {{if .CanWrite}}<a class="botao" href="/tarefas/nova" data-drawer="/tarefas/nova">Nova tarefa</a>{{end}}
+  {{if .CanWrite}}<a class="botao" href="/tarefas/nova">Nova tarefa</a>{{end}}
 </div>
 <form method="get" action="/tarefas" role="search" class="busca linha"
       hx-get="/tarefas" hx-trigger="input changed delay:300ms from:#q, change from:#status, change from:#quem, search from:#q"
@@ -28,18 +28,17 @@
 <div class="tabela">
 <table>
   <caption>{{len .Tarefas}} tarefa(s) nesta página. O vencimento é o informado pelo advogado.</caption>
-  <thead><tr><th scope="col">Vencimento</th><th scope="col">Tarefa</th><th scope="col">Processo</th><th scope="col">Responsável</th><th scope="col">Prioridade</th><th scope="col">Situação</th>{{if .CanWrite}}<th scope="col">Ações</th>{{end}}</tr></thead>
+  <thead><tr><th scope="col">Vencimento</th><th scope="col">Tarefa</th><th scope="col">Processo</th><th scope="col">Responsável</th><th scope="col">Situação</th>{{if .CanWrite}}<th scope="col">Ações</th>{{end}}</tr></thead>
   <tbody>
   {{$w := .CanWrite}}{{range .Tarefas}}
   <tr>
     <td>{{if .Vencimento}}{{.Vencimento.Format "02/01/2006"}}{{else}}—{{end}}{{if .Atrasada}} <span class="badge badge-danger">atrasada</span>{{end}}</td>
-    <td>{{.Titulo}}{{if .AConferir}} <span class="badge badge-warn">a conferir pelo advogado</span>{{end}}{{if .Subtitulo}}<br><small class="apoio">{{.Subtitulo}}</small>{{end}}</td>
+    <td>{{.Titulo}}{{if .AConferir}} <span class="badge badge-warn">a conferir pelo advogado</span>{{end}}</td>
     <td>{{if .ProcessoNumero}}<a href="/processos/{{.ProcessoID}}"><code>{{.ProcessoNumero}}</code></a>{{else}}—{{end}}</td>
     <td>{{.Responsavel}}</td>
-    <td><span class="badge {{.PrioridadeClasse}}">{{.PrioridadeRotulo}}</span></td>
     <td>{{.StatusRotulo}}</td>
     {{if $w}}<td class="acoes row-actions">
-      <a href="/tarefas/{{.ID}}/editar" data-drawer="/tarefas/{{.ID}}/editar">Editar</a>
+      <a href="/tarefas/{{.ID}}/editar">Editar</a>
       {{if .Aberta}}<form method="post" action="/tarefas/{{.ID}}/status">
         <input type="hidden" name="csrf_token" value="{{$.CSRF}}"><input type="hidden" name="version" value="{{.Version}}">
         <input type="hidden" name="status" value="concluida"><button type="submit" class="secundario">Concluir</button></form>{{end}}

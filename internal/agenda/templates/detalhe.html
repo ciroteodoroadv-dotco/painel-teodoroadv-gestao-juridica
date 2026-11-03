@@ -5,7 +5,6 @@
 </div>
 {{if .Aviso}}<p class="ok" role="status">Evento cadastrado.</p>{{end}}
 {{if .Erro}}<p class="erro" role="alert">Não foi possível adicionar o participante.</p>{{end}}
-{{if .Conflito}}<p class="erro" role="status">{{.Conflito}}</p>{{end}}
 <dl class="ficha">
   <dt>Tipo</dt><dd>{{$e.TipoRotulo}}</dd>
   <dt>Quando</dt><dd>{{$e.InicioFmt}}{{if $e.FimFmt}} até {{$e.FimFmt}}{{end}} <small class="apoio">(horário de Brasília)</small></dd>
