@@ -12,37 +12,7 @@ def _d(delta):
 
 from pessoas_processos import PESSOAS, PROCESSOS  # noqa: E402 (dados do Plano 2, iguais ao seed do v2)
 
-ATENDIMENTOS = [
-    {"arquivo": "ate-0001.md", "codigo": "ATE.0001", "title": "Consulta sobre contrato bancário",
-     "atendimento_tipo": "Triagem", "cliente": "Maria Exemplo", "clientes": ["Maria Exemplo"],
-     "status": "Em andamento", "data_abertura": _d(-45), "descricao": "Atendimento fictício."},
-    {"arquivo": "ate-0002.md", "codigo": "ATE.0002", "title": "Revisão de cláusulas",
-     "atendimento_tipo": "Extrajudicial", "cliente": "Empresa Modelo Ltda",
-     "clientes": ["Empresa Modelo Ltda"], "status": "Em triagem", "data_abertura": _d(-10),
-     "descricao": "Atendimento fictício."},
-    {"arquivo": "ate-0003.md", "codigo": "ATE.0003", "title": "Orientação sucessória",
-     "atendimento_tipo": "Triagem", "cliente": "João Fictício", "clientes": ["João Fictício"],
-     "status": "Concluído", "data_abertura": _d(-90), "descricao": "Atendimento fictício."},
-]
-
-
-def _tarefa(arq, estado, titulo, sub, prio, prazo, fatal=""):
-    return {"arquivo": f"{estado}/{arq}.md", "estado": estado, "codigo": "TAR." + arq[-4:],
-            "title": titulo, "subtitulo": sub, "prioridade": prio, "prazo": prazo,
-            "prazo_fatal": fatal, "data_base": _d(-5), "responsaveis": ["Advogado Exemplo"],
-            "criado_por": "Advogado Exemplo", "origem_tipo": "processo",
-            "origem_id": "ativo/proc-0001.md", "partes": [], "observacoes": "",
-            "descricao": "Tarefa fictícia."}
-
-
-TAREFAS = [
-    _tarefa("tar-0001", "a-confirmar", "Conferir procuração", "Reunião", "Normal", _d(3)),
-    _tarefa("tar-0002", "pendente", "Redigir contestação", "Aula", "Urgente", _d(4), _d(5)),
-    _tarefa("tar-0003", "em-execucao", "Ligar para o cliente", "Ligação", "Alta", _d(1)),
-    _tarefa("tar-0004", "revisao", "Revisar petição inicial", "", "Normal", _d(7)),
-    _tarefa("tar-0005", "concluidas-com-sucesso", "Protocolar recurso", "", "Baixa", _d(-3)),
-    _tarefa("tar-0006", "canceladas", "Tarefa cancelada de exemplo", "", "Baixa", _d(-8)),
-]
+from atendimentos_tarefas import ATENDIMENTOS, TAREFAS  # noqa: E402 (dados do Plano 3, iguais ao seed do v2)
 
 AGENDA = [
     {"id": "ag-1", "tipo": "Reunião", "descricao": "Reunião com Maria Exemplo", "data": _d(2),

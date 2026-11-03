@@ -29,7 +29,7 @@ func TestInstantaneosParaParidade(t *testing.T) {
 		t.Fatal(err)
 	}
 	paginas := map[string]string{"agenda.html": "/", "agenda-lista.html": "/agenda", "tarefas.html": "/tarefas",
-		"processos.html": "/processos", "pessoas.html": "/pessoas", "prazos.html": "/prazos"}
+		"processos.html": "/processos", "pessoas.html": "/pessoas", "prazos.html": "/prazos", "atendimentos.html": "/atendimentos"}
 	var base string
 	for nome, caminho := range paginas {
 		_, html := adv.get(caminho)
@@ -49,7 +49,17 @@ func TestInstantaneosParaParidade(t *testing.T) {
 	if err := e.pool.QueryRow(context.Background(), `SELECT id FROM processos WHERE codigo='PRO. 0000001'`).Scan(&pPro1); err != nil {
 		t.Fatal(err)
 	}
-	for _, caminho := range []string{"/pessoas/nova", "/pessoas/" + pAna + "/editar", "/processos/novo",
+	// Plano 3: fragmentos dos drawers de Atendimentos e Tarefas.
+	var ate1, tar1 string
+	if err := e.pool.QueryRow(context.Background(), `SELECT id FROM atendimentos WHERE codigo='ATE. 0000001'`).Scan(&ate1); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.pool.QueryRow(context.Background(), `SELECT id FROM tarefas WHERE codigo='TAR. 0000001'`).Scan(&tar1); err != nil {
+		t.Fatal(err)
+	}
+	for _, caminho := range []string{"/atendimentos/novo", "/atendimentos/" + ate1 + "/editar", "/atendimentos/pessoas", "/tarefas/nova",
+		"/tarefas/" + tar1 + "/editar", "/tarefas/" + tar1 + "/filha", "/tarefas/" + tar1 + "/excluir",
+		"/pessoas/nova", "/pessoas/" + pAna + "/editar", "/processos/novo",
 		"/processos/" + pPro1 + "/editar", "/processos/" + pPro1 + "/estado", "/processos/" + pPro1 + "/andamento",
 		"/processos/" + pPro1 + "/financeiro", "/processos/" + pPro1 + "/providencia", "/processos/" + pPro1 + "/excluir"} {
 		_, frag := adv.do("GET", caminho, nil, map[string]string{"HX-Request": "true"})

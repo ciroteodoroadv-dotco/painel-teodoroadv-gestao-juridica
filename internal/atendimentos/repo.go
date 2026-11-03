@@ -90,11 +90,11 @@ func (s *Service) Get(ctx context.Context, id string) (*Atendimento, error) {
 	return a, nil
 }
 
-// Listar devolve os atendimentos, mais novos primeiro. q filtra sem acento nem maiúsculas por código, clientes,
+// Listar devolve os atendimentos em ordem de código (a ata sequencial do B). q filtra sem acento nem maiúsculas por código, clientes,
 // partes adversas, objeto e observações (a mesma busca da tela do B).
 func (s *Service) Listar(ctx context.Context, q string) ([]*Atendimento, error) {
 	rows, err := s.Pool.Query(ctx, `SELECT `+cols+` FROM atendimentos WHERE excluido_em IS NULL
-		ORDER BY data_abertura DESC, codigo DESC`)
+		ORDER BY codigo`)
 	if err != nil {
 		return nil, err
 	}

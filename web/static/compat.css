@@ -104,3 +104,12 @@ a.btn-ghost,a.btn-ghost:hover{color:var(--text);}
 .hint-vinculo{padding:8px 0;}
 .form-inline{display:inline;}
 .tarefa-fatal{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+/* "Mover para..." do B é o select cru do navegador (sem a regra genérica de select do v2). */
+.row-actions select{width:auto;padding:0;border:1px solid rgb(118,118,118);border-radius:0;}
+/* Campos que o painel B não estiliza (ficam como o navegador desenha): senha, arquivo e radio. */
+.field input[type=password]{width:auto;padding:1px 2px;border:2px inset rgb(118,118,118);border-radius:0;}
+.field input[type=file]{width:auto;padding:0;border:0;border-radius:0;background:transparent;}
+.field input[type=radio]{background-color:transparent;}
+label.sr-only{font-size:14px;font-weight:400;line-height:1.45;}
+.tabela-atendimentos th,.tabela-atendimentos td:not(.atendimento-objeto){white-space:normal;}
+.tabela-atendimentos td:first-child{white-space:nowrap;}

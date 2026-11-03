@@ -26,3 +26,13 @@
 | Envio de formulário em drawer (`data-drawer-form`) | exercitado por testes HTTP; **não exercitado por clique no Chrome** |
 | Capturas 1440/400 e do B | **não feito** |
 | Conferência do advogado na tela real | pendente; aprovar a omissão de "Nome do arquivo da ficha" |
+
+## Plano 3 — Atendimentos e Tarefas (03/11/2026)
+| Item | Estado |
+|---|---|
+| Estilo computado B x v2 (2 páginas e 5 drawers) | feito: zero diferença além das justificadas (`paridade/RELATORIO-3.md`) |
+| Comparação texto a texto | feito: 19 ausências, todas justificadas |
+| Envio de formulários, upload de PDF, exclusão com senha | exercitados por testes HTTP; **não por clique no Chrome** |
+| "Novo cliente" dentro do atendimento (volta ao rascunho) | código pronto (`atendimento.js`); **não exercitado no Chrome** |
+| Capturas 1440/400 e do B | **não feito** |
+| Conferência do advogado na tela real | pendente |
