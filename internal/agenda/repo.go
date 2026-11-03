@@ -114,3 +114,21 @@ func (s *Service) Proximos(ctx context.Context, dias, limit int) ([]Evento, erro
 	now := time.Now()
 	return s.List(ctx, Filtro{De: now.Add(-2 * time.Hour), Ate: now.AddDate(0, 0, dias)}, limit, 0)
 }
+
+// ExisteNoInstante procura outro evento (não excluído) que comece no mesmo minuto e tenha o mesmo
+// responsável (ou ambos sem responsável). Devolve «título» às HH:MM do primeiro encontrado, ou "".
+func (s *Service) ExisteNoInstante(ctx context.Context, inicio time.Time, responsavelID, ignorarID string) (string, error) {
+	var titulo string
+	var ini time.Time
+	err := s.Pool.QueryRow(ctx, `SELECT titulo, inicio FROM agenda_eventos
+		WHERE excluido_em IS NULL AND date_trunc('minute', inicio) = date_trunc('minute', $1::timestamptz)
+		  AND responsavel_id IS NOT DISTINCT FROM $2::uuid AND ($3 = '' OR id <> $3::uuid)
+		ORDER BY created_at, id LIMIT 1`, inicio, webx.Nullable(responsavelID), ignorarID).Scan(&titulo, &ini)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return "«" + titulo + "» às " + ini.In(webx.SP()).Format("15:04"), nil
+}

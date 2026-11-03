@@ -16,8 +16,8 @@ type Opcao = webx.Opcao
 
 // Tipos de evento.
 var Tipos = []Opcao{
-	{Valor: "audiencia", Rotulo: "Audiência"}, {Valor: "reuniao", Rotulo: "Reunião"},
-	{Valor: "diligencia", Rotulo: "Diligência"}, {Valor: "outro", Rotulo: "Outro"},
+	{Valor: "audiencia", Rotulo: "Audiência"}, {Valor: "reuniao", Rotulo: "Reunião"}, {Valor: "ligacao", Rotulo: "Ligação"},
+	{Valor: "diligencia", Rotulo: "Diligência"}, {Valor: "aula", Rotulo: "Aula"}, {Valor: "outro", Rotulo: "Outro"},
 }
 
 func rotulo(v string) string {
@@ -115,3 +115,12 @@ func (in Input) normalize() (normalized, error) {
 	}
 	return n, nil
 }
+
+// ErrConflito indica outro compromisso (não audiência) no mesmo instante, para o mesmo responsável.
+// Com é «título» às HH:MM do compromisso que já ocupa o horário. Para a tela é um erro de validação.
+type ErrConflito struct{ Com string }
+
+func (e ErrConflito) Error() string { return "Já existe " + e.Com + " para este responsável." }
+
+// Unwrap faz o conflito aparecer ao handler como erro de validação (mensagem na tela, dados preservados).
+func (e ErrConflito) Unwrap() error { return webx.Invalid{Msg: e.Error()} }

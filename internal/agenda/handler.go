@@ -153,7 +153,7 @@ func (h *Handler) detail(w http.ResponseWriter, r *http.Request, s *auth.Session
 	}
 	pd := base(s, e.Titulo)
 	pd.Data = map[string]any{"E": e, "CanWrite": auth.Can(s.Role, auth.PermAgendaWrite),
-		"Aviso": r.URL.Query().Get("aviso") == "criado", "Erro": r.URL.Query().Get("erro") != ""}
+		"Aviso": r.URL.Query().Get("aviso") == "criado", "Erro": r.URL.Query().Get("erro") != "", "Conflito": h.conflitoDe(r.Context(), e)}
 	h.A.Render(w, r, http.StatusOK, page("detalhe.html"), pd)
 }
 
@@ -266,4 +266,16 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 	default:
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 	}
+}
+
+// conflitoDe devolve o aviso de horário ocupado de uma audiência (que nunca é bloqueada); vazio nos demais tipos.
+func (h *Handler) conflitoDe(ctx context.Context, e *Evento) string {
+	if e.Tipo != "audiencia" {
+		return ""
+	}
+	com, err := h.S.ExisteNoInstante(ctx, e.Inicio, e.ResponsavelID, e.ID)
+	if err != nil || com == "" {
+		return ""
+	}
+	return "Atenção: já existe " + com + " para este responsável no mesmo horário."
 }
