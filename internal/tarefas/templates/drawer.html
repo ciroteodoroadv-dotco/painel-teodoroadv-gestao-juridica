@@ -1,0 +1,124 @@
+{{define "opcoesPessoa"}}<option value="">—</option>{{$p := .Pessoa}}{{range .Pessoas}}<option value="{{.Valor}}"{{if eq .Valor $p}} selected{{end}}>{{.Rotulo}}</option>{{end}}{{end}}
+
+{{define "linhaParte"}}<div class="row-parte-tarefa">
+    <div class="row2">
+      <div class="field"><label>Pessoa</label><select name="parte_pessoa" class="parte-tarefa-pessoa">{{template "opcoesPessoa" .}}</select></div>
+      <div class="field"><label>Papel</label>
+        <select name="parte_papel" class="parte-tarefa-papel" data-mostra-quando="Outro" data-mostra="proximo">
+          <option value="">—</option>{{$sel := .Papel.Sel}}{{range .Papeis}}<option{{if eq . $sel}} selected{{end}}>{{.}}</option>{{end}}
+        </select>
+        <input type="text" name="parte_papel_outro" class="parte-tarefa-papel-outro outro-campo" placeholder="Especifique o papel" value="{{.Papel.Outro}}"{{if ne .Papel.Sel "Outro"}} hidden{{end}}>
+      </div>
+    </div>
+    <button type="button" class="btn-text" data-remove-row=".row-parte-tarefa">Remover parte</button>
+  </div>{{end}}
+
+{{define "linhaResp"}}<div class="row-responsavel-tarefa">
+    <div class="field"><label>Responsável</label><select name="responsavel" class="responsavel-tarefa-select">{{template "opcoesPessoa" .}}</select></div>
+    <button type="button" class="btn-text" data-remove-row=".row-responsavel-tarefa">Remover</button>
+  </div>{{end}}
+
+{{define "criadoPor"}}<div class="field"><label>Criado por</label><select name="criado_por"><option value="">Não informado</option>{{$c := $.T.CriadoPorID}}{{range .Criadores}}<option value="{{.ID}}"{{if eq .ID $c}} selected{{end}}>{{.Rotulo}}</option>{{end}}</select><p class="hint">Pessoa que criou este registro. Não define quem executará a atividade.</p></div>{{end}}
+
+{{define "partes"}}<fieldset class="fieldset-tarefa">
+        <legend>Partes</legend>
+        <div id="partesTarefaRows">{{range .Partes}}{{template "linhaParte" .}}{{end}}</div>
+        <template id="tplParteTarefa">{{template "linhaParte" .VaziaParte}}</template>
+        <button type="button" class="btn-text" data-add-row="#tplParteTarefa" data-row-target="#partesTarefaRows">+ adicionar parte</button>
+      </fieldset>{{end}}
+
+{{define "responsaveis"}}<fieldset class="fieldset-tarefa">
+        <legend>Responsáveis existentes</legend>
+        <div id="responsaveisTarefaRows">{{range .Resps}}{{template "linhaResp" .}}{{end}}</div>
+        <template id="tplRespTarefa">{{template "linhaResp" .VaziaResp}}</template>
+        <button type="button" class="btn-text" data-add-row="#tplRespTarefa" data-row-target="#responsaveisTarefaRows">+ adicionar responsável</button>
+      </fieldset>{{end}}
+
+{{define "subtitulos"}}<datalist id="sugestoesSubtituloTarefa">{{range .Subtitulo}}
+          <option value="{{.}}"></option>{{end}}
+        </datalist>{{end}}
+
+{{define "statusPrioridade"}}<div class="field"><label>Status</label>
+          <select name="estado">{{$e := .EstadoSel}}{{range .Estados}}<option value="{{.Chave}}"{{if eq .Chave $e}} selected{{end}}>{{.Rotulo}}</option>{{end}}</select>
+        </div>{{end}}
+
+{{define "prioridade"}}<div class="field"><label>Prioridade</label>
+          <select name="prioridade">{{$p := .PrioridadeSel}}{{range .Prioridades}}<option{{if eq . $p}} selected{{end}}>{{.}}</option>{{end}}</select>
+        </div>{{end}}
+
+{{define "form"}}{{$t := .T}}{{if .Novo}}<h2>Nova tarefa</h2>
+    <p class="drawer-sub">Toda tarefa nasce vinculada a um atendimento ou a um processo já existente.</p>
+    <form data-drawer-form data-protege method="post" action="/tarefas">
+      <div class="field">
+        <label>Vínculo *</label>
+        <div class="radio-row">
+          <label class="radio-opt"><input type="radio" name="origem_tipo" value="atendimento" required data-origem-opcoes="#tplOrigemAtendimento" data-origem-alvo="#origemIdSelect"{{if not .TemAtend}} disabled{{end}}{{if eq .Vinculo "atendimento"}} checked{{end}}> Atendimento</label>
+          <label class="radio-opt"><input type="radio" name="origem_tipo" value="processo" required data-origem-opcoes="#tplOrigemProcesso" data-origem-alvo="#origemIdSelect"{{if not .TemProc}} disabled{{end}}{{if eq .Vinculo "processo"}} checked{{end}}> Processo</label>
+        </div>
+      </div>
+      <div class="field" id="origemIdField">
+        <label>Vínculo específico *</label>
+        <select name="origem_id" id="origemIdSelect" required>{{$o := .OrigemID}}{{if eq .Vinculo "atendimento"}}{{range .OpAtend}}<option value="{{.Valor}}"{{if eq .Valor $o}} selected{{end}}>{{.Rotulo}}</option>{{end}}{{else if eq .Vinculo "processo"}}{{range .OpProc}}<option value="{{.Valor}}"{{if eq .Valor $o}} selected{{end}}>{{.Rotulo}}</option>{{end}}{{end}}</select>
+        <template id="tplOrigemAtendimento">{{range .OpAtend}}<option value="{{.Valor}}">{{.Rotulo}}</option>{{end}}</template>
+        <template id="tplOrigemProcesso">{{range .OpProc}}<option value="{{.Valor}}">{{.Rotulo}}</option>{{end}}</template>
+      </div>
+      <input type="hidden" name="tarefa_pai" value="{{$t.TarefaPaiID}}">
+      <div class="field"><label>Título *</label><input type="text" name="titulo" required placeholder="Ex.: Protocolar embargos à execução"></div>
+      <div class="field"><label>Subtítulo</label><input type="text" name="subtitulo" list="sugestoesSubtituloTarefa">
+        {{template "subtitulos" .}}
+        <div class="hint">Tarefas de Ligação, Reunião ou Aula aparecem também na categoria correspondente da agenda.</div>
+      </div>
+      {{template "partes" .}}
+      <div class="field"><label>Descrição</label><textarea name="descricao"></textarea></div>
+      <div class="row2">
+        {{template "criadoPor" .}}<div class="field"><label>Data base</label><input type="date" name="data_base"></div>
+        <div class="field"><label>Prazo de entrega</label><input type="date" name="prazo"></div>
+      </div>
+      <div class="field"><label>Prazo fatal</label><input type="date" name="prazo_fatal"></div>
+      {{template "responsaveis" .}}
+      <div class="row2">
+        {{template "statusPrioridade" .}}
+        {{template "prioridade" .}}
+      </div>
+      <div class="field"><label>Observações</label><textarea name="observacoes"></textarea></div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar tarefa</button>
+      </div>
+    </form>{{else}}<h2>Editar tarefa</h2>
+    <p class="drawer-sub">{{$t.Titulo}}</p>
+    <form data-drawer-form data-protege method="post" action="/tarefas/{{$t.ID}}">
+      <input type="hidden" name="version" value="{{$t.Version}}">
+      <div class="field">
+        <label>Vínculo específico</label>
+        <div class="hint hint-vinculo">{{$t.OrigemCodigo}}</div>
+      </div>
+      <div class="field"><label>Título *</label><input type="text" name="titulo" required value="{{$t.Titulo}}"></div>
+      <div class="field"><label>Subtítulo</label><input type="text" name="subtitulo" value="{{$t.Subtitulo}}" list="sugestoesSubtituloTarefa">
+        {{template "subtitulos" .}}
+        <div class="hint">Ligação, Reunião ou Aula aparecem também na categoria correspondente da agenda.</div>
+      </div>
+      {{template "partes" .}}
+      <div class="field"><label>Descrição</label><textarea name="descricao" placeholder="Registre aqui as atualizações da tarefa">{{$t.Descricao}}</textarea></div>
+      {{template "responsaveis" .}}
+      {{template "criadoPor" .}}<div class="field"><label>Data base</label><input type="date" name="data_base" value="{{$t.DataBaseISO}}"></div>
+      <div class="row2">
+        <div class="field"><label>Prazo de entrega</label><input type="date" name="prazo" value="{{$t.PrazoISO}}"></div>
+        <div class="field"><label>Prazo fatal</label><input type="date" name="prazo_fatal" value="{{$t.PrazoFatalISO}}">{{if .AConferir}}
+          <div class="hint">A CONFERIR — um advogado precisa confirmar esta data.</div>{{end}}</div>
+      </div>
+      <div class="row2">
+        {{template "prioridade" .}}
+        {{template "statusPrioridade" .}}
+      </div>
+      <div class="field"><label>Observações</label><textarea name="observacoes">{{$t.Observacoes}}</textarea></div>
+      <div class="field">
+        <label for="documentoTarefa">Documentos do caso</label>
+        <input id="documentoTarefa" type="file" accept=".pdf,application/pdf" data-upload="/tarefas/{{$t.ID}}/documentos">
+        <div class="hint">O PDF será guardado, cifrado, junto ao caso.</div>
+      </div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar alterações</button>
+      </div>
+    </form>{{end}}{{end}}

@@ -23,6 +23,11 @@ type ProcessoLookup interface {
 	Buscar(ctx context.Context, q string, limit int) ([]Opcao, error)
 }
 
+// AtendimentoLookup é o que este domínio precisa do domínio de atendimentos.
+type AtendimentoLookup interface {
+	Existe(ctx context.Context, id string) (bool, error)
+}
+
 // PessoaLookup é o que este domínio precisa do cadastro de pessoas.
 type PessoaLookup interface {
 	Names(ctx context.Context, ids []string) (map[string]string, error)
@@ -44,6 +49,7 @@ type Doc struct {
 // Upload é o pedido de envio.
 type Upload struct {
 	Nome, Descricao, ProcessoID, PessoaID string
+	AtendimentoID, TarefaID               string // vínculos do "Documentos do caso" da tarefa
 	Data                                  []byte
 }
 
@@ -53,6 +59,8 @@ type Service struct {
 	Store     *Store
 	Processos ProcessoLookup
 	Pessoas   PessoaLookup
+	// Atendimentos confere o atendimento citado em Upload.AtendimentoID (opcional, ligado em internal/app).
+	Atendimentos AtendimentoLookup
 }
 
 func (s *Service) record(ctx context.Context, tx pgx.Tx, ac webx.Actor, action, id string) error {
@@ -71,7 +79,7 @@ func (s *Service) Enviar(ctx context.Context, ac webx.Actor, u Upload) (string, 
 		return "", webx.Invalidf("O arquivo está vazio.")
 	case len(u.Data) > MaxArquivo:
 		return "", webx.Invalidf("Arquivo grande demais (o limite é 25 MiB).")
-	case u.ProcessoID == "" && u.PessoaID == "":
+	case u.ProcessoID == "" && u.PessoaID == "" && u.AtendimentoID == "":
 		return "", webx.Invalidf("Vincule o documento a um processo ou a uma pessoa.")
 	case len([]rune(u.Descricao)) > 500:
 		return "", webx.Invalidf("Descrição com mais de 500 caracteres.")
@@ -88,6 +96,18 @@ func (s *Service) Enviar(ctx context.Context, ac webx.Actor, u Upload) (string, 
 			return "", err
 		} else if !ok {
 			return "", webx.Invalidf("Processo não encontrado.")
+		}
+	}
+	if u.AtendimentoID != "" {
+		ok := false
+		if s.Atendimentos != nil && webx.UUID(u.AtendimentoID) {
+			var err error
+			if ok, err = s.Atendimentos.Existe(ctx, u.AtendimentoID); err != nil {
+				return "", err
+			}
+		}
+		if !ok {
+			return "", webx.Invalidf("Atendimento não encontrado.")
 		}
 	}
 	if u.PessoaID != "" {
@@ -109,9 +129,9 @@ func (s *Service) Enviar(ctx context.Context, ac webx.Actor, u Upload) (string, 
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	var id string
-	err = tx.QueryRow(ctx, `INSERT INTO documentos (nome_original, tipo, tamanho, sha256, arquivo, descricao, processo_id, pessoa_id, created_by, updated_by)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9) RETURNING id`, nome, tipo, len(u.Data), sum[:], arq, u.Descricao,
-		webx.Nullable(u.ProcessoID), webx.Nullable(u.PessoaID), ac.UserID).Scan(&id)
+	err = tx.QueryRow(ctx, `INSERT INTO documentos (nome_original, tipo, tamanho, sha256, arquivo, descricao, processo_id, pessoa_id, atendimento_id, tarefa_id, created_by, updated_by)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11) RETURNING id`, nome, tipo, len(u.Data), sum[:], arq, u.Descricao,
+		webx.Nullable(u.ProcessoID), webx.Nullable(u.PessoaID), webx.Nullable(u.AtendimentoID), webx.Nullable(u.TarefaID), ac.UserID).Scan(&id)
 	if err == nil {
 		err = s.record(ctx, tx, ac, "documento.enviado", id)
 	}

@@ -1,99 +1,132 @@
-// Package tarefas cuida das tarefas do escritório. O vencimento é SEMPRE informado pelo advogado:
-// o sistema não calcula prazo processual nem decide providência.
+// Package tarefas cuida das tarefas do escritório, no desenho do painel B: toda tarefa nasce vinculada a um atendimento
+// ou a um processo, tem 7 estados, prioridade, partes e responsáveis (pessoas) e prazo fatal. O prazo fatal é SEMPRE
+// informado por gente: o sistema não calcula prazo, e o domínio Prazos guarda a data como "a conferir" até um advogado confirmar.
 package tarefas
 
 import (
 	"context"
-	"strings"
+	"io"
 	"time"
-	"unicode/utf8"
 
 	"painelteodoro/internal/platform/webx"
 )
 
-// Opcao é valor/rótulo de lista suspensa.
-type Opcao = webx.Opcao
+// Opcao é valor/rótulo de lista suspensa; Ref é a referência curta a uma pessoa.
+type (
+	Opcao = webx.Opcao
+	Ref   = webx.PessoaRef
+)
 
-// Status possíveis.
-var Statuses = []Opcao{
-	{Valor: "aberta", Rotulo: "Aberta"}, {Valor: "em_andamento", Rotulo: "Em andamento"},
-	{Valor: "concluida", Rotulo: "Concluída"}, {Valor: "cancelada", Rotulo: "Cancelada"},
-}
-
-func rotulo(v string) string {
-	for _, o := range Statuses {
-		if o.Valor == v {
-			return o.Rotulo
-		}
-	}
-	return v
-}
-
-// ProcessoLookup é o que este domínio precisa do domínio de processos (interface explícita).
-type ProcessoLookup interface {
-	Existe(ctx context.Context, id string) (bool, error)
-	Resumos(ctx context.Context, ids []string) (map[string]string, error)
-	Buscar(ctx context.Context, q string, limit int) ([]Opcao, error)
-}
-
-// UserLookup é o que este domínio precisa do cadastro de usuários.
-type UserLookup interface {
-	Options(ctx context.Context) ([]Opcao, error)
-	Emails(ctx context.Context, ids []string) (map[string]string, error)
-}
+// ParteIn é uma linha de "Partes" do formulário; ParteTarefa é a mesma linha já lida do banco.
+type (
+	ParteIn     struct{ PessoaID, Papel string }
+	ParteTarefa struct{ PessoaID, Nome, Papel string }
+)
 
 // Tarefa é a visão de leitura.
 type Tarefa struct {
-	ID, Titulo, Status, Origem string
-	ProcessoID, ProcessoNumero string
-	ResponsavelID, Responsavel string
-	Vencimento                 *time.Time
-	Version                    int
-	Atrasada                   bool // só exibição: vencimento anterior a hoje e ainda em aberto
+	ID, Codigo, Titulo, Subtitulo, Estado, Prioridade string
+	OrigemTipo, OrigemID, OrigemCodigo, ClienteNome   string
+	Descricao, Observacoes                            string
+	TarefaPaiID, TarefaPaiCodigo                      string
+	DataBase, Prazo, PrazoFatal                       *time.Time
+	PrazoFatalSituacao                                string // ""|"a_conferir"|"confirmado"|"cumprido"|"cancelado"
+	CriadoPorID, CriadoPor                            string
+	Partes                                            []ParteTarefa
+	Responsaveis                                      []Ref
+	Version                                           int
 }
 
-// StatusRotulo devolve o rótulo do status.
-func (t Tarefa) StatusRotulo() string { return rotulo(t.Status) }
-
-// Aberta diz se a tarefa ainda está pendente.
-func (t Tarefa) Aberta() bool { return t.Status == "aberta" || t.Status == "em_andamento" }
-
-// AConferir indica tarefa criada por automação, pendente de conferência pelo advogado.
-func (t Tarefa) AConferir() bool { return t.Origem == "automacao_a_conferir" }
-
-// Input vem do formulário.
-type Input struct{ Titulo, ProcessoID, ResponsavelID, Vencimento, Status string }
-
-type normalized struct {
-	titulo, processo, responsavel, status string
-	vencimento                            *time.Time
+func br(t *time.Time) string {
+	if t == nil {
+		return "—"
+	}
+	return t.Format("02/01/2006")
 }
 
-func (in Input) normalize() (normalized, error) {
-	n := normalized{titulo: strings.TrimSpace(in.Titulo), processo: strings.TrimSpace(in.ProcessoID),
-		responsavel: strings.TrimSpace(in.ResponsavelID), status: in.Status}
-	if c := utf8.RuneCountInString(n.titulo); c < 2 || c > 300 {
-		return n, webx.Invalidf("Informe o título da tarefa (de 2 a 300 caracteres).")
+func iso(t *time.Time) string {
+	if t == nil {
+		return ""
 	}
-	if rotulo(n.status) == n.status {
-		return n, webx.Invalidf("Escolha o status.")
-	}
-	if v := strings.TrimSpace(in.Vencimento); v != "" {
-		t, err := time.Parse("2006-01-02", v)
-		if err != nil {
-			return n, webx.Invalidf("Data de vencimento inválida.")
+	return t.Format("2006-01-02")
+}
+
+// PrazoBR, PrazoFatalBR e DataBaseBR são as datas no formato dd/mm/aaaa (ou "—").
+func (t Tarefa) PrazoBR() string      { return br(t.Prazo) }
+func (t Tarefa) PrazoFatalBR() string { return br(t.PrazoFatal) }
+func (t Tarefa) DataBaseBR() string   { return br(t.DataBase) }
+
+// PrazoISO, PrazoFatalISO e DataBaseISO preenchem os campos <input type="date">.
+func (t Tarefa) PrazoISO() string      { return iso(t.Prazo) }
+func (t Tarefa) PrazoFatalISO() string { return iso(t.PrazoFatal) }
+func (t Tarefa) DataBaseISO() string   { return iso(t.DataBase) }
+
+// AConferir diz se o prazo fatal ainda espera confirmação de advogado (selo A CONFERIR no mesmo campo).
+func (t Tarefa) AConferir() bool { return t.PrazoFatalSituacao == "a_conferir" }
+
+// Aberta diz se a tarefa ainda corre (não está concluída nem cancelada).
+func (t Tarefa) Aberta() bool { return Aberto(t.Estado) }
+
+// ResponsaveisTexto lista os responsáveis separados por vírgula (a célula "Responsável" do B).
+func (t Tarefa) ResponsaveisTexto() string {
+	s := ""
+	for i, r := range t.Responsaveis {
+		if i > 0 {
+			s += ", "
 		}
-		n.vencimento = &t
+		s += r.Nome
 	}
-	return n, nil
+	return s
 }
 
-// Hoje devolve a data de hoje no fuso do escritório (America/Sao_Paulo), à meia-noite UTC para comparar com DATE.
-func Hoje(now time.Time) time.Time {
-	loc, err := time.LoadLocation("America/Sao_Paulo")
-	if err != nil {
-		loc = time.FixedZone("BRT", -3*3600)
-	}
-	n := now.In(loc)
-	return time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, time.UTC)
+// Resumo é a visão curta que a Agenda usa (Plano 4).
+type Resumo struct {
+	ID, Codigo, Titulo, Subtitulo, Estado string
+	Prazo, PrazoFatal                     *time.Time
+}
+
+// Input vem do formulário. Datas em AAAA-MM-DD; pessoas e vínculos são ids.
+type Input struct {
+	OrigemTipo, OrigemID, TarefaPai, Titulo, Subtitulo, Descricao string
+	CriadoPorID, DataBase, Prazo, PrazoFatal                      string
+	Estado, Prioridade, Observacoes                               string
+	Partes                                                        []ParteIn
+	Responsaveis                                                  []string
+}
+
+// PessoaLookup é o que este domínio precisa do cadastro de pessoas.
+type PessoaLookup interface {
+	Refs(ctx context.Context, ids []string) ([]Ref, error)
+	Opcoes(ctx context.Context, ac webx.Actor, comDocumento bool) ([]Opcao, error)
+}
+
+// VinculoLookup é o que este domínio precisa de atendimentos e processos (o adaptador mora em internal/app).
+type VinculoLookup interface {
+	// Resumos devolve id → {código, nome do cliente}; id inexistente fica de fora.
+	Resumos(ctx context.Context, tipo string, ids []string) (map[string][2]string, error)
+	// Opcoes monta o seletor "Vínculo específico": "ATE. 0000001 · CLIENTE" / "PRO. 0000012 · CLIENTE".
+	Opcoes(ctx context.Context, tipo string) ([]Opcao, error)
+}
+
+// PrazoSync espelha o prazo fatal da tarefa no domínio Prazos (o adaptador mora em internal/app).
+type PrazoSync interface {
+	// Sincronizar cria ou atualiza o prazo da tarefa. confirmar=true (ator com permissão de advogado) grava como
+	// confirmado; senão fica "a conferir". Devolve a situação resultante.
+	Sincronizar(ctx context.Context, ac webx.Actor, tarefaID, processoID, descricao string, data *time.Time, confirmar bool) (situacao string, err error)
+	// Situacoes devolve tarefa → situação do prazo (só as que têm prazo).
+	Situacoes(ctx context.Context, tarefaIDs []string) (map[string]string, error)
+	// Encerrar fecha o prazo da tarefa: motivo "cumprida", "cancelada" ou "excluida".
+	Encerrar(ctx context.Context, ac webx.Actor, tarefaID, motivo string) error
+	// Confirmar usa o fluxo de confirmação do domínio Prazos (só advogado; a rota exige a permissão).
+	Confirmar(ctx context.Context, ac webx.Actor, tarefaID string) error
+}
+
+// DocumentoSink guarda o PDF enviado pela tarefa no domínio Documentos (cifrado, conferido pelo conteúdo, auditado).
+type DocumentoSink interface {
+	Anexar(ctx context.Context, ac webx.Actor, tarefaID, origemTipo, origemID, nome string, conteudo io.Reader) error
+}
+
+// Reauth confere a senha do usuário logado antes de uma ação destrutiva.
+type Reauth interface {
+	Confirmar(ctx context.Context, ac webx.Actor, senha string) error
 }

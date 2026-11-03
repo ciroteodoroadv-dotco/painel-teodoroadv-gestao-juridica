@@ -36,7 +36,7 @@ func TestTemaPainelContrato(t *testing.T) {
 	}
 }
 
-var scriptsDoPainel = []string{"app.js", "drawer.js", "forms.js", "mascaras.js", "atendimento.js"}
+var scriptsDoPainel = []string{"app.js", "drawer.js", "forms.js", "mascaras.js", "atendimento.js", "upload.js"}
 
 func TestScriptsSemEvalNemInline(t *testing.T) {
 	for _, nome := range scriptsDoPainel {

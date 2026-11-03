@@ -178,7 +178,7 @@ func seedDemo(ctx context.Context, cfg config.Config, st *auth.Store, pool *pgxp
 	if err := app.SeedDemo(ctx, pool, cfg.FieldKey, st, u.ID); err != nil {
 		return err
 	}
-	fmt.Println("Dados fictícios criados: 4 pessoas, 2 processos e 4 tarefas (todos marcados como exemplo).")
+	fmt.Println("Dados fictícios criados: 4 pessoas, 3 processos, 3 atendimentos e 6 tarefas (todos marcados como exemplo).")
 	return nil
 }
 

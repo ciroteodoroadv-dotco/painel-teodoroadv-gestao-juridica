@@ -16,13 +16,14 @@ func TestSeedDemo(t *testing.T) {
 		t.Fatal(err)
 	}
 	if e.count(`SELECT count(*) FROM pessoas`) != 4 || e.count(`SELECT count(*) FROM processos`) != 3 ||
-		e.count(`SELECT count(*) FROM tarefas`) != 4 || e.count(`SELECT count(*) FROM agenda_eventos`) != 1 || e.count(`SELECT count(*) FROM processo_partes`) != 6 {
+		e.count(`SELECT count(*) FROM tarefas`) != 6 || e.count(`SELECT count(*) FROM atendimentos`) != 3 ||
+		e.count(`SELECT count(*) FROM tarefas WHERE tarefa_pai_id IS NOT NULL`) != 1 || e.count(`SELECT count(*) FROM prazos WHERE tarefa_id IS NOT NULL AND situacao='a_conferir'`) != 1 || e.count(`SELECT count(*) FROM agenda_eventos`) != 1 || e.count(`SELECT count(*) FROM processo_partes`) != 6 {
 		t.Fatal("quantidades inesperadas na demonstração")
 	}
 	if err := SeedDemo(ctx, e.pool, fieldKey, e.a.Store, id); err == nil {
 		t.Fatal("a demonstração não pode rodar duas vezes")
 	}
-	if _, body := adv.get("/"); !strings.Contains(body, "Exemplo: revisar contestação") {
-		t.Error("a tela Hoje deveria mostrar a tarefa atrasada da demonstração")
+	if _, body := adv.get("/tarefas"); !strings.Contains(body, "Protocolar embargos à execução (exemplo)") || !strings.Contains(body, "A CONFERIR") {
+		t.Error("a tela de Tarefas deveria mostrar a demonstração, com o selo A CONFERIR")
 	}
 }

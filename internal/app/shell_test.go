@@ -1,7 +1,6 @@
 package app
 
 import (
-	"net/url"
 	"regexp"
 	"strings"
 	"testing"
@@ -28,10 +27,8 @@ func TestCascaDoPainelB(t *testing.T) {
 	adv, _ := e.user("adv@exemplo.test", auth.Advogado)
 	ass, _ := e.user("ass@exemplo.test", auth.Assistente)
 
-	adv.criarPessoa(t, "Ana Souza", "")
-	if r, _ := adv.post("/tarefas", url.Values{"titulo": {"Tarefa da casca"}, "status": {"aberta"}}); r.StatusCode != 303 {
-		t.Fatalf("criar tarefa = %d", r.StatusCode)
-	}
+	ana := adv.criarPessoa(t, "Ana Souza", "")
+	adv.criarTarefa(t, tarefaForm("atendimento", adv.criarAtendimento(t, "Demanda da casca", []string{ana}), "Tarefa da casca"))
 	// Prazo registrado pela assistente fica "a conferir" e alimenta a faixa da Agenda.
 	if r, _ := ass.post("/prazos", prazoForm("Prazo da faixa", 3)); r.StatusCode != 303 {
 		t.Fatalf("criar prazo = %d", r.StatusCode)

@@ -17,7 +17,10 @@
     var botao = f.querySelector('[type="submit"]');
     var rotulo = botao ? botao.textContent : "";
     if (botao) { botao.disabled = true; botao.textContent = "Salvando…"; }
-    var restaurar = function () { if (botao && botao.isConnected) { botao.disabled = false; botao.textContent = rotulo; } };
+    var restaurar = function () {
+      if (botao && botao.isConnected) { botao.disabled = false; botao.textContent = rotulo; }
+      if (f.hasAttribute("data-reset-ao-falhar")) f.reset(); // ex.: "Mover para..." volta ao título se o servidor recusar
+    };
     fetch(f.getAttribute("action") || location.href, {
       method: (f.getAttribute("method") || "post").toUpperCase(),
       body: new FormData(f),
@@ -53,6 +56,35 @@
     }).catch(function () {
       restaurar();
       window.PainelToast("Não foi possível salvar.", true);
+    });
+  });
+
+  // ---- Envia o formulário ao mudar o campo: <select form="id" data-submit-on-change> ("Mover para..." do B).
+  document.addEventListener("change", function (ev) {
+    var c = ev.target;
+    if (!c.matches || !c.matches("[data-submit-on-change]") || !c.value || !c.form) return;
+    c.form.requestSubmit();
+  });
+
+  // ---- Troca as opções de um select pelo conteúdo de um <template> ao marcar o radio:
+  // <input type="radio" data-origem-opcoes="#tplOrigemAtendimento" data-origem-alvo="#origemIdSelect"> (App.refreshOrigemOptions).
+  document.addEventListener("change", function (ev) {
+    var r = ev.target;
+    if (!r.matches || !r.matches("input[type=radio][data-origem-opcoes]")) return;
+    var tpl = document.querySelector(r.getAttribute("data-origem-opcoes"));
+    var alvo = document.querySelector(r.getAttribute("data-origem-alvo"));
+    if (tpl && alvo && tpl.content) alvo.replaceChildren(tpl.content.cloneNode(true));
+  });
+
+  // ---- Busca no servidor: <form data-busca-servidor method="get" action="/x"> (Tarefas busca ao enviar, como no B).
+  // Recarrega só o conteúdo (os painéis abertos do acordeão continuam abertos) e guarda a busca na URL.
+  document.addEventListener("submit", function (ev) {
+    var f = ev.target;
+    if (!f.matches || !f.matches("form[data-busca-servidor]")) return;
+    ev.preventDefault();
+    var url = (f.getAttribute("action") || location.pathname) + "?" + new URLSearchParams(new FormData(f)).toString();
+    App.recarregarConteudo(url).then(function () { history.replaceState(null, "", url); }).catch(function () {
+      window.PainelToast("Não foi possível buscar.", true);
     });
   });
 

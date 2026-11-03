@@ -43,18 +43,19 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	pes := &pessoas.Service{Pool: pool, FieldKey: fieldKey}
 	proc := &processos.Service{Pool: pool, Pessoas: pes}
 	pes.Papeis = proc // os papéis da pessoa derivam dos processos (decisão do painel B)
-	tar := &tarefas.Service{Pool: pool, Processos: proc, Users: users}
 	praz := &prazos.Service{Pool: pool, Processos: proc, Users: users}
 	ate := &atendimentos.Service{Pool: pool, Pessoas: pes}
 	proc.Atendimentos = ate
-	proc.Vinculos = []processos.VinculosLookup{tar, praz}
 
 	ag := &agenda.Service{Pool: pool, Processos: proc, Pessoas: pes, Users: users}
 	store, err := documentos.NewStore(docsDir, fieldKey)
 	if err != nil {
 		return err
 	}
-	doc := &documentos.Service{Pool: pool, Store: store, Processos: proc, Pessoas: pes}
+	doc := &documentos.Service{Pool: pool, Store: store, Processos: proc, Pessoas: pes, Atendimentos: ate}
+	tar := &tarefas.Service{Pool: pool, Pessoas: pes, Vinculos: vinculos{ate: ate, proc: proc}, Prazos: prazoSync{p: praz},
+		Docs: docSink{d: doc}, Reauth: reauth{a: a}}
+	proc.Vinculos = []processos.VinculosLookup{tar, praz}
 
 	(&prazos.Handler{A: a, S: praz}).Register(rt) // 1º: widget no topo de "Hoje"
 	(&pessoas.Handler{A: a, S: pes}).Register(rt)

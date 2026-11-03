@@ -8,10 +8,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"painelteodoro/internal/agenda"
+	"painelteodoro/internal/atendimentos"
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/pessoas"
 	"painelteodoro/internal/platform/br"
 	"painelteodoro/internal/platform/webx"
+	"painelteodoro/internal/prazos"
 	"painelteodoro/internal/processos"
 	"painelteodoro/internal/tarefas"
 )
@@ -32,7 +34,9 @@ func SeedDemo(ctx context.Context, pool *pgxpool.Pool, fieldKey []byte, store *a
 	pes := &pessoas.Service{Pool: pool, FieldKey: fieldKey}
 	proc := &processos.Service{Pool: pool, Pessoas: pes}
 	pes.Papeis = proc
-	tar := &tarefas.Service{Pool: pool, Processos: proc, Users: users}
+	ate := &atendimentos.Service{Pool: pool, Pessoas: pes}
+	praz := &prazos.Service{Pool: pool, Processos: proc, Users: users}
+	tar := &tarefas.Service{Pool: pool, Pessoas: pes, Vinculos: vinculos{ate: ate, proc: proc}, Prazos: prazoSync{p: praz}}
 	ac := webx.Actor{UserID: actorID, RequestID: "seed-demo"}
 
 	ids := map[string]string{}
@@ -107,14 +111,48 @@ func SeedDemo(ctx context.Context, pool *pgxpool.Pool, fieldKey []byte, store *a
 		Local: "Fórum (exemplo), sala 3", ProcessoID: p1, ResponsavelID: actorID}); err != nil {
 		return err
 	}
-	d := func(dias int) string { return time.Now().AddDate(0, 0, dias).Format("2006-01-02") }
-	for _, t := range []tarefas.Input{
-		{Titulo: "Exemplo: revisar contestação", ProcessoID: p1, ResponsavelID: actorID, Vencimento: d(-1), Status: "aberta"},
-		{Titulo: "Exemplo: reunir documentos do cliente", ProcessoID: p1, ResponsavelID: actorID, Vencimento: d(2), Status: "em_andamento"},
-		{Titulo: "Exemplo: ligar para a Empresa Exemplo", ProcessoID: p2, ResponsavelID: actorID, Vencimento: d(5), Status: "aberta"},
-		{Titulo: "Exemplo: tarefa sem data", ResponsavelID: actorID, Status: "aberta"},
+	// Atendimentos e tarefas fictícios (a mesma massa existe em tools/refb/atendimentos_tarefas.py).
+	var a1, a2 string
+	for _, a := range []struct {
+		in   atendimentos.Input
+		dest *string
+	}{
+		{atendimentos.Input{Clientes: []string{ids["maria"]}, PartesAdversas: []string{ids["banco"]}, CriadoPorID: ids["joao"],
+			Descricao: "Revisão de contrato bancário (exemplo)", DataAbertura: "2026-10-05"}, &a1},
+		{atendimentos.Input{Clientes: []string{ids["empresa"]}, Descricao: "Consulta sobre cobrança de duplicatas (exemplo)",
+			DataAbertura: "2026-10-20", Observacoes: "Cliente pediu retorno por telefone."}, &a2},
+		{atendimentos.Input{Clientes: []string{ids["joao"]}, PartesAdversas: []string{ids["maria"]},
+			Descricao: "Triagem de caso trabalhista (exemplo)", DataAbertura: "2026-11-02"}, new(string)},
 	} {
-		if _, err := tar.Create(ctx, ac, t); err != nil {
+		id, _, err := ate.Create(ctx, ac, a.in)
+		if err != nil {
+			return err
+		}
+		*a.dest = id
+	}
+	partes := []tarefas.ParteIn{{PessoaID: ids["maria"], Papel: "Autor"}, {PessoaID: ids["banco"], Papel: "Réu"}}
+	t1, _, err := tar.Create(ctx, ac, tarefas.Input{OrigemTipo: "processo", OrigemID: p1, Titulo: "Protocolar embargos à execução (exemplo)",
+		Estado: "pendente", Prioridade: "Urgente", CriadoPorID: ids["joao"], DataBase: "2026-11-03", Prazo: "2026-11-10", PrazoFatal: "2026-11-12",
+		Partes: partes, Responsaveis: []string{ids["joao"]}, Descricao: "Conferir os cálculos antes do protocolo."}, true)
+	if err != nil {
+		return err
+	}
+	for _, t := range []struct {
+		in        tarefas.Input
+		confirmar bool
+	}{
+		{tarefas.Input{OrigemTipo: "atendimento", OrigemID: a1, Titulo: "Ligar para a cliente (exemplo)", Subtitulo: "Ligação",
+			Estado: "em-execucao", Prioridade: "Alta", Prazo: "2026-11-05", Responsaveis: []string{ids["joao"]}}, true},
+		{tarefas.Input{OrigemTipo: "atendimento", OrigemID: a2, Titulo: "Aula sobre execução (exemplo)", Subtitulo: "Aula",
+			Estado: "revisao", Prioridade: "Normal", Prazo: "2026-11-20"}, true},
+		{tarefas.Input{OrigemTipo: "processo", OrigemID: p2, Titulo: "Conferir intimação (exemplo)", Estado: "a-confirmar",
+			Prioridade: "Normal", PrazoFatal: "2026-11-15", Responsaveis: []string{ids["joao"]}}, false},
+		{tarefas.Input{OrigemTipo: "atendimento", OrigemID: a1, Titulo: "Enviar minuta ao cliente (exemplo)",
+			Estado: "concluidas-com-sucesso", Prioridade: "Baixa"}, true},
+		{tarefas.Input{OrigemTipo: "processo", OrigemID: p1, TarefaPai: t1, Titulo: "Juntar procuração (exemplo)", Estado: "pendente",
+			Prioridade: "Normal", PrazoFatal: "2026-11-11", Partes: partes, Responsaveis: []string{ids["joao"]}}, true},
+	} {
+		if _, _, err := tar.Create(ctx, ac, t.in, t.confirmar); err != nil {
 			return err
 		}
 	}

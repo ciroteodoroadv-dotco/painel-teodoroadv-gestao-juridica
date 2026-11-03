@@ -231,7 +231,7 @@ func TestProcessoEdicaoConflitoEExclusao(t *testing.T) {
 	_, ed := adv.get("/processos/" + pid + "/editar")
 	for _, q := range []string{"<h2>Editar processo</h2>", num, "Título da ficha", "Polo", "Projeto vinculado",
 		`Estado (ativo/sobrestado/...) não se edita aqui — use "Mover estado" na lista.`, "Salvar alterações",
-		"Disponível quando o módulo Atendimentos for ativado", `value="` + num + `"`} {
+		`value="` + num + `"`} {
 		if !strings.Contains(ed, q) {
 			t.Errorf("drawer de edição sem %q", q)
 		}
@@ -251,9 +251,7 @@ func TestProcessoEdicaoConflitoEExclusao(t *testing.T) {
 	}
 
 	// Exclusão lógica: com tarefa em aberto pede confirmação extra.
-	if r, body := adv.post("/tarefas", url.Values{"titulo": {"Tarefa vinculada"}, "status": {"aberta"}, "processo_id": {pid}}); r.StatusCode != 303 {
-		t.Fatalf("tarefa = %d %s", r.StatusCode, body)
-	}
+	adv.criarTarefa(t, tarefaForm("processo", pid, "Tarefa vinculada"))
 	_, conf := adv.get("/processos/" + pid + "/excluir")
 	if !strings.Contains(conf, "Há 1 tarefa(s)/prazo(s) em aberto vinculados.") || !strings.Contains(conf, "Excluir esta ficha? Ela deixa de aparecer nas listas") {
 		t.Error("o drawer de exclusão deveria avisar do trabalho em aberto")

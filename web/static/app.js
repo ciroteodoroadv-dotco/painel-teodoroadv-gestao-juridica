@@ -52,8 +52,8 @@
   });
 
   // Recarrega #content, #stats, o menu e as faixas a partir da própria página (sem recarregar a janela).
-  App.recarregarConteudo = function () {
-    return fetch(location.href, { credentials: "same-origin" })
+  App.recarregarConteudo = function (url) {
+    return fetch(url || location.href, { credentials: "same-origin" })
       .then(function (r) { return r.text(); })
       .then(function (html) {
         // O acordeão mantém os painéis abertos depois de recarregar (state.accOpen do B).

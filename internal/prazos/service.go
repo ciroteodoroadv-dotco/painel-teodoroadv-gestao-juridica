@@ -82,6 +82,10 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input, confirmar
 // Update altera um prazo ABERTO. Quem não pode confirmar derruba a confirmação (volta a "a conferir"): uma data
 // confirmada nunca muda sem que um advogado volte a confirmá-la.
 func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version int, in Input, confirmar bool) error {
+	var daTarefa bool
+	if err := s.Pool.QueryRow(ctx, `SELECT tarefa_id IS NOT NULL FROM prazos WHERE id=$1`, id).Scan(&daTarefa); err == nil && daTarefa {
+		return webx.Invalidf("Este prazo pertence a uma tarefa: altere o Prazo fatal na própria tarefa.")
+	}
 	n, err := in.normalize()
 	if err != nil {
 		return err

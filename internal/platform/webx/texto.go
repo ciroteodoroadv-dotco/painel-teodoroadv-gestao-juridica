@@ -15,3 +15,20 @@ func SemAcento(s string) string { return semAcento.Replace(strings.ToLower(s)) }
 
 // Rotulo é o texto das opções de pessoa dos seletores do B: "NOME · PES. 0000001".
 func (r PessoaRef) Rotulo() string { return strings.ToUpper(r.Nome) + " · " + r.Codigo }
+
+// UUID diz se s tem o formato de um UUID (evita mandar lixo ao banco como identificador).
+func UUID(s string) bool {
+	if len(s) != 36 {
+		return false
+	}
+	for i, c := range s {
+		if i == 8 || i == 13 || i == 18 || i == 23 {
+			if c != '-' {
+				return false
+			}
+		} else if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F') {
+			return false
+		}
+	}
+	return true
+}

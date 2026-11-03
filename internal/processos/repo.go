@@ -228,3 +228,25 @@ func (s *Service) Opcoes(ctx context.Context) ([]Opcao, error) {
 	}
 	return out, nil
 }
+
+// ResumosVinculo devolve id → {código, nome do cliente} dos processos pedidos (o vínculo das Tarefas).
+func (s *Service) ResumosVinculo(ctx context.Context, ids []string) (map[string][2]string, error) {
+	out := map[string][2]string{}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	ps, err := s.Listar(ctx)
+	if err != nil {
+		return nil, err
+	}
+	quer := map[string]bool{}
+	for _, id := range ids {
+		quer[id] = true
+	}
+	for _, p := range ps {
+		if quer[p.ID] {
+			out[p.ID] = [2]string{p.Codigo, p.ClienteNome()}
+		}
+	}
+	return out, nil
+}

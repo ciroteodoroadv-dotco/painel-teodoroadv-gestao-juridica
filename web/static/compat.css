@@ -97,3 +97,10 @@ a.btn-ghost,a.btn-ghost:hover{color:var(--text);}
 .acc td.row-actions{white-space:nowrap;}
 /* "É cliente do escritório" (fora de .field, como no B): sem o negrito e a margem que o label genérico do v2 aplica. */
 .row-parte label.radio-opt,.row-parte-tarefa label.radio-opt{display:flex;align-items:center;gap:6px;margin:0;font-weight:400;font-size:13px;}
+/* Tarefas (plano 3): substitutos dos style="" do 08-tarefas.js do B. */
+.fieldset-tarefa{border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;}
+.row-responsavel-tarefa{display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;}
+.row-responsavel-tarefa .field{flex:1;}
+.hint-vinculo{padding:8px 0;}
+.form-inline{display:inline;}
+.tarefa-fatal{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
