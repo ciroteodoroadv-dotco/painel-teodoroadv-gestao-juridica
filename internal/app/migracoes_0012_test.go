@@ -76,8 +76,10 @@ func TestMigracao0012PreservaIntimacoesDescartadas(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
 	_, uid := e.user("m12b@exemplo.test", auth.Advogado)
-	if err := migrate.Down(ctx, e.pool); err != nil { // volta ao esquema da 0011
-		t.Fatal(err)
+	for range 2 { // 0013 e 0012: volta ao esquema da 0011
+		if err := migrate.Down(ctx, e.pool); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if _, err := e.pool.Exec(ctx, `INSERT INTO intimacoes (hash, status, decidida_por) VALUES ('antiga','descartada',$1), ('nova','triagem',NULL)`, uid); err != nil {
 		t.Fatalf("esquema da 0011: %v", err)
