@@ -95,7 +95,7 @@ Levantamento feito por subagente de leitura e conferido por amostra. **Nenhuma p
 | Consulta real a BCB e ViaCEP não verificada — integrações nunca ligadas (N11) | advogado | **alto** |
 | CEP: só advogado consulta; 20/min por usuário; cache de 10 min (N7) | advogado | médio |
 | Dependência `golang.org/x/crypto` v0.56.0: GO-2026-5932 (corrigida só em pseudo-versão, não chamada pelo código); reexecutar `scripts/analise-estatica.sh` quando sair a versão marcada | desenvolvedor | baixo |
-| Teste ponta a ponta no navegador (Tarefa 5): ver `paridade/E2E-8.md` | desenvolvedor | médio |
+| Teste ponta a ponta no navegador (Tarefa 5): ver `docs/arquivo/plano-fusao/paridade/E2E-8.md` | desenvolvedor | médio |
 
 ## Operação (transversal)
 | Item | Quem decide | Risco |
@@ -118,3 +118,12 @@ Levantamento feito por subagente de leitura e conferido por amostra. **Nenhuma p
 10. Quem cancela o quê e se compromisso, diligência e intimação pedem senha como a audiência.
 11. Conferir o significado das séries do Banco Central antes de confiar no rodapé.
 12. Aprovar inventário LGPD, contrato da Cloudflare e destino da segunda cópia do backup antes de usar dado real.
+
+## Fundação (M1) — migrado do PLANO-IMPLEMENTACAO.md em 04/11/2026
+| Item | Quem decide | Risco |
+|---|---|---|
+| Lint com golangci-lint v2.5.0 no job `go`: implementado, sem execução de CI ainda (Go não baixa módulos no ambiente de edição) | desenvolvedor | médio |
+| Job `migracoes` (ciclo up→down→up): implementado, sem execução de CI ainda | desenvolvedor | médio |
+| SBOM (SPDX/CycloneDX) no CI: pendente; ação precisa estar fixada por SHA, não verificada | desenvolvedor | baixo |
+| trivy (vulnerabilidades) no CI: pendente; mesma condição do SBOM | desenvolvedor | médio |
+
