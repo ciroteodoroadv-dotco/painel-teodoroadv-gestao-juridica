@@ -83,3 +83,13 @@
 | Calendário forense: Novo dia, Inativar (JS executado) | feito |
 | Capturas 1440/400 | **não feito** |
 | Conferência do advogado na tela real e validação das regras | pendente |
+
+## Plano 8 — Índices, CEP e fechamento (04/11/2026)
+| Item | Estado |
+|---|---|
+| Faixa de índices (`#idxTicker`) com `.idxt-item`/`.idxt-status` do B e releitura a cada 30 s (`data-refresh`) | feito; executado no Chrome (pilha de teste, transporte falso): o texto foi substituído pelo servidor em ~30 s |
+| Botão "Buscar CEP": campos vazios, UF em maiúsculas, botão desabilitado durante a consulta, confirmação sobreposta (Cancelar/Substituir) | feito; executado no Chrome (pilha de teste, ViaCEP falso) |
+| Página "Índices" do administrador e rodapé "Estado das coletas" com o módulo `indices` | coberto por testes HTTP; **não** comparada visualmente (não existe no B) |
+| Capturas 1440/400 e comparação de estilo computado B x v2 do ticker | **não feito**: a classe `.idx-ticker` é a do B (hash idêntico); só `.idxt-velho` é novo (`compat.css`) |
+| Teste ponta a ponta por clique (Tarefa 5 do plano 8) | **não executado** (ver `paridade/E2E-8.md`) |
+| Conferência do advogado na tela real | pendente (`ACEITE-FINAL.md`) |

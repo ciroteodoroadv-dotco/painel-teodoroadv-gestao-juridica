@@ -58,3 +58,8 @@ O arquivo `C:\Users\User\.painel-chaves\recuperacao.txt` é a **única** forma d
 Painel não abre → Docker Desktop está rodando? (`docker ps`). Esqueceu a senha ou perdeu o aparelho do 2º fator → outro
 administrador usa "Usuários"; se for o único, rode no WSL `painel user reset-password EMAIL` / `reset-2fa EMAIL`
 (ver `RUNBOOK.md`).
+
+## 7. Ligar as integrações (depois que o painel estiver em uso)
+
+Nada que fala com a internet vem ligado. Ligue **uma por vez**, na ordem que preferir, seguindo o `docs/plano-fusao/ACEITE-FINAL.md`: índices do Banco Central e Buscar CEP
+(`docs/operacao/INDICES-E-CEP.md`), intimações do DJEN (`COLETA-DJEN.md`) e monitor do DataJud (`MONITOR-DATAJUD.md`). Depois de cada uma, confira o resultado na fonte oficial.

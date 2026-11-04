@@ -147,3 +147,13 @@ chaves, códigos) · Usuários e Auditoria (administrador). Pessoas e processos 
 Túnel Cloudflare, backup e servidor Oracle (M5); jobs e
 integrações (M6). Faltam também a importação reversível de cadastros e o expurgo definitivo (ver plano).
 O backup ainda não existe: **não coloque dado real** até o M5.
+
+## Integrações externas e novas telas (Plano 8)
+
+Todas as integrações vêm **desligadas**. As chaves ficam no arquivo de ambiente da pilha (nunca no Git); cada uma só vale depois do teste manual do `docs/plano-fusao/ACEITE-FINAL.md`:
+`PAINEL_DJEN_ATIVO`, `PAINEL_DATAJUD_ATIVO` (+ `PAINEL_DATAJUD_KEY`), `PAINEL_INDICES_ATIVO`, `PAINEL_CEP_ATIVO` (ver ADR 0011).
+- **Índices** (administrador): menu "Índices" (segundo grupo) mostra os valores e tem o botão "Atualizar índices agora". Guia: `docs/operacao/INDICES-E-CEP.md`.
+- **Faixa de índices e "Estado das coletas"** no pé da tela se renovam sozinhos (30 s e 60 s) e só leem o que já está gravado.
+- **Buscar CEP**: no cadastro de pessoa; só o advogado.
+- **Análise estática de segurança**: `scripts/analise-estatica.sh` (precisa do Docker); relatório em `docs/plano-fusao/ANALISE-ESTATICA.md`.
+- **Teste de backup com o esquema final**: `deploy/teste-backup-local.sh` (use uma pilha de teste com outro nome de projeto; veja `docs/plano-fusao/RELATORIO-8.md`).

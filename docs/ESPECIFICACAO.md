@@ -138,3 +138,9 @@ backup → migrar → healthcheck → rollback automático se falhar. Nenhuma ed
 
 Migração de dados reais, WhatsApp (exige DPIA), e-mail, DataJud, DJEN. Prazo processual nunca é calculado
 automaticamente; dados externos entram como "pendente de conferência pelo advogado".
+
+## 14. Adendo — Fusão com o painel B (novembro de 2026)
+
+O frontend do painel B prevaleceu (forma) e o v2 manteve a regra de segurança. O que mudou em relação às seções acima (menu, telas, telas novas de Atendimentos, Audiências, Diligências, Intimações,
+Monitor do DataJud, Calculadora de prazo, Calendário forense, Índices e CEP) está em `docs/plano-fusao/` (`ESPECIFICACAO-FUSAO.md`, `00-SEQUENCIA.md`, `NOTAS-PLANO-*.md`, `PENDENCIAS.md`)
+e nos ADRs 0009 a 0012. Em especial, o item "Fora de escopo" da seção 13 foi superado: DJEN, DataJud, índices e CEP existem, **desligados por padrão** (ADR 0011).
