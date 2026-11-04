@@ -137,7 +137,7 @@ func (b *browser) jsonPost(path, csrf string, body []byte) (*http.Response, stri
 	if err != nil {
 		b.e.t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	var buf bytes.Buffer
 	_, _ = buf.ReadFrom(resp.Body)
 	for _, ck := range resp.Cookies() {

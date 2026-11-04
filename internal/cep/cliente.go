@@ -56,7 +56,7 @@ func NovoCliente(cfg Config) (*Cliente, error) {
 		cfg.BaseURL = BaseOficial
 	}
 	u, err := url.Parse(cfg.BaseURL)
-	if err != nil || u.Host == "" || (u.Scheme != "https" && !(cfg.PermitirHTTP && u.Scheme == "http")) {
+	if err != nil || u.Host == "" || (u.Scheme != "https" && (!cfg.PermitirHTTP || u.Scheme != "http")) {
 		return nil, errors.New("cep: a URL base precisa ser https")
 	}
 	if cfg.Timeout <= 0 {
