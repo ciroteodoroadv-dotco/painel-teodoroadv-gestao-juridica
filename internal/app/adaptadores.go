@@ -5,6 +5,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"painelteodoro/internal/atendimentos"
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/documentos"
@@ -74,4 +76,8 @@ type reauth struct{ a *auth.Auth }
 
 func (r reauth) Confirmar(ctx context.Context, ac webx.Actor, senha string) error {
 	return r.a.Reautenticar(ctx, ac.UserID, senha)
+}
+
+func (a prazoSync) SincronizarTx(ctx context.Context, tx pgx.Tx, ac webx.Actor, tarefaID, processoID, descricao string, data *time.Time, confirmar bool) (string, error) {
+	return a.p.SincronizarNaTx(ctx, tx, ac, tarefaID, processoID, descricao, data, confirmar)
 }

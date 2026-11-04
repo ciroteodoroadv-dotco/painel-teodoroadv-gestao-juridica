@@ -234,5 +234,14 @@ func (s *Service) mudaStatus(ctx context.Context, ac webx.Actor, id, status, mot
 		TargetID: id, Result: audit.OK, RequestID: ac.RequestID}); err == nil {
 		err = tx.Commit(ctx)
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	// Decidida: o prazo interno de confirmação da tarefa de análise acaba (E3).
+	if s.Tarefas != nil {
+		if e := s.Tarefas.EncerrarPrazoInterno(ctx, ac, id); e != nil {
+			return webx.Invalidf("A decisão foi gravada, mas o prazo interno da tarefa de análise não foi encerrado. Abra a tarefa e mova-a de \"A confirmar\".")
+		}
+	}
+	return nil
 }

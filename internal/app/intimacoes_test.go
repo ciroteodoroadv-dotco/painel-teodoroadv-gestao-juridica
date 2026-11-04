@@ -87,12 +87,12 @@ func TestColetaCriaIntimacaoETarefaAConfirmarSemPrazo(t *testing.T) {
 	if e.count(`SELECT count(*) FROM intimacoes WHERE status='triagem' AND oab_id=$1::uuid`, oab) != 2 {
 		t.Error("deveria haver 2 intimações em triagem")
 	}
-	if e.count(`SELECT count(*) FROM tarefas WHERE intimacao_id IS NOT NULL AND estado='a-confirmar' AND prazo_fatal IS NULL AND prazo IS NULL
+	if e.count(`SELECT count(*) FROM tarefas WHERE intimacao_id IS NOT NULL AND estado='a-confirmar' AND prazo_fatal = DATE '2026-11-05' AND prazo_interno AND prazo IS NULL
 		AND subtitulo='Análise de decisão' AND prioridade='Normal'`) != 2 {
-		t.Error("cada intimação nova deve abrir uma tarefa a-confirmar, sem nenhuma data")
+		t.Error("cada intimação nova abre uma tarefa a-confirmar com prazo INTERNO de 2 dias (E3)")
 	}
-	if e.count(`SELECT count(*) FROM prazos`) != 0 {
-		t.Error("(k) a tarefa de análise não pode virar prazo")
+	if e.count(`SELECT count(*) FROM prazos WHERE situacao <> 'a_conferir'`) != 0 {
+		t.Error("(k) o prazo interno nunca nasce confirmado")
 	}
 	var titulo, desc string
 	_ = e.pool.QueryRow(context.Background(), `SELECT titulo, descricao FROM tarefas WHERE intimacao_id IS NOT NULL ORDER BY codigo LIMIT 1`).Scan(&titulo, &desc)

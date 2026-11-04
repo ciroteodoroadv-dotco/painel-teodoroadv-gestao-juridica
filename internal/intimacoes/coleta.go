@@ -2,12 +2,9 @@ package intimacoes
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/jackc/pgx/v5"
 
 	"painelteodoro/internal/audit"
 	"painelteodoro/internal/intimacoes/djen"
@@ -143,7 +140,7 @@ func (s *Service) coletaOAB(ctx context.Context, o OAB, desde, ate time.Time, at
 	return novas, repetidas, falhas, res.Parcial, nil
 }
 
-// registra grava a intimação nova, resolve o processo e abre a tarefa de análise — tudo ou nada.
+// registra grava a intimação nova, resolve o processo e abre as tarefas de análise — tudo ou nada.
 func (s *Service) registra(ctx context.Context, o OAB, c djen.Comunicacao, ator, reqID string) (novo, repetida bool, err error) {
 	hash := djen.Hash(c)
 	var um int
@@ -161,35 +158,22 @@ func (s *Service) registra(ctx context.Context, o OAB, c djen.Comunicacao, ator,
 			}
 		}
 	}
+	return s.registraNova(ctx, Nova{Hash: hash, Origem: OrigemDJEN, OabID: o.ID, Tribunal: c.Tribunal, Orgao: c.Orgao, ProcessoNumero: numero,
+		ProcessoID: procID, Tipo: c.Tipo, Data: &c.DataPublicacao, Texto: c.Texto, Resumo: djen.NormalizarResumo(c.Texto), Link: c.Link,
+		TituloAnalise: tituloAnalise(c.Tipo, numero), DescricaoAnalise: descricaoAnalise(c.Link),
+		LinhaConsolidada: "DJEN: " + strings.TrimSpace(c.Tipo+" "+c.Orgao), CriadoPor: o.CriadoPor, Ator: ator, RequestID: reqID})
+}
+
+// registraNova abre a transação própria, registra e confirma.
+func (s *Service) registraNova(ctx context.Context, n Nova) (novo, repetida bool, err error) {
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return false, false, err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	var data any
-	if !c.DataPublicacao.IsZero() {
-		data = c.DataPublicacao
-	}
-	var id string
-	err = tx.QueryRow(ctx, `INSERT INTO intimacoes (hash, origem, oab_id, tribunal, orgao, processo_numero, processo_id, tipo, data_publicacao, resumo, link)
-		VALUES ($1,'DJEN',$2::uuid,$3,$4,$5,$6::uuid,$7,$8,$9,$10) ON CONFLICT (hash) DO NOTHING RETURNING id::text`,
-		hash, o.ID, c.Tribunal, c.Orgao, numero, nullable(procID), c.Tipo, data, djen.NormalizarResumo(c.Texto), c.Link).Scan(&id)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return false, true, nil // outra coleta gravou no meio
-		}
-		return false, false, err
-	}
-	if s.Tarefas == nil {
-		return false, false, errors.New("intimacoes: tarefa de análise não configurada")
-	}
-	if _, err = s.Tarefas.CriarAnaliseDeIntimacao(ctx, tx, AnaliseIn{IntimacaoID: id, ProcessoID: procID, Titulo: tituloAnalise(c.Tipo, numero),
-		Descricao: descricaoAnalise(c.Link), CriadoPor: o.CriadoPor, AuditActor: ator, RequestID: reqID}); err != nil {
-		return false, false, err
-	}
-	if err = audit.Record(ctx, tx, audit.Event{Actor: ator, Action: "intimacao.registrada", TargetType: "intimacao", TargetID: id,
-		Result: audit.OK, RequestID: reqID}); err != nil {
-		return false, false, err
+	_, rep, err := s.RegistrarNaTx(ctx, tx, n)
+	if err != nil || rep {
+		return false, rep, err
 	}
 	return true, false, tx.Commit(ctx)
 }

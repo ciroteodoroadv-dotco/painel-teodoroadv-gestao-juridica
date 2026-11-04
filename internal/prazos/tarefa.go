@@ -17,15 +17,26 @@ import (
 // permissão de advogado) grava como confirmado. Mudar a data derruba uma confirmação anterior de quem não pode confirmar;
 // salvar de novo a mesma data não mexe na situação (a não ser para o advogado confirmar um prazo "a conferir").
 func (s *Service) SincronizarDaTarefa(ctx context.Context, ac webx.Actor, tarefaID, processoID, descricao string, data *time.Time, confirmar bool) (string, error) {
-	if data == nil {
-		return "", webx.Invalidf("Informe a data do prazo fatal.")
-	}
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return "", err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+	novo, err := s.SincronizarNaTx(ctx, tx, ac, tarefaID, processoID, descricao, data, confirmar)
+	if err == nil {
+		err = tx.Commit(ctx)
+	}
+	return novo, err
+}
+
+// SincronizarNaTx faz o mesmo DENTRO da transação do chamador (a tarefa ainda pode não estar commitada: é o caso das
+// tarefas automáticas, que nascem com o prazo interno na mesma transação da intimação). Não faz commit.
+func (s *Service) SincronizarNaTx(ctx context.Context, tx pgx.Tx, ac webx.Actor, tarefaID, processoID, descricao string, data *time.Time, confirmar bool) (string, error) {
+	if data == nil {
+		return "", webx.Invalidf("Informe a data do prazo fatal.")
+	}
 	var id, sit string
+	var err error
 	var velha time.Time
 	err = tx.QueryRow(ctx, `SELECT id, data_fatal, situacao FROM prazos WHERE tarefa_id=$1::uuid AND excluido_em IS NULL FOR UPDATE`, tarefaID).Scan(&id, &velha, &sit)
 	novo := map[bool]string{true: Confirmado, false: AConferir}[confirmar]
@@ -49,9 +60,6 @@ func (s *Service) SincronizarDaTarefa(ctx context.Context, ac webx.Actor, tarefa
 		if err == nil {
 			err = s.record(ctx, tx, ac, "prazo.alterado", id, map[string]string{"etapa": novo})
 		}
-	}
-	if err == nil {
-		err = tx.Commit(ctx)
 	}
 	return novo, err
 }

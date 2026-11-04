@@ -123,6 +123,12 @@ func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version 
 	if tag.RowsAffected() == 0 {
 		return s.whyNoRows(ctx, id)
 	}
+	sai := saiDoPrazoInterno(atual, n.estado)
+	if sai {
+		if _, err = tx.Exec(ctx, `UPDATE tarefas SET prazo_fatal=NULL, prazo_interno=false WHERE id=$1`, id); err != nil {
+			return err
+		}
+	}
 	if err = gravarListas(ctx, tx, id, n); err == nil {
 		err = s.record(ctx, tx, ac, "tarefa.alterada", id)
 	}
@@ -131,6 +137,9 @@ func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version 
 	}
 	if err != nil {
 		return err
+	}
+	if sai {
+		return s.encerraPrazoInterno(ctx, ac, id)
 	}
 	novo := *atual
 	novo.Titulo, novo.Estado = n.titulo, n.estado
@@ -165,11 +174,20 @@ func (s *Service) Mover(ctx context.Context, ac webx.Actor, id string, version i
 	if tag.RowsAffected() == 0 {
 		return s.whyNoRows(ctx, id)
 	}
+	sai := saiDoPrazoInterno(atual, novoEstado)
+	if sai {
+		if _, err = tx.Exec(ctx, `UPDATE tarefas SET prazo_fatal=NULL, prazo_interno=false WHERE id=$1`, id); err != nil {
+			return err
+		}
+	}
 	if err = s.recordDePara(ctx, tx, ac, "tarefa.estado_alterado", id, atual.Estado, novoEstado); err == nil {
 		err = tx.Commit(ctx)
 	}
 	if err != nil {
 		return err
+	}
+	if sai {
+		return s.encerraPrazoInterno(ctx, ac, id)
 	}
 	novo := *atual
 	novo.Estado = novoEstado

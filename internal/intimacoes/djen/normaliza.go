@@ -74,7 +74,7 @@ func texto(m itemJSON, chaves ...string) string {
 func normalizar(m itemJSON) (Comunicacao, error) {
 	c := Comunicacao{ID: texto(m, "id", "identificador"), Tribunal: texto(m, "siglaTribunal", "tribunal"),
 		Orgao: texto(m, "nomeOrgao", "orgao"), Processo: texto(m, "numeroprocessocommascara", "numero_processo", "processo"),
-		Tipo: texto(m, "tipoComunicacao", "tipo"), Texto: NormalizarResumo(texto(m, "texto", "resumo"))}
+		Tipo: texto(m, "tipoComunicacao", "tipo"), Texto: NormalizarTexto(texto(m, "texto", "resumo"))}
 	if l := texto(m, "link", "url"); strings.HasPrefix(l, "https://") {
 		c.Link = l
 	}
@@ -86,4 +86,23 @@ func normalizar(m itemJSON) (Comunicacao, error) {
 		}
 	}
 	return c, errors.New("djen: comunicação com data inválida; não descartada")
+}
+
+// MaxTexto é o teto de segurança do texto integral da comunicação, em caracteres; MarcaCorte é acrescentada se ele for atingido.
+const (
+	MaxTexto   = 100000
+	MarcaCorte = "[texto cortado]"
+)
+
+// NormalizarTexto limpa o texto integral (tira marcação HTML, junta espaços) SEM o corte de 2000 caracteres do resumo.
+// Só corta no teto de segurança, por caracteres, e então marca "[texto cortado]".
+func NormalizarTexto(s string) string {
+	s = strings.ToValidUTF8(s, "")
+	s = html.UnescapeString(tagHTML.ReplaceAllString(s, " "))
+	s = strings.Join(strings.Fields(s), " ")
+	s = espacoAn.ReplaceAllString(s, "$1")
+	if utf8.RuneCountInString(s) > MaxTexto {
+		s = string([]rune(s)[:MaxTexto]) + MarcaCorte
+	}
+	return s
 }

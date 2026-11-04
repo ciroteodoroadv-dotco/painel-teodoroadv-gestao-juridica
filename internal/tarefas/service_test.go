@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"painelteodoro/internal/auth"
@@ -493,4 +494,13 @@ func TestAbertosDoProcessoEDocumentos(t *testing.T) {
 	if err := a.s.AnexarDocumento(ctx, a.ac, "00000000-0000-0000-0000-000000000000", "a.pdf", strings.NewReader("x")); !errors.Is(err, webx.ErrNotFound) {
 		t.Errorf("tarefa inexistente = %v", err)
 	}
+}
+
+func (f *falsoPrazos) SincronizarTx(_ context.Context, _ pgx.Tx, _ webx.Actor, tarefaID, _, _ string, data *time.Time, confirmar bool) (string, error) {
+	f.calls = append(f.calls, chamada{"sincronizar-tx", tarefaID, "", data, confirmar})
+	if f.sit == nil {
+		f.sit = map[string]string{}
+	}
+	f.sit[tarefaID] = map[bool]string{true: "confirmado", false: "a_conferir"}[confirmar]
+	return f.sit[tarefaID], nil
 }

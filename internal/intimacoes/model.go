@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"painelteodoro/internal/intimacoes/djen"
+	"painelteodoro/internal/platform/webx"
 )
 
 // Modulo é o nome da coleta no rodapé "Estado das coletas" (o B chama a mesma coleta de "intimacoes", rótulo DJEN).
@@ -35,11 +36,16 @@ type Coletor interface {
 type AnaliseIn struct {
 	IntimacaoID, ProcessoID, Titulo, Descricao string
 	CriadoPor, AuditActor, RequestID           string
+	PrazoFatal                                 *time.Time // prazo INTERNO de confirmação (E3 do Plano 6)
 }
 
 // TarefaAutomatica cria a tarefa de análise dentro da transação da intimação. Idempotente por intimação.
 type TarefaAutomatica interface {
 	CriarAnaliseDeIntimacao(ctx context.Context, tx pgx.Tx, in AnaliseIn) (tarefaID string, err error)
+	// CriarConsolidadaDoDia abre (ou completa) a tarefa consolidada do processo no dia, também na transação do chamador.
+	CriarConsolidadaDoDia(ctx context.Context, tx pgx.Tx, in ConsolidadaIn) (tarefaID string, err error)
+	// EncerrarPrazoInterno encerra o prazo interno da tarefa de análise quando a intimação é decidida.
+	EncerrarPrazoInterno(ctx context.Context, ac webx.Actor, intimacaoID string) error
 }
 
 // TarefaResumo é a tarefa de análise como a tabela a mostra: título e rótulo do estado.

@@ -13,6 +13,7 @@ import (
 	"painelteodoro/internal/intimacoes"
 	"painelteodoro/internal/intimacoes/djen"
 	"painelteodoro/internal/platform/coletas"
+	"painelteodoro/internal/platform/webx"
 	"painelteodoro/internal/processos"
 	"painelteodoro/internal/tarefas"
 )
@@ -128,4 +129,12 @@ func montarIntimacoes(a *auth.Auth, pool *pgxpool.Pool, proc *processos.Service,
 		return auth.Faixa{Strong: forte, Text: texto}, nil
 	})
 	return svc, nil
+}
+
+func (a intimTarefas) CriarConsolidadaDoDia(ctx context.Context, tx pgx.Tx, in intimacoes.ConsolidadaIn) (string, error) {
+	return a.s.CriarConsolidadaDoDia(ctx, tx, tarefas.ConsolidadaIn(in))
+}
+
+func (a intimTarefas) EncerrarPrazoInterno(ctx context.Context, ac webx.Actor, intimacaoID string) error {
+	return a.s.EncerrarPrazoInternoDaIntimacao(ctx, ac, intimacaoID)
 }

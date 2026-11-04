@@ -17,12 +17,12 @@ func TestSeedDemo(t *testing.T) {
 	}
 	if e.count(`SELECT count(*) FROM pessoas`) != 4 || e.count(`SELECT count(*) FROM processos`) != 3 ||
 		e.count(`SELECT count(*) FROM tarefas`) != 9 || e.count(`SELECT count(*) FROM atendimentos`) != 3 ||
-		e.count(`SELECT count(*) FROM tarefas WHERE tarefa_pai_id IS NOT NULL`) != 1 || e.count(`SELECT count(*) FROM prazos WHERE tarefa_id IS NOT NULL AND situacao='a_conferir'`) != 1 || e.count(`SELECT count(*) FROM agenda_compromissos`) != 3 || e.count(`SELECT count(*) FROM audiencias`) != 2 || e.count(`SELECT count(*) FROM audiencias WHERE cancelada`) != 1 || e.count(`SELECT count(*) FROM diligencias`) != 2 || e.count(`SELECT count(*) FROM processo_partes`) != 6 {
+		e.count(`SELECT count(*) FROM tarefas WHERE tarefa_pai_id IS NOT NULL`) != 1 || e.count(`SELECT count(*) FROM prazos WHERE tarefa_id IS NOT NULL AND situacao='a_conferir'`) != 2 || e.count(`SELECT count(*) FROM agenda_compromissos`) != 3 || e.count(`SELECT count(*) FROM audiencias`) != 2 || e.count(`SELECT count(*) FROM audiencias WHERE cancelada`) != 1 || e.count(`SELECT count(*) FROM diligencias`) != 2 || e.count(`SELECT count(*) FROM processo_partes`) != 6 {
 		t.Fatal("quantidades inesperadas na demonstração")
 	}
 	if e.count(`SELECT count(*) FROM intimacoes`) != 3 || e.count(`SELECT count(*) FROM intimacoes WHERE status='triagem'`) != 1 ||
 		e.count(`SELECT count(*) FROM intimacoes WHERE status='confirmada'`) != 1 || e.count(`SELECT count(*) FROM intimacoes WHERE status='cancelada'`) != 1 ||
-		e.count(`SELECT count(*) FROM tarefas WHERE intimacao_id IS NOT NULL AND estado='a-confirmar' AND prazo_fatal IS NULL`) != 3 ||
+		e.count(`SELECT count(*) FROM tarefas WHERE intimacao_id IS NOT NULL AND estado='a-confirmar' AND prazo_fatal IS NOT NULL AND prazo_interno`) != 1 ||
 		e.count(`SELECT count(*) FROM oab_monitoradas`) != 1 || e.count(`SELECT count(*) FROM coletas`) != 2 ||
 		e.count(`SELECT count(*) FROM coletas WHERE status='sucesso'`) != 1 || e.count(`SELECT count(*) FROM coletas WHERE status='falha'`) != 1 {
 		t.Fatal("a demonstração de intimações deveria ter 1 OAB, 3 intimações (uma por status), 3 tarefas de análise e 2 coletas")

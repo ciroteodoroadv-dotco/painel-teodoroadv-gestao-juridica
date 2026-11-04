@@ -25,7 +25,7 @@ func (a *amb) novaIntimacao(t *testing.T, hash string) string {
 func (a *amb) analise(intim, proc string) AnaliseIn {
 	return AnaliseIn{IntimacaoID: intim, ProcessoID: proc, Titulo: "Analisar intimação — Intimação — 0000101-25.2025.8.26.0100",
 		Descricao: "Prazo a apurar pelo advogado. O sistema não calculou prazo.\nLink: https://exemplo.test/c/1",
-		CriadoPor: a.ac.UserID, AuditActor: a.ac.UserID, RequestID: "t"}
+		CriadoPor: a.ac.UserID, AuditActor: a.ac.UserID, RequestID: "t", PrazoFatal: &prazoInterno}
 }
 
 func TestAnaliseDeIntimacaoNasceAConfirmarSemPrazo(t *testing.T) {
@@ -47,8 +47,8 @@ func TestAnaliseDeIntimacaoNasceAConfirmarSemPrazo(t *testing.T) {
 	if tt.Estado != "a-confirmar" || tt.Prioridade != "Normal" || tt.Subtitulo != "Análise de decisão" {
 		t.Errorf("estado/prioridade/subtítulo: %+v", tt)
 	}
-	if tt.PrazoFatal != nil || tt.Prazo != nil || tt.DataBase != nil {
-		t.Errorf("o sistema não presume prazo: prazo=%v fatal=%v base=%v", tt.Prazo, tt.PrazoFatal, tt.DataBase)
+	if tt.Prazo != nil || tt.DataBase != nil || tt.PrazoFatal == nil || !tt.PrazoInterno {
+		t.Errorf("só o prazo fatal INTERNO existe (o sistema não presume prazo processual): prazo=%v fatal=%v base=%v", tt.Prazo, tt.PrazoFatal, tt.DataBase)
 	}
 	if tt.OrigemTipo != "intimacao" || tt.OrigemID != intim || tt.OrigemCodigo != "DJEN" {
 		t.Errorf("origem sem processo deve ser DJEN: tipo=%q id=%q código=%q", tt.OrigemTipo, tt.OrigemID, tt.OrigemCodigo)
@@ -56,13 +56,8 @@ func TestAnaliseDeIntimacaoNasceAConfirmarSemPrazo(t *testing.T) {
 	if !strings.Contains(tt.Descricao, "Prazo a apurar pelo advogado") || !strings.HasPrefix(tt.Codigo, "TAR. ") {
 		t.Errorf("descrição/código: %+v", tt)
 	}
-	if len(a.prazos.calls) != 0 {
-		t.Errorf("nada pode ser enviado ao domínio Prazos: %+v", a.prazos.calls)
-	}
-	var n int
-	_ = a.pool.QueryRow(ctx, `SELECT count(*) FROM prazos`).Scan(&n)
-	if n != 0 {
-		t.Errorf("a tarefa de análise não pode virar prazo (%d)", n)
+	if len(a.prazos.calls) != 1 {
+		t.Errorf("o prazo interno vai uma vez ao domínio Prazos: %+v", a.prazos.calls)
 	}
 }
 
@@ -173,5 +168,84 @@ func TestTarefaDeIntimacaoNaListaEmAgendaEDocumentos(t *testing.T) {
 	tt, _ := a.s.Get(ctx, id)
 	if tt.OrigemTipo != "intimacao" || tt.Titulo != "Analisar intimação (ajustado)" {
 		t.Errorf("%+v", tt)
+	}
+}
+
+var prazoInterno = time.Date(2026, 11, 6, 0, 0, 0, 0, time.UTC)
+
+func TestAnaliseNasceComPrazoInternoAConferir(t *testing.T) {
+	a := novoAmb(t)
+	ctx := context.Background()
+	intim := a.novaIntimacao(t, "h-interno")
+	tx, _ := a.pool.Begin(ctx)
+	id, err := a.s.CriarAnaliseDeIntimacao(ctx, tx, a.analise(intim, a.pro))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = tx.Commit(ctx)
+	tt, _ := a.s.Get(ctx, id)
+	if tt.PrazoFatal == nil || !tt.PrazoFatal.Equal(prazoInterno) || !tt.PrazoInterno || tt.Estado != "a-confirmar" {
+		t.Fatalf("prazo interno: %+v", tt)
+	}
+	if len(a.prazos.calls) != 1 || a.prazos.calls[0].op != "sincronizar-tx" || a.prazos.calls[0].confirmar {
+		t.Errorf("deveria sincronizar pelo caminho do prazo fatal, como 'a conferir': %+v", a.prazos.calls)
+	}
+	// Sair de "A confirmar" (só advogado) encerra o prazo interno.
+	if err := a.s.Mover(ctx, a.ac, id, 1, "pendente", true); err != nil {
+		t.Fatal(err)
+	}
+	tt, _ = a.s.Get(ctx, id)
+	if tt.PrazoFatal != nil || tt.PrazoInterno {
+		t.Errorf("prazo interno deveria ser encerrado ao sair de A confirmar: %+v", tt)
+	}
+	if u := a.prazos.ultima(); u.op != "encerrar" || u.motivo != "cancelada" {
+		t.Errorf("deveria encerrar o prazo no domínio Prazos: %+v", u)
+	}
+}
+
+func TestEncerrarPrazoInternoDaIntimacao(t *testing.T) {
+	a := novoAmb(t)
+	ctx := context.Background()
+	intim := a.novaIntimacao(t, "h-decide")
+	tx, _ := a.pool.Begin(ctx)
+	id, _ := a.s.CriarAnaliseDeIntimacao(ctx, tx, a.analise(intim, ""))
+	_ = tx.Commit(ctx)
+	if err := a.s.EncerrarPrazoInternoDaIntimacao(ctx, a.ac, intim); err != nil {
+		t.Fatal(err)
+	}
+	tt, _ := a.s.Get(ctx, id)
+	if tt.PrazoFatal != nil || tt.PrazoInterno || a.prazos.ultima().op != "encerrar" {
+		t.Errorf("decidir a intimação encerra o prazo interno: %+v", tt)
+	}
+	if err := a.s.EncerrarPrazoInternoDaIntimacao(ctx, a.ac, intim); err != nil {
+		t.Errorf("repetir não é erro: %v", err)
+	}
+}
+
+func TestConsolidadaDoDiaEIdempotentePorProcessoEDia(t *testing.T) {
+	a := novoAmb(t)
+	ctx := context.Background()
+	in := ConsolidadaIn{ProcessoID: a.pro, Dia: time.Date(2026, 11, 4, 0, 0, 0, 0, time.UTC), Titulo: "Novidades do dia — processo",
+		Linhas: []string{"DataJud: Distribuição (04/11/2026)"}, CriadoPor: a.ac.UserID, AuditActor: a.ac.UserID, RequestID: "t", PrazoFatal: &prazoInterno}
+	var ids [3]string
+	for i, dia := range []int{4, 4, 5} {
+		in.Dia = time.Date(2026, 11, dia, 0, 0, 0, 0, time.UTC)
+		in.Linhas = []string{"linha " + string(rune('a'+i))}
+		tx, _ := a.pool.Begin(ctx)
+		id, err := a.s.CriarConsolidadaDoDia(ctx, tx, in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = tx.Commit(ctx)
+		ids[i] = id
+	}
+	if ids[0] != ids[1] || ids[0] == ids[2] {
+		t.Errorf("uma consolidada por processo e dia: %v", ids)
+	}
+	tt, _ := a.s.Get(ctx, ids[0])
+	if tt.Estado != "a-confirmar" || !tt.PrazoInterno || tt.PrazoFatal == nil || tt.OrigemTipo != "processo" ||
+		!strings.Contains(tt.Descricao, "linha a") || !strings.Contains(tt.Descricao, "linha b") ||
+		!strings.Contains(tt.Descricao, "Prazo interno de confirmação (2 dias corridos). NÃO é o prazo processual: o advogado apura o prazo da intimação.") {
+		t.Errorf("consolidada: %+v", tt)
 	}
 }

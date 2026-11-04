@@ -8,6 +8,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"painelteodoro/internal/platform/webx"
 )
 
@@ -36,6 +38,7 @@ type Tarefa struct {
 	Partes                                            []ParteTarefa
 	Responsaveis                                      []Ref
 	Version                                           int
+	PrazoInterno                                      bool // prazo fatal interno de confirmação (2 dias), não o prazo processual
 }
 
 func br(t *time.Time) string {
@@ -110,6 +113,8 @@ type PrazoSync interface {
 	// Sincronizar cria ou atualiza o prazo da tarefa. confirmar=true (ator com permissão de advogado) grava como
 	// confirmado; senão fica "a conferir". Devolve a situação resultante.
 	Sincronizar(ctx context.Context, ac webx.Actor, tarefaID, processoID, descricao string, data *time.Time, confirmar bool) (situacao string, err error)
+	// SincronizarTx faz o mesmo dentro da transação do chamador (tarefas automáticas, ainda não commitadas).
+	SincronizarTx(ctx context.Context, tx pgx.Tx, ac webx.Actor, tarefaID, processoID, descricao string, data *time.Time, confirmar bool) (situacao string, err error)
 	// Situacoes devolve tarefa → situação do prazo (só as que têm prazo).
 	Situacoes(ctx context.Context, tarefaIDs []string) (map[string]string, error)
 	// Encerrar fecha o prazo da tarefa: motivo "cumprida", "cancelada" ou "excluida".
