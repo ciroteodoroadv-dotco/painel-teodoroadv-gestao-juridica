@@ -60,7 +60,8 @@ Se o Go local for menor que 1.26.10, o contêiner não consegue baixar a versão
 
 PROVA REAL (igual à da matemática): desfaz a operação e confere se a entrada original volta exatamente. Se a entrada reconstruída não for idêntica à que foi pedida, a prova falha.
 - Contagem: a soma das partes tem de dar o total. Divergência de um item é falha.
-- Mudança de código: aplicar o diff ao contrário (git apply -R, em cópia de trabalho) tem de restaurar o estado anterior byte a byte. Em seguida, o estado anterior tem de reproduzir a falha que a mudança corrigiu.
+- Mudança de código: antes de qualquer correção, o subagente escreve o teste que reproduz a falha e o executa no estado anterior. A saída literal tem de mostrar o teste falhando. Sem esse teste vermelho, a mudança é [Chute] e não pode ser declarada verificada. Depois da correção, o mesmo teste tem de passar.
+- Reversibilidade: aplicar o diff ao contrário (git apply -R, em cópia de trabalho) tem de restaurar o estado anterior byte a byte. Isso prova só que o diff é reversível. A prova da falha é a do item anterior.
 - Especificação: cada requisito da ESPECIFICAÇÃO tem de ser reencontrado no código, com arquivo e linha. Requisito sem correspondência é falha. Código sem requisito é registrado.
 - Cálculo de prazo ou financeiro: refazer a conta no sentido inverso (da data final até a inicial) e comparar com o resultado.
 - A saída literal de cada comando vai no relatório. Resumo no lugar da saída não conta.
