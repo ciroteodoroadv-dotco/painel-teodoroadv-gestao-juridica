@@ -112,7 +112,7 @@ func TestAnaliseDeIntimacaoDesfazComATransacao(t *testing.T) {
 	}
 }
 
-func TestPorIntimacoesDevolveTituloEEstadoComRotulo(t *testing.T) {
+func TestPorIntimacoesDevolveTituloEEstadoComoNoB(t *testing.T) {
 	a := novoAmb(t)
 	ctx := context.Background()
 	i1, i2 := a.novaIntimacao(t, "h-por1"), a.novaIntimacao(t, "h-por2")
@@ -126,14 +126,14 @@ func TestPorIntimacoesDevolveTituloEEstadoComRotulo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(m) != 1 || m[i1].Estado != "A confirmar" || !strings.HasPrefix(m[i1].Titulo, "Analisar intimação") {
+	if len(m) != 1 || m[i1].Estado != "a-confirmar" || !strings.HasPrefix(m[i1].Titulo, "Analisar intimação") {
 		t.Errorf("PorIntimacoes = %+v", m)
 	}
 	if err := a.s.Mover(ctx, a.ac, id, 1, "pendente", true); err != nil {
 		t.Fatal(err)
 	}
 	m, _ = a.s.PorIntimacoes(ctx, []string{i1})
-	if m[i1].Estado != "Pendente" {
+	if m[i1].Estado != "pendente" {
 		t.Errorf("estado deveria acompanhar a tarefa: %+v", m)
 	}
 	if m, err := a.s.PorIntimacoes(ctx, nil); err != nil || len(m) != 0 {

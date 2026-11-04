@@ -45,3 +45,13 @@
 | JS novo no Chrome (acordeão, busca, mostra/oculta, filtro de opções, toast, decodificação do cabeçalho) | executado nos instantâneos |
 | Envio real de formulário por clique, capturas 1440/400 | **não feito** (testes HTTP cobrem o servidor) |
 | Conferência do advogado na tela real | pendente |
+
+## Plano 5 — Intimações (DJEN) (03-04/11/2026)
+| Item | Estado |
+|---|---|
+| Estilo computado B x v2 (categoria Intimações da Agenda: 23 seletores x 30 propriedades + rodapé Estado das coletas) | feito: zero diferença além da justificada (`paridade/RELATORIO-5.md`) |
+| Comparação texto a texto (11-agenda.js e 16-sync-status.js) | feito: zero ausência do Plano 5 (restam as 8 do Plano 4) |
+| JS novo no Chrome (`data-refresh` do rodapé: recarrega, mostra "indisponível" na falha) | executado nos instantâneos |
+| Página Coleta DJEN e drawers da OAB | sem equivalente no B (só vocabulário visual); testes HTTP; **não comparados no Chrome** |
+| Clique real em Confirmar/Descartar, capturas 1440/400 | **não feito** (testes HTTP cobrem o servidor) |
+| Conferência do advogado na tela real e teste manual orientado antes de ligar a coleta | pendente |

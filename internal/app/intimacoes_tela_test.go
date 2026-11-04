@@ -54,7 +54,7 @@ func TestAgendaIntimacoesTabelaDoB(t *testing.T) {
 		t.Error("com intimações registradas não há bloco de indisponibilidade")
 	}
 	for _, trecho := range []string{`<td>DJEN</td>`, `<td class="tabular">02/11/2026</td>`, `<span class="badge badge-warn">Em triagem</span>`,
-		`<strong>Analisar intimação — Intimação`, `<div class="hint">A confirmar</div>`} {
+		`<strong>Analisar intimação — Intimação`, `<div class="hint">a-confirmar</div>`} {
 		if !strings.Contains(pg, trecho) {
 			t.Errorf("faltou %q", trecho)
 		}
@@ -134,7 +134,7 @@ func TestRodapeEstadoDasColetas(t *testing.T) {
 	_, pg = adv.get("/agenda")
 	ordem(t, "rodapé", pg, `<section id="syncStatus" class="sync-status" aria-label="Estado das coletas" data-refresh="/sync/estado">`,
 		`<strong>Estado das coletas</strong>`, `<p>Histórico local. Não comprova agendamento ativo nem substitui a conferência nas fontes oficiais.</p>`,
-		`<ul><li>DJEN: última coleta concluída. Tentativa: 03/11/2026 12:04:05 (Brasília). Sucesso: 03/11/2026 12:04:05 (Brasília). OABs: 1.</li></ul>`)
+		`<ul><li>DJEN: última coleta concluída. Tentativa: 03/11/2026, 12:04:05 (Brasília). Sucesso: 03/11/2026, 12:04:05 (Brasília). OABs: 1.</li></ul>`)
 	if strings.Contains(pg, `class="sync-error"`) {
 		t.Error("sucesso não leva sync-error")
 	}
@@ -142,7 +142,7 @@ func TestRodapeEstadoDasColetas(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, pg = adv.get("/agenda")
-	if !strings.Contains(pg, `<li class="sync-error">DJEN: erro. Tentativa: 03/11/2026 13:04:05 (Brasília). Sucesso: 03/11/2026 12:04:05 (Brasília). djen: HTTP 500</li>`) {
+	if !strings.Contains(pg, `<li class="sync-error">DJEN: erro. Tentativa: 03/11/2026, 13:04:05 (Brasília). Sucesso: 03/11/2026, 12:04:05 (Brasília). djen: HTTP 500</li>`) {
 		t.Errorf("falha deve levar sync-error e manter o último sucesso:\n%s", trechoRodape(pg))
 	}
 	// O fragmento que o JS recarrega: só o miolo, para quem tem sessão.

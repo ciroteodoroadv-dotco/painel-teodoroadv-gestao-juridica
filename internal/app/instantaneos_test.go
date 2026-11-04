@@ -90,6 +90,34 @@ func TestInstantaneosParaParidade(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	// Plano 5: a página Coleta DJEN (administrador) e os drawers da OAB.
+	adm, _ := e.user("adm@exemplo.test", auth.Administrador)
+	_, coleta := adm.get("/coleta-djen")
+	if err := os.WriteFile(filepath.Join(out, "coleta-djen.html"), []byte(coleta), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var oab1 string
+	if err := e.pool.QueryRow(context.Background(), `SELECT id FROM oab_monitoradas LIMIT 1`).Scan(&oab1); err != nil {
+		t.Fatal(err)
+	}
+	for _, caminho := range []string{"/coleta-djen/nova", "/coleta-djen/" + oab1 + "/editar"} {
+		_, frag := adm.do("GET", caminho, nil, map[string]string{"HX-Request": "true"})
+		alvo := filepath.Join(out, filepath.FromSlash(strings.TrimPrefix(caminho, "/")))
+		if err := os.MkdirAll(filepath.Dir(alvo), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(alvo, []byte(frag), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Fragmento do rodapé, que o JS (data-refresh) recarrega.
+	_, sync := adv.get("/sync/estado")
+	if err := os.MkdirAll(filepath.Join(out, "sync"), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(out, "sync", "estado"), []byte(sync), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	// Página de componentes: a mesma casca, com o miolo do painel B (acordeão, drawer, máscaras…).
 	// Os links de CSS/JS já são absolutos (/static/…).
 	ini := strings.Index(base, `<div class="stats" id="stats">`)

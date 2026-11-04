@@ -152,7 +152,10 @@ func SeedDemo(ctx context.Context, pool *pgxpool.Pool, fieldKey []byte, store *a
 			return err
 		}
 	}
-	return semearAgenda(ctx, pool, ac, pes, proc, ate, tar, ids, p1, p2, a2)
+	if err := semearAgenda(ctx, pool, ac, pes, proc, ate, tar, ids, p1, p2, a2); err != nil {
+		return err
+	}
+	return semearIntimacoes(ctx, pool, ac, proc, tar)
 }
 
 // semSenha aceita qualquer senha: só existe para o cancelamento de audiência da demonstração (SeedDemo roda só em dev).

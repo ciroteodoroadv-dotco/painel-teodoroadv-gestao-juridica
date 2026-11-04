@@ -103,6 +103,8 @@ a.btn-ghost,a.btn-ghost:hover{color:var(--text);}
 .row-responsavel-tarefa .field{flex:1;}
 .hint-vinculo{padding:8px 0;}
 .form-inline{display:inline;}
+/* Confirmar/Descartar de Intimações vão em formulários próprios; com display:contents os botões são itens da linha de ações, como no B. */
+.row-actions > .form-inline{display:contents;}
 .tarefa-fatal{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
 /* "Mover para..." do B é o select cru do navegador (sem a regra genérica de select do v2). */
 .row-actions select{width:auto;padding:0;border:1px solid rgb(118,118,118);border-radius:0;}

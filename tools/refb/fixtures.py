@@ -28,24 +28,10 @@ INDICES = {
     },
 }
 
-INTIMACOES = {
-    "status": "sucesso",
-    "intimacoes": [
-        {"hash": "int-1", "origem": "DJEN", "tribunal": "TJXX", "orgao": "1ª Vara de Exemplo",
-         "processo": "0000000-00.2026.8.26.0000", "tipo": "Intimação", "data_publ": _d(-1),
-         "resumo": "Intimação fictícia.", "status": "triagem"},
-        {"hash": "int-2", "origem": "DJEN", "tribunal": "TJXX", "orgao": "2ª Vara de Exemplo",
-         "processo": "0000001-01.2026.8.26.0001", "tipo": "Despacho", "data_publ": _d(-2),
-         "resumo": "Despacho fictício.", "status": "triagem"},
-    ],
-}
-
-SINCRONIZACAO = {"fontes": [
-    {"modulo": "intimacoes", "status": "nao_sincronizado", "mensagem": "Dado fictício de referência."},
-]}
+from intimacoes import INTIMACOES, SINCRONIZACAO, TAREFAS_DJEN  # noqa: E402 (dados do Plano 5, iguais ao seed do v2)
 
 ROTAS = {
-    "pessoas": PESSOAS, "processos": PROCESSOS, "tarefas": TAREFAS,
+    "pessoas": PESSOAS, "processos": PROCESSOS, "tarefas": TAREFAS + TAREFAS_DJEN,
     "atendimentos": ATENDIMENTOS, "agenda": AGENDA, "audiencias": AUDIENCIAS,
     "diligencias": DILIGENCIAS, "indices": INDICES, "intimacoes": INTIMACOES,
     "sincronizacao/status": SINCRONIZACAO,

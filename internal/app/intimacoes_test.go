@@ -334,7 +334,7 @@ func TestDecidirConfirmaDescartaEAudita(t *testing.T) {
 		t.Fatalf("lista = %d ok=%v err=%v", len(linhas), ok, err)
 	}
 	if linhas[0].Status != "triagem" || linhas[0].StatusRotulo != "Em triagem" || linhas[0].StatusClasse != "badge-warn" ||
-		linhas[0].Tarefa == "" || linhas[0].TarefaEstado != "A confirmar" || linhas[0].Data != "02/11/2026" || linhas[0].Origem != "DJEN" {
+		linhas[0].Tarefa == "" || linhas[0].TarefaEstado != "a-confirmar" || linhas[0].Data != "02/11/2026" || linhas[0].Origem != "DJEN" {
 		t.Errorf("linha = %+v", linhas[0])
 	}
 	_, adv := e.user("adv-dec@exemplo.test", auth.Advogado)

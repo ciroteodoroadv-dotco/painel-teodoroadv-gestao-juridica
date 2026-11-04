@@ -54,7 +54,8 @@ func (s *Service) CriarAnaliseDeIntimacao(ctx context.Context, tx pgx.Tx, in Ana
 	return id, err
 }
 
-// ResumoDeIntimacao é a tarefa de análise como a tabela de Intimações a mostra: título e estado (com o rótulo do B).
+// ResumoDeIntimacao é a tarefa de análise como a tabela de Intimações a mostra: título e estado. O B mostra o estado
+// pela chave da pasta ("a-confirmar"), não pelo rótulo; o v2 repete (decisão em NOTAS-PLANO-5.md).
 type ResumoDeIntimacao struct{ Titulo, Estado string }
 
 // PorIntimacoes devolve, por id de intimação, a tarefa de análise (não excluída).
@@ -79,11 +80,6 @@ func (s *Service) PorIntimacoes(ctx context.Context, ids []string) (map[string]R
 		var iid, titulo, estado string
 		if err := rows.Scan(&iid, &titulo, &estado); err != nil {
 			return nil, err
-		}
-		for _, e := range Estados {
-			if e.Chave == estado {
-				estado = e.Rotulo
-			}
 		}
 		out[iid] = ResumoDeIntimacao{Titulo: titulo, Estado: estado}
 	}

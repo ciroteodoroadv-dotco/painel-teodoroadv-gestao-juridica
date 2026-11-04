@@ -15,8 +15,8 @@ func TestLinhaComoNoB(t *testing.T) {
 		erro bool
 	}{
 		{Estado{Modulo: "intimacoes", Status: "sucesso", UltimaTentativa: &tent, UltimoSucesso: &suc, Mensagem: "OABs: 1."},
-			"DJEN: última coleta concluída. Tentativa: 03/11/2026 12:04:05 (Brasília). Sucesso: 02/11/2026 20:00:00 (Brasília). OABs: 1.", false},
-		{Estado{Modulo: "intimacoes", Status: "parcial", UltimaTentativa: &tent}, "DJEN: coleta parcial. Tentativa: 03/11/2026 12:04:05 (Brasília). Sucesso: não registrado. ", true},
+			"DJEN: última coleta concluída. Tentativa: 03/11/2026, 12:04:05 (Brasília). Sucesso: 02/11/2026, 20:00:00 (Brasília). OABs: 1.", false},
+		{Estado{Modulo: "intimacoes", Status: "parcial", UltimaTentativa: &tent}, "DJEN: coleta parcial. Tentativa: 03/11/2026, 12:04:05 (Brasília). Sucesso: não registrado. ", true},
 		{Estado{Modulo: "intimacoes", Status: "falha", Mensagem: "djen: HTTP 500"}, "DJEN: erro. Tentativa: não registrado. Sucesso: não registrado. djen: HTTP 500", true},
 		{Estado{Modulo: "intimacoes", Status: "bloqueado", Mensagem: "Coleta desligada neste ambiente."}, "DJEN: bloqueado. Tentativa: não registrado. Sucesso: não registrado. Coleta desligada neste ambiente.", true},
 		{Estado{Modulo: "intimacoes", Status: "nao_sincronizado"}, "DJEN: sem tentativa registrada. Tentativa: não registrado. Sucesso: não registrado. ", true},
