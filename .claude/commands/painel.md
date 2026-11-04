@@ -58,13 +58,14 @@ Você, Opus, chama a si mesmo só se: o Sonnet reportar falha que exige julgamen
 - ./scripts/analise-estatica.sh
 Se o Go local for menor que 1.26.10, o contêiner não consegue baixar a versão exigida. Nesse caso, a verificação oficial é o job `go` do GitHub Actions, e nenhuma mudança é declarada verificada sem log dele.
 
-PROTOCOLO DA PROVA REAL EXATA (vale para todo número, lista, contagem e afirmação de estado):
-- Cada afirmação verificável é recalculada por comando executado agora. Nunca se copia número de memória, de resumo anterior ou de saída de outra sessão.
-- Toda contagem é feita com comando (ex.: git ls-files | wc -l), e a soma das partes é conferida contra o total. Se a soma não bater, a prova falhou.
-- A saída do comando é colada literalmente no relatório do subagente. Resumo no lugar da saída não conta.
-- Compara-se com o critério antes de dizer "passou". Divergência de um único item é falha, não arredondamento.
-- Afirmação sem comando que a prove vira [Chute] e fica marcada como não verificada.
-- A árvore de trabalho é verificada limpa (git status) antes e depois da prova, para que o resultado reflita o commit testado.
+PROVA REAL (igual à da matemática): desfaz a operação e confere se a entrada original volta exatamente. Se a entrada reconstruída não for idêntica à que foi pedida, a prova falha.
+- Contagem: a soma das partes tem de dar o total. Divergência de um item é falha.
+- Mudança de código: aplicar o diff ao contrário (git apply -R, em cópia de trabalho) tem de restaurar o estado anterior byte a byte. Em seguida, o estado anterior tem de reproduzir a falha que a mudança corrigiu.
+- Especificação: cada requisito da ESPECIFICAÇÃO tem de ser reencontrado no código, com arquivo e linha. Requisito sem correspondência é falha. Código sem requisito é registrado.
+- Cálculo de prazo ou financeiro: refazer a conta no sentido inverso (da data final até a inicial) e comparar com o resultado.
+- A saída literal de cada comando vai no relatório. Resumo no lugar da saída não conta.
+- Quem prova não é quem escreveu a mudança. O subagente Sonnet recebe instrução fechada e não repete só os testes que o implementador já rodou.
+- Afirmação sem prova que a sustente vira [Chute] e fica marcada como não verificada.
 
 7. AUDITORIA DO PLANO
 Ao fechar um plano, rode spec-to-code-compliance contra a especificação e registre o que não bate. Para mudança sensível, rode security-review e differential-review.
