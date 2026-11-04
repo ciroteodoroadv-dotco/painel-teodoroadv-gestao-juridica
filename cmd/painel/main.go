@@ -86,7 +86,7 @@ func serve() error {
 	djenCfg := app.DJEN{Ativo: cfg.DJENAtivo, BaseURL: cfg.DJENURL, Intervalo: cfg.DJENIntervalo, AlertaHoras: cfg.DJENAlertaHoras}
 	dj := cfg.DataJud
 	datajudCfg := app.DataJud{Ativo: dj.Ativo, BaseURL: dj.URL, Chave: func() string { return string(dj.Chave) }, Intervalo: dj.Intervalo, Pausa: dj.IntervaloEntreProcessos, AlertaHoras: dj.AlertaHoras}
-	if err := app.RegisterDomains(a, rt, pool, cfg.FieldKey, cfg.DocsDir, app.WithDJEN(djenCfg), app.WithDataJud(datajudCfg), app.WithServicos(&svcs)); err != nil {
+	if err := app.RegisterDomains(a, rt, pool, cfg.FieldKey, cfg.DocsDir, app.WithDJEN(djenCfg), app.WithDataJud(datajudCfg), app.WithCalculadoraValidada(cfg.CalculadoraRegrasValidadas), app.WithServicos(&svcs)); err != nil {
 		return fmt.Errorf("pasta de documentos ou coleta de intimações: %w", err)
 	}
 	// Coleta do DJEN: DESLIGADA por padrão. Desligada, só registra o estado "bloqueado" (sem rede e sem agendador).

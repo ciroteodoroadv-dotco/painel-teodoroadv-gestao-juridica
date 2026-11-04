@@ -16,6 +16,7 @@ import (
 	"painelteodoro/internal/platform/br"
 	"painelteodoro/internal/platform/webx"
 	"painelteodoro/internal/prazos"
+	"painelteodoro/internal/prazos/calendario"
 	"painelteodoro/internal/processos"
 	"painelteodoro/internal/tarefas"
 )
@@ -155,7 +156,14 @@ func SeedDemo(ctx context.Context, pool *pgxpool.Pool, fieldKey []byte, store *a
 	if err := semearAgenda(ctx, pool, ac, pes, proc, ate, tar, ids, p1, p2, a2); err != nil {
 		return err
 	}
-	return semearIntimacoes(ctx, pool, ac, proc, tar)
+	if err := semearIntimacoes(ctx, pool, ac, proc, tar); err != nil {
+		return err
+	}
+	cal := &calendario.Service{Pool: pool}
+	if err := cal.Semear(ctx, webx.Hoje(time.Now()).Year()); err != nil {
+		return err
+	}
+	return semearCalendarios(ctx, ac, cal)
 }
 
 // semSenha aceita qualquer senha: só existe para o cancelamento de audiência da demonstração (SeedDemo roda só em dev).

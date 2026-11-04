@@ -91,7 +91,7 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 		*o.out = Servicos{Intimacoes: intim, Monitor: mon, Coletas: intim.Coletas, Calendario: cal}
 	}
 
-	(&prazos.Handler{A: a, S: praz}).Register(rt) // 1º: widget no topo de "Hoje"
+	(&prazos.Handler{A: a, S: praz, Cal: cal, Validada: o.regrasValidadas, Agora: o.agora}).Register(rt) // 1º: widget no topo de "Hoje"
 	(&calendario.Handler{A: a, S: cal}).Register(rt)
 	(&pessoas.Handler{A: a, S: pes}).Register(rt)
 	(&atendimentos.Handler{A: a, S: ate}).Register(rt)

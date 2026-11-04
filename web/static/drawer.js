@@ -26,6 +26,7 @@
     if (sobrepor && aberto) App.drawerStack.push(Array.from(d.childNodes));
     if (!aberto) App.drawerPreviousFocus = document.activeElement;
     d.replaceChildren(...nodes);
+    if (window.htmx) window.htmx.process(d); // ativa hx-post/hx-get dos fragmentos inseridos
     const titulo = d.querySelector('h2');
     if (titulo) titulo.id = 'drawerTitle';
     o.classList.remove('hidden');

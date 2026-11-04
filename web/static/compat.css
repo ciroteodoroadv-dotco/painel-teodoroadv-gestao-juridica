@@ -109,6 +109,7 @@ a.btn-ghost,a.btn-ghost:hover{color:var(--text);}
 /* "Mover para..." do B é o select cru do navegador (sem a regra genérica de select do v2). */
 .row-actions select{width:auto;padding:0;border:1px solid rgb(118,118,118);border-radius:0;}
 /* Campos que o painel B não estiliza (ficam como o navegador desenha): senha, arquivo e radio. */
+.field input[type=number]{width:auto;padding:1px 2px;border:2px inset rgb(118,118,118);border-radius:0;}
 .field input[type=password]{width:auto;padding:1px 2px;border:2px inset rgb(118,118,118);border-radius:0;}
 .field input[type=file]{width:auto;padding:0;border:0;border-radius:0;background:transparent;}
 .field input[type=radio]{background-color:transparent;}
@@ -118,3 +119,10 @@ label.sr-only{font-size:14px;font-weight:400;line-height:1.45;}
 /* Drawer "Intimação" (E2 do Plano 6): texto integral da comunicação, com as quebras de linha do DataJud. */
 .drawer .texto-integral{white-space:pre-wrap;overflow-wrap:anywhere;max-height:50vh;overflow:auto;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;}
 .drawer .aviso-fonte{font-size:12.5px;margin:0 0 12px 0;color:var(--text-muted);}
+
+/* Plano 7: aviso vermelho da Calculadora (o B usava style= inline; a CSP do v2 não permite). */
+.form-block-erro{border-color:#c0392b;color:#c0392b;}
+.form-block-erro strong{color:#c0392b;}
+.form-block .premissas{margin:8px 0 0 18px;padding:0;}
+.form-block .premissas li{margin:2px 0;}
+.form-block .acoes-calculo{margin-top:12px;}

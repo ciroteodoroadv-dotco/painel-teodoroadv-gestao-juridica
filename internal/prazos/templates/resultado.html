@@ -1,0 +1,17 @@
+{{define "erro"}}<div class="form-block form-block-erro" role="alert">{{.}}</div>{{end}}
+
+{{define "resultado"}}{{if not .Validada}}<div class="form-block form-block-erro" role="alert"><strong>Regras de cálculo ainda não validadas pelo advogado — não use para prazo real.</strong></div>{{end}}
+<div class="form-block">
+  <strong>Vencimento calculado: {{.Venc}}</strong> <span class="badge badge-warn">A CONFERIR</span><br>{{.Frase}}.
+  <ul class="premissas">{{range .Premissas}}<li>{{.}}</li>{{end}}</ul>
+  {{if .Excluidos}}<p>Dias não contados, com a fonte:</p>
+  <ul class="premissas">{{range .Excluidos}}<li>{{.Data.Format "02/01/2006"}} — {{.Descricao}} ({{.Fonte}})</li>{{end}}</ul>{{end}}
+  {{if .Alternativas}}<p><strong>Alternativas (o vencimento acima é o mais curto):</strong></p>
+  <ul class="premissas">{{range .Alternativas}}<li>{{.}}</li>{{end}}</ul>{{end}}
+  {{if .Duvidas}}<p><strong>Dúvidas que cabem ao advogado:</strong></p>
+  <ul class="premissas">{{range .Duvidas}}<li>{{.}}</li>{{end}}</ul>{{end}}
+  <p><strong>Não considerado por este cálculo:</strong></p>
+  <ul class="premissas">{{range .NaoConsiderado}}<li>{{.}}</li>{{end}}</ul>
+  <p>Cálculo de apoio. O advogado confere o prazo no processo e no calendário do tribunal.</p>
+  <div class="acoes-calculo"><a class="btn btn-ghost" href="{{.Link}}">Criar prazo com este cálculo</a></div>
+</div>{{end}}

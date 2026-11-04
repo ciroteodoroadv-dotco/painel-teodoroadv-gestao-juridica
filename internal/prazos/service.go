@@ -55,6 +55,9 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input, confirmar
 	if err := s.checkRefs(ctx, n); err != nil {
 		return "", err
 	}
+	if n.fonte == "calculadora" {
+		confirmar = false // cálculo de apoio: só vale depois do clique em Confirmar (regra de ouro)
+	}
 	situacao := AConferir
 	if confirmar {
 		situacao = Confirmado
@@ -92,6 +95,9 @@ func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version 
 	}
 	if err := s.checkRefs(ctx, n); err != nil {
 		return err
+	}
+	if n.fonte == "calculadora" {
+		confirmar = false
 	}
 	return s.write(ctx, ac, id, "prazo.alterado", map[string]string{"etapa": map[bool]string{true: Confirmado, false: AConferir}[confirmar]},
 		`UPDATE prazos SET descricao=$3, processo_id=$4, data_fatal=$5, fundamento=$6, fonte=$7, responsavel_id=$8,

@@ -74,3 +74,12 @@
 | Capturas 1440/400 | **não feito** (só 1568) |
 | Teste manual orientado (chave, ligar com UM processo, conferir linha de base e formato real) | **pendente** — `docs/operacao/MONITOR-DATAJUD.md` |
 | Conferência do advogado na tela real | pendente |
+
+## Plano 7 — Calculadora de prazo e Calendário forense (04/11/2026)
+| Item | Estado |
+|---|---|
+| Drawer da calculadora x B (rótulos, ordem, estilo computado de 10 elementos) | feito no Chrome: idêntico (ajuste do input numérico); ver paridade/RELATORIO-7.md |
+| htmx do resultado, erro 400 no bloco vermelho, botão Criar prazo (JS executado) | feito |
+| Calendário forense: Novo dia, Inativar (JS executado) | feito |
+| Capturas 1440/400 | **não feito** |
+| Conferência do advogado na tela real e validação das regras | pendente |

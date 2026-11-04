@@ -1,0 +1,42 @@
+{{define "calculadora"}}<h2>Calculadora de prazo</h2>
+    <p class="drawer-sub">Ferramenta solta, não vinculada a ficha nenhuma — só calcula e mostra o resultado.</p>
+    <form hx-post="/prazos/calcular" hx-target="#resultadoPrazo" hx-swap="innerHTML">
+      <div class="field">
+        <label>Data do evento</label>
+        <input type="date" name="base" required value="{{.Hoje}}">
+        <div class="hint">Data da disponibilização no Diário ou da ciência/intimação direta.</div>
+      </div>
+      <div class="field">
+        <label>Modo de contagem</label>
+        <div class="radio-row">
+          <label class="radio-opt"><input type="radio" name="modo" value="dje" checked> Diário oficial (DJe)</label>
+          <label class="radio-opt"><input type="radio" name="modo" value="ciencia"> Ciência / intimação direta</label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Regra do prazo</label>
+        <div class="radio-row">
+          <label class="radio-opt"><input type="radio" name="tipo" value="uteis" checked> CPC (dias úteis)</label>
+          <label class="radio-opt"><input type="radio" name="tipo" value="corridos"> CPP (prazo processual penal — dias corridos)</label>
+          <label class="radio-opt"><input type="radio" name="tipo" value="material-civel"> Prazo material cível (dias corridos)</label>
+          <label class="radio-opt"><input type="radio" name="tipo" value="material-penal"> Prazo material penal (dias corridos)</label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Número de dias</label>
+        <input type="number" name="dias" min="1" step="1" required>
+      </div>
+      <div class="field">
+        <label>Calendário</label>
+        <select name="calendario">
+          <option value="">Nacional (sem calendário local verificado)</option>{{range .Calendarios}}
+          <option value="{{.ID}}">{{.Sigla}} — {{.Nome}}</option>{{end}}
+        </select>
+        <div class="hint">Extra do v2 (não existe no painel B): calendário do tribunal cadastrado, com fonte em cada data. Sem ele, só os feriados nacionais.</div>
+      </div>
+      <div id="resultadoPrazo" aria-live="polite"></div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Fechar</button>
+        <button type="submit" class="btn btn-primary">Calcular</button>
+      </div>
+    </form>{{end}}

@@ -48,6 +48,10 @@ CREATE TRIGGER calendario_dias_sem_delete BEFORE DELETE ON calendario_dias FOR E
 CREATE TRIGGER calendarios_sem_delete BEFORE DELETE ON calendarios FOR EACH ROW EXECUTE FUNCTION calendario_sem_delete();
 REVOKE DELETE ON calendario_dias, calendarios FROM painel_app;
 
+-- Prazo criado a partir da Calculadora: fonte própria, para nunca se confundir com prazo digitado ou do tribunal.
+ALTER TABLE prazos DROP CONSTRAINT prazos_fonte_check;
+ALTER TABLE prazos ADD CONSTRAINT prazos_fonte_check CHECK (fonte IN ('manual', 'djen', 'datajud', 'outra', 'calculadora'));
+
 -- +goose Down
 -- +goose StatementBegin
 DO $$
@@ -56,9 +60,14 @@ BEGIN
        OR EXISTS (SELECT 1 FROM calendarios WHERE created_by IS NOT NULL) THEN
         RAISE EXCEPTION 'migração 0014 não é reversível com dados: nada se apaga (calendários cadastrados por pessoas)';
     END IF;
+    IF EXISTS (SELECT 1 FROM prazos WHERE fonte = 'calculadora') THEN
+        RAISE EXCEPTION 'migração 0014 não é reversível: há prazo criado pela Calculadora (nada se apaga)';
+    END IF;
 END
 $$;
 -- +goose StatementEnd
+ALTER TABLE prazos DROP CONSTRAINT prazos_fonte_check;
+ALTER TABLE prazos ADD CONSTRAINT prazos_fonte_check CHECK (fonte IN ('manual', 'djen', 'datajud', 'outra'));
 DROP TABLE calendario_dias;
 DROP TABLE calendarios;
 DROP FUNCTION calendario_sem_delete();

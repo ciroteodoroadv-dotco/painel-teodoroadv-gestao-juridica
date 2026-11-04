@@ -15,6 +15,7 @@
 <script src="/static/app.js" defer></script>
 <script src="/static/drawer.js" defer></script>
 <script src="/static/forms.js" defer></script>
+<script src="/static/calculadora.js" defer></script>
 <script src="/static/atendimento.js" defer></script>
 <script src="/static/upload.js" defer></script>
 </head>
@@ -27,7 +28,7 @@
       <img class="seal-logo" src="/static/logo.png" alt="Teodoro Advocacia Estratégica" width="150" height="150">
     </div>
     <nav class="tabs" id="navTabs" aria-label="Seções do painel">
-      {{range .Nav}}<a href="{{.Href}}"{{if .Active}} class="active" aria-current="page"{{end}}><span>{{.Label}}</span>{{if .HasCount}}<span class="count">{{.Count}}</span>{{end}}</a>{{end}}
+      {{range .Nav}}<a href="{{.Href}}"{{if .Drawer}} data-drawer="{{.Href}}"{{end}}{{if .Active}} class="active" aria-current="page"{{end}}><span>{{.Label}}</span>{{if .HasCount}}<span class="count">{{.Count}}</span>{{end}}</a>{{end}}
     </nav>
     <nav class="tabs tabs-sistema" id="navSistema" aria-label="Sistema">
       {{range .NavSistema}}<a href="{{.Href}}"{{if .Active}} class="active" aria-current="page"{{end}}><span>{{.Label}}</span></a>{{end}}

@@ -20,6 +20,7 @@ type Opcao = webx.Opcao
 var Fontes = []Opcao{
 	{Valor: "manual", Rotulo: "Digitado por advogado/assistente"}, {Valor: "djen", Rotulo: "DJEN (intimação)"},
 	{Valor: "datajud", Rotulo: "DataJud (movimentação)"}, {Valor: "outra", Rotulo: "Outra (PJe, e-mail, telefone…)"},
+	{Valor: "calculadora", Rotulo: "Calculadora de prazo (a conferir)"},
 }
 
 // Situações.

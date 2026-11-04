@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"time"
 
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/platform/webx"
@@ -20,6 +21,14 @@ var tplFS embed.FS
 type Handler struct {
 	A *auth.Auth
 	S *Service
+	// Calculadora (Plano 7).
+	Cal      Calendarios
+	Validada bool             // PAINEL_CALCULADORA_REGRAS_VALIDADAS: só o advogado liga
+	Agora    func() time.Time // relógio (teste); nil = time.Now
+}
+
+func fragmento(name string) *template.Template {
+	return template.Must(template.ParseFS(tplFS, "templates/"+name))
 }
 
 func page(name string) *template.Template {
@@ -31,6 +40,11 @@ func (h *Handler) Register(rt *auth.Router) {
 	h.A.AddNavSistema("Prazos", "/prazos", auth.PermPrazoRead)
 	h.A.AddWidget(h.widget)
 	h.A.AddFaixa(h.faixa)
+	if h.Cal != nil {
+		h.A.AddNavAcao("Calculadora de prazo", "/prazos/calculadora", auth.PermPrazoRead)
+		rt.Handle("GET /prazos/calculadora", auth.PermPrazoRead, h.calculadoraDrawer)
+		rt.Handle("POST /prazos/calcular", auth.PermPrazoRead, h.calcular)
+	}
 	rt.Handle("GET /prazos", auth.PermPrazoRead, h.list)
 	rt.Handle("GET /prazos/novo", auth.PermPrazoWrite, h.newForm)
 	rt.Handle("POST /prazos", auth.PermPrazoWrite, h.create)
@@ -131,7 +145,7 @@ func inputFrom(r *http.Request) Input {
 
 func (h *Handler) newForm(w http.ResponseWriter, r *http.Request, s *auth.Session) {
 	h.renderForm(w, r, s, http.StatusOK, formData{IsNew: true,
-		In: Input{Fonte: "manual", ResponsavelID: s.UserID, ProcessoID: r.URL.Query().Get("processo")}}, "")
+		In: prefill(r, s.UserID)}, "")
 }
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request, s *auth.Session) {
@@ -251,4 +265,21 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 	default:
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 	}
+}
+
+// prefill preenche o formulário a partir do link "Criar prazo com este cálculo". Só preenche o formulário:
+// o prazo só nasce se a pessoa salvar, e vindo da calculadora nasce A CONFERIR.
+func prefill(r *http.Request, userID string) Input {
+	q := r.URL.Query()
+	in := Input{Fonte: "manual", ResponsavelID: userID, ProcessoID: q.Get("processo")}
+	if q.Get("fonte") == "calculadora" {
+		in.Fonte = "calculadora"
+		if _, err := time.Parse("2006-01-02", q.Get("data_fatal")); err == nil {
+			in.DataFatal = q.Get("data_fatal")
+		}
+		if f := []rune(q.Get("fundamento")); len(f) <= 300 {
+			in.Fundamento = string(f)
+		}
+	}
+	return in
 }

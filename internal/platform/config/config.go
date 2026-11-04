@@ -42,6 +42,9 @@ type Config struct {
 
 	// Monitor do DataJud (Plano 6): DESLIGADO por padrão.
 	DataJud DataJud
+
+	// Plano 7: só o advogado liga, depois de validar docs/juridico/REGRAS-DE-PRAZO.md. Ausente = false.
+	CalculadoraRegrasValidadas bool
 }
 
 // String é seguro para log: não revela nenhum segredo.
@@ -107,6 +110,14 @@ func Load(e Env) (Config, error) {
 
 	djenAtivo, djenURL, djenInt, djenAlerta := loadDJEN(e, &errs)
 	datajud := loadDataJud(e, &errs)
+	var regrasValidadas bool
+	switch v := strings.ToLower(strings.TrimSpace(e.Getenv("PAINEL_CALCULADORA_REGRAS_VALIDADAS"))); v {
+	case "", "false", "0":
+	case "true", "1":
+		regrasValidadas = true
+	default:
+		errs = append(errs, errors.New("PAINEL_CALCULADORA_REGRAS_VALIDADAS inválida: use true ou false"))
+	}
 
 	if len(errs) > 0 {
 		return Config{}, errors.Join(errs...)
@@ -126,7 +137,7 @@ func Load(e Env) (Config, error) {
 		SessionKey:       sessionKey,
 		FieldKey:         fieldKey,
 		DJENAtivo:        djenAtivo, DJENURL: djenURL, DJENIntervalo: djenInt, DJENAlertaHoras: djenAlerta,
-		DataJud: datajud,
+		DataJud: datajud, CalculadoraRegrasValidadas: regrasValidadas,
 	}, nil
 }
 

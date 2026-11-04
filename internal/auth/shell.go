@@ -41,6 +41,7 @@ type NavLink struct {
 	Count       int
 	HasCount    bool
 	Active      bool
+	Drawer      bool // item de ação: abre o fragmento Href num drawer (sem página própria)
 }
 
 type navItem struct {
@@ -48,6 +49,7 @@ type navItem struct {
 	perm        Perm
 	count       func(context.Context) (int, error)
 	sistema     bool
+	drawer      bool
 }
 
 // Faixa é a faixa de aviso (.notice) no topo da Agenda inicial.
@@ -62,6 +64,11 @@ func (a *Auth) AddNav(label, href string, perm Perm) { a.AddNavCount(label, href
 // AddNavCount registra um item do menu principal com contador (o <span class="count"> do B).
 func (a *Auth) AddNavCount(label, href string, perm Perm, count func(context.Context) (int, error)) {
 	a.nav = append(a.nav, navItem{label: label, href: href, perm: perm, count: count})
+}
+
+// AddNavAcao registra um item do menu principal que abre um drawer (ex.: "Calculadora de prazo"), sem contador.
+func (a *Auth) AddNavAcao(label, href string, perm Perm) {
+	a.nav = append(a.nav, navItem{label: label, href: href, perm: perm, drawer: true})
 }
 
 // AddNavSistema registra um item do segundo grupo do menu (o que o v2 tem e o B não).
@@ -86,7 +93,7 @@ func (a *Auth) menu(ctx context.Context, role Role, path string) (principal, sis
 		if !Can(role, n.perm) {
 			continue
 		}
-		l := NavLink{Label: n.label, Href: n.href, Active: ativo(path, n.href)}
+		l := NavLink{Label: n.label, Href: n.href, Active: !n.drawer && ativo(path, n.href), Drawer: n.drawer}
 		if n.count != nil && ctx != nil {
 			if c, err := n.count(ctx); err == nil {
 				l.Count, l.HasCount = c, true

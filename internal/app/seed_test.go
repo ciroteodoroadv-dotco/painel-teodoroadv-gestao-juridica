@@ -27,6 +27,13 @@ func TestSeedDemo(t *testing.T) {
 		e.count(`SELECT count(*) FROM coletas WHERE status='sucesso'`) != 1 || e.count(`SELECT count(*) FROM coletas WHERE status='parcial'`) != 1 {
 		t.Fatal("a demonstração de intimações deveria ter 1 OAB, 5 intimações (3 do DJEN, uma por status, e 2 do DataJud em triagem), 5 tarefas de análise e 3 coletas")
 	}
+	// Plano 7: calendários fictícios. A Justiça Federal vem [VERIFICAR] e SEM efeito no cálculo; o de teste tem 2 dias com efeito.
+	if e.count(`SELECT count(*) FROM calendarios WHERE sigla IN ('TRF-DEMO','TRIBUNAL DE TESTE')`) != 2 ||
+		e.count(`SELECT count(*) FROM calendario_dias d JOIN calendarios c ON c.id=d.calendario_id WHERE c.sigla='TRIBUNAL DE TESTE' AND d.conta_como_nao_util`) != 2 ||
+		e.count(`SELECT count(*) FROM calendario_dias d JOIN calendarios c ON c.id=d.calendario_id WHERE c.sigla='TRF-DEMO' AND d.conta_como_nao_util`) != 0 ||
+		e.count(`SELECT count(*) FROM calendarios WHERE sigla='TRF-DEMO' AND verificar`) != 1 {
+		t.Fatal("a demonstração deveria trazer o calendário da Justiça Federal [VERIFICAR] (sem efeito) e o TRIBUNAL DE TESTE (2 dias)")
+	}
 	if err := SeedDemo(ctx, e.pool, fieldKey, e.a.Store, id); err == nil {
 		t.Fatal("a demonstração não pode rodar duas vezes")
 	}

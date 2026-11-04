@@ -1,5 +1,5 @@
 {{define "content"}}{{with .Data}}
-<p class="apoio"><strong>Regra de ouro:</strong> o prazo só vale depois de confirmado por advogado. Os dias são <em>corridos</em>; o sistema ainda não calcula dias úteis nem feriados forenses. Confira sempre também no tribunal.</p>
+<p class="apoio"><strong>Regra de ouro:</strong> o prazo só vale depois de confirmado por advogado. As datas aqui são <em>dias corridos</em> entre hoje e a data fatal. Cálculo de apoio disponível na <strong>Calculadora de prazo</strong> (menu lateral); o resultado é sempre <strong>A CONFERIR</strong>. Confira sempre também no tribunal.</p>
 <form method="get" action="/prazos" role="search" class="busca linha"
       hx-get="/prazos" hx-trigger="input changed delay:300ms from:#q, change from:#situacao, change from:#quem, search from:#q"
       hx-target="#resultado" hx-push-url="true" hx-sync="this:replace">

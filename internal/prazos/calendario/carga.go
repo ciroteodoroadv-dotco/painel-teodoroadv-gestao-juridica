@@ -15,7 +15,7 @@ type doBanco struct {
 }
 
 func (c doBanco) NaoUtil(d time.Time) (calculo.DiaNaoUtil, bool) { x, ok := c.dias[d]; return x, ok }
-func (c doBanco) Cobre(ano int) bool                              { return c.anos[ano] }
+func (c doBanco) Cobre(ano int) bool                             { return c.anos[ano] }
 
 // Carregar devolve o calendário para o cálculo, com cache curto (invalidado a cada gravação).
 // id vazio = só os feriados nacionais (nil).

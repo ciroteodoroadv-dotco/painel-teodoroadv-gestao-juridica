@@ -38,14 +38,15 @@ type Servicos struct {
 }
 
 type options struct {
-	djen           DJEN
-	datajud        DataJud
-	sigiloso       intimacoes.ColetorPorNumero
-	envolveMonit   func(processos.Monitoramento) processos.Monitoramento
-	coletor        intimacoes.Coletor
-	agora          func() time.Time
-	envolveTarefas func(intimacoes.TarefaAutomatica) intimacoes.TarefaAutomatica
-	out            *Servicos
+	regrasValidadas bool
+	djen            DJEN
+	datajud         DataJud
+	sigiloso        intimacoes.ColetorPorNumero
+	envolveMonit    func(processos.Monitoramento) processos.Monitoramento
+	coletor         intimacoes.Coletor
+	agora           func() time.Time
+	envolveTarefas  func(intimacoes.TarefaAutomatica) intimacoes.TarefaAutomatica
+	out             *Servicos
 }
 
 // Option ajusta RegisterDomains.
@@ -64,6 +65,9 @@ func WithRelogio(f func() time.Time) Option { return func(o *options) { o.agora 
 func WithTarefaAutomatica(f func(intimacoes.TarefaAutomatica) intimacoes.TarefaAutomatica) Option {
 	return func(o *options) { o.envolveTarefas = f }
 }
+
+// WithCalculadoraValidada informa se o advogado validou as regras de prazo (PAINEL_CALCULADORA_REGRAS_VALIDADAS).
+func WithCalculadoraValidada(v bool) Option { return func(o *options) { o.regrasValidadas = v } }
 
 // WithServicos pede de volta os serviços montados.
 func WithServicos(s *Servicos) Option { return func(o *options) { o.out = s } }

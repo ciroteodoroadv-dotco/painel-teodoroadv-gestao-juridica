@@ -2,7 +2,7 @@
 {{with .Data}}{{if .Aviso}}<p class="erro" role="status">{{.Aviso}}</p>{{end}}{{end}}
 {{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
 {{with .Data}}
-<p class="apoio">Digite a <strong>data fatal</strong> como você a apurou (dias corridos; o sistema não calcula dia útil nem feriado forense). Indique o fundamento e a fonte para quem for conferir.</p>
+<p class="apoio">Digite a <strong>data fatal</strong> como você a apurou (o sistema não calcula sozinho: para apoio use a Calculadora de prazo, cujo resultado é sempre A CONFERIR). Indique o fundamento e a fonte para quem for conferir.</p>
 <form method="post" action="{{if .IsNew}}/prazos{{else}}/prazos/{{.ID}}{{end}}" data-protege class="grade">
   <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
   {{if not .IsNew}}<input type="hidden" name="version" value="{{.Version}}">{{end}}

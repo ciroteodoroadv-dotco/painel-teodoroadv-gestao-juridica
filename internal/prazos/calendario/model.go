@@ -35,7 +35,7 @@ type Calendario struct {
 // Dia é a visão de leitura de um dia do calendário.
 type Dia struct {
 	ID, CalendarioID, Tipo, Descricao, FonteCitacao, FonteURL, Observacao string
-	VerificadoPor, MotivoInativacao                                      string
+	VerificadoPor, MotivoInativacao                                       string
 	Data                                                                  time.Time
 	ContaNaoUtil, Ativo                                                   bool
 }
@@ -52,7 +52,10 @@ type DiaInput struct {
 	ContaNaoUtil                                                            bool
 }
 
-func tamanho(s string, min, max int) bool { n := utf8.RuneCountInString(strings.TrimSpace(s)); return n >= min && n <= max }
+func tamanho(s string, min, max int) bool {
+	n := utf8.RuneCountInString(strings.TrimSpace(s))
+	return n >= min && n <= max
+}
 
 func valorIn(v string, opts []webx.Opcao) bool {
 	for _, o := range opts {

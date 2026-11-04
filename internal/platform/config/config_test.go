@@ -239,3 +239,20 @@ func TestDataJudVariaveisEChaveSoPorSegredo(t *testing.T) {
 		}
 	}
 }
+
+// Plano 7: a calculadora só deixa de avisar "regras não validadas" quando o advogado liga a variável.
+func TestCalculadoraRegrasValidadas(t *testing.T) {
+	c, err := Load(envOf(baseVars(), nil))
+	if err != nil || c.CalculadoraRegrasValidadas {
+		t.Fatalf("ausente deve ser false: %+v %v", c.CalculadoraRegrasValidadas, err)
+	}
+	v := baseVars()
+	v["PAINEL_CALCULADORA_REGRAS_VALIDADAS"] = "true"
+	if c, err = Load(envOf(v, nil)); err != nil || !c.CalculadoraRegrasValidadas {
+		t.Fatalf("true deve ligar: %v", err)
+	}
+	v["PAINEL_CALCULADORA_REGRAS_VALIDADAS"] = "talvez"
+	if _, err = Load(envOf(v, nil)); err == nil {
+		t.Error("valor inválido deveria ser recusado")
+	}
+}
