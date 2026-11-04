@@ -44,6 +44,7 @@ type options struct {
 	djen            DJEN
 	datajud         DataJud
 	indices         Indices
+	cep             CEP
 	sigiloso        intimacoes.ColetorPorNumero
 	envolveMonit    func(processos.Monitoramento) processos.Monitoramento
 	coletor         intimacoes.Coletor

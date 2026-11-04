@@ -175,15 +175,7 @@
     if (a !== null) i.setSelectionRange(a, b);
   });
 
-  // ---- Buscar CEP: a consulta externa só será ligada em plano futuro (integração desligada por padrão).
-  document.addEventListener("click", function (ev) {
-    var e = el(ev.target), b = e && e.closest("[data-buscar-cep]");
-    if (!b) return;
-    var campo = b.form && b.form.elements.cep;
-    var digitos = campo ? campo.value.replace(/\D/g, "") : "";
-    if (digitos.length !== 8) { window.PainelToast("Informe um CEP com oito dígitos.", true); return; }
-    window.PainelToast("Consulta de CEP indisponível neste painel.", true);
-  });
+  // ---- Buscar CEP: ver cep.js (consulta pelo painel; o navegador não fala com a internet).
 
   // ---- Esconde campos quando o select tem certo valor: <select data-oculta-quando="Diligência" data-oculta=".so-compromisso">
   // (o oposto de data-mostra-quando). Campos escondidos ficam desabilitados e não vão no envio.

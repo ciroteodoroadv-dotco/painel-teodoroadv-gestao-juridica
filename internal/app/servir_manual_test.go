@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -21,7 +22,12 @@ func TestServirParaConferenciaManual(t *testing.T) {
 	if os.Getenv("PAINEL_SERVIR_MANUAL") != "1" {
 		t.Skip("conferência manual: defina PAINEL_SERVIR_MANUAL=1")
 	}
-	e := newEnv(t)
+	n := 0
+	e := newEnvOpts(t, WithCEP(CEP{Ativo: true, Transport: &viaCEPFalso{corpo: enderecoSe}, PermitirHTTP: true, BaseURL: "http://viacep.test"}),
+		WithIndices(Indices{Ativo: true, Transport: sgsFalso{&n}, PermitirHTTP: true, BaseURL: "http://bcb.test", Pausa: 1}))
+	if _, err := e.svc.Indices.Coletar(context.Background()); err != nil { // valores FICTÍCIOS do transporte falso
+		t.Fatal(err)
+	}
 	_, id := e.user("adv@exemplo.test", auth.Advogado)
 	if err := SeedDemo(context.Background(), e.pool, fieldKey, e.a.Store, id); err != nil {
 		t.Fatal(err)
@@ -32,8 +38,16 @@ func TestServirParaConferenciaManual(t *testing.T) {
 	proxy := httputil.NewSingleHostReverseProxy(alvo)
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("../../web/static"))))
+	mux.HandleFunc("/entrar-teste", func(w http.ResponseWriter, r *http.Request) { // só aqui: sessão FICTÍCIA do banco descartável
+		http.SetCookie(w, &http.Cookie{Name: "__Host-sid", Value: b.sid, Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+		http.Redirect(w, r, "/pessoas", http.StatusFound)
+	})
 	mux.Handle("/", proxy)
-	front := httptest.NewServer(mux)
+	front := httptest.NewUnstartedServer(mux)
+	if l, err := net.Listen("tcp", "0.0.0.0:18090"); err == nil { // porta de TESTE (nunca a 18080 do advogado)
+		front.Listener = l
+	}
+	front.Start()
 	defer front.Close()
 	fmt.Printf("ENDERECO=%s\nSID=%s\n", front.URL, b.sid)
 	_ = os.Remove("/tmp/parar-servidor-v2")

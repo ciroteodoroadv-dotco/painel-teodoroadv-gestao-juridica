@@ -87,6 +87,9 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	if err != nil {
 		return err
 	}
+	if err := montarCEP(a, rt, &o); err != nil {
+		return err
+	}
 	cal := &calendario.Service{Pool: pool}
 	if err := cal.Semear(context.Background(), webx.Hoje(time.Now()).Year()); err != nil {
 		return err
