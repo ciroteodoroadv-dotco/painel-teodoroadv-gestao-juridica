@@ -44,11 +44,13 @@ const (
 	PermDocRead           Perm = "documentos:ler"
 	PermDocWrite          Perm = "documentos:escrever"
 	PermPrazoRead         Perm = "prazos:ler"
-	PermPrazoWrite        Perm = "prazos:escrever"  // registrar/editar (o prazo fica "a conferir")
-	PermPrazoConfirm      Perm = "prazos:confirmar" // confirmar, cumprir, cancelar, excluir: SÓ advogado
+	PermPrazoWrite        Perm = "prazos:escrever"     // registrar/editar (o prazo fica "a conferir")
+	PermPrazoConfirm      Perm = "prazos:confirmar"    // confirmar, cumprir, cancelar, excluir: SÓ advogado
+	PermCalendarioRead    Perm = "calendario:ler"      // quem lê prazos lê o calendário forense e usa a calculadora
+	PermCalendarioWrite   Perm = "calendario:escrever" // cadastrar/inativar dia de calendário (com fonte): advogado e administrador
 )
 
-var leitura = []Perm{PermHome, PermPessoasRead, PermProcRead, PermTarefaRead, PermAtendimentoRead, PermAgendaRead, PermAudienciaRead, PermDiligenciaRead, PermDocRead, PermPrazoRead}
+var leitura = []Perm{PermHome, PermPessoasRead, PermProcRead, PermTarefaRead, PermAtendimentoRead, PermAgendaRead, PermAudienciaRead, PermDiligenciaRead, PermDocRead, PermPrazoRead, PermCalendarioRead}
 
 // matrix: negar por padrão. Administrador gere usuários e vê auditoria (não mexe em processos);
 // advogado lê e escreve nos domínios e é o único que confirma prazo, cancela (audiência, compromisso, diligência, intimação)
@@ -59,10 +61,10 @@ var matrix = func() map[Role]map[Perm]bool {
 	for _, p := range leitura {
 		m[Administrador][p], m[Advogado][p], m[Assistente][p] = true, true, true
 	}
-	for _, p := range []Perm{PermUsersManage, PermAuditRead, PermColetaManage} {
+	for _, p := range []Perm{PermUsersManage, PermAuditRead, PermColetaManage, PermCalendarioWrite} {
 		m[Administrador][p] = true
 	}
-	for _, p := range []Perm{PermPessoasWrite, PermProcWrite, PermTarefaWrite, PermAtendimentoWrite, PermAgendaWrite, PermAudienciaWrite, PermAudienciaCancel, PermDiligenciaWrite, PermCompromissoCancel, PermDiligenciaCancel, PermIntimacaoDecide, PermDocWrite, PermPrazoWrite, PermPrazoConfirm} {
+	for _, p := range []Perm{PermPessoasWrite, PermProcWrite, PermTarefaWrite, PermAtendimentoWrite, PermAgendaWrite, PermAudienciaWrite, PermAudienciaCancel, PermDiligenciaWrite, PermCompromissoCancel, PermDiligenciaCancel, PermIntimacaoDecide, PermDocWrite, PermPrazoWrite, PermPrazoConfirm, PermCalendarioWrite} {
 		m[Advogado][p] = true
 	}
 	for _, p := range []Perm{PermTarefaWrite, PermAtendimentoWrite, PermAgendaWrite, PermAudienciaWrite, PermDiligenciaWrite, PermPrazoWrite} {

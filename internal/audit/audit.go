@@ -26,6 +26,7 @@ const (
 // allowedMeta é a lista permitida de chaves de metadado. Qualquer outra é descartada.
 var allowedMeta = map[string]bool{
 	"motivo": true, "de": true, "para": true, "papel": true, "email_hash": true, "etapa": true, "rota": true, "metodo": true, "suprimidos": true,
+	"regra": true, "modo": true, "dias": true, "calendario": true, "tipo": true, "data": true,
 }
 
 // Event é um fato auditável.

@@ -27,7 +27,7 @@ func store(t *testing.T) *coletas.Store {
 	t.Cleanup(func() {
 		_, _ = pool.Exec(context.Background(), `TRUNCATE intimacoes, oab_monitoradas, coletas CASCADE`)
 	})
-	_, _ = pool.Exec(ctx, `TRUNCATE pessoas, processos, atendimentos, agenda_compromissos, audiencias, diligencias, intimacoes, oab_monitoradas, coletas CASCADE`)
+	_, _ = pool.Exec(ctx, `TRUNCATE pessoas, processos, atendimentos, agenda_compromissos, audiencias, diligencias, intimacoes, oab_monitoradas, coletas, calendario_dias, calendarios CASCADE`)
 	if err := migrate.Reset(ctx, pool); err != nil {
 		t.Fatal(err)
 	}

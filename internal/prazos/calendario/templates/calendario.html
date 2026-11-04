@@ -1,0 +1,12 @@
+{{define "calendario"}}<h2>Novo calendário</h2>
+    <p class="drawer-sub">O calendário nasce vazio: cadastre os dias depois, cada um com a sua fonte.</p>
+    <form data-drawer-form method="post" action="/calendario-forense/calendarios">
+      <div class="field"><label>Sigla *</label><input type="text" name="sigla" required maxlength="30" placeholder="Ex.: TJSP, TRT-2"></div>
+      <div class="field"><label>Nome *</label><input type="text" name="nome" required maxlength="120"></div>
+      <div class="field"><label>Âmbito *</label>
+        <select name="ambito" required>{{range .Ambitos}}<option value="{{.Valor}}">{{.Rotulo}}</option>{{end}}</select></div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar calendário</button>
+      </div>
+    </form>{{end}}

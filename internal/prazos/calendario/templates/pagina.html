@@ -1,0 +1,36 @@
+{{define "content"}}{{with .Data}}
+<p class="apoio"><strong>[VERIFICAR]</strong> marca o que ainda não foi validado pelo advogado. O cálculo só exclui dia que tenha fonte registrada e esteja ativo; nada aqui se apaga, o dia errado é inativado com motivo.</p>
+<form method="get" action="/calendario-forense" class="busca linha" role="search">
+  <div><label for="calendario">Calendário</label>
+    <select id="calendario" name="calendario">
+      {{$s := .Sel.ID}}{{range .Calendarios}}<option value="{{.ID}}" {{if eq .ID $s}}selected{{end}}>{{.Sigla}} — {{.Nome}}</option>{{end}}
+    </select></div>
+  <div><label for="ano">Ano</label>
+    <select id="ano" name="ano">{{$a := .Ano}}{{range .Anos}}<option value="{{.}}" {{if eq . $a}}selected{{end}}>{{.}}</option>{{end}}</select></div>
+  <div><button type="submit">Mostrar</button>{{if .CanWrite}} <a class="botao secundario" href="/calendario-forense/novo" data-drawer="/calendario-forense/novo">Novo calendário</a>{{end}}</div>
+</form>
+{{if .Sel.ID}}
+<h2>{{.Sel.Sigla}} — {{.Sel.Nome}}{{if .Sel.Verificar}} <span class="badge badge-warn">[VERIFICAR]</span>{{end}}</h2>
+{{if .Dias}}
+<div class="tabela">
+<table class="quebra">
+  <caption>{{len .Dias}} registro(s) em {{.Ano}}</caption>
+  <thead><tr><th scope="col">Data</th><th scope="col">Tipo</th><th scope="col">Descrição</th><th scope="col">Conta como não útil</th><th scope="col">Fonte</th><th scope="col">Verificado por</th><th scope="col">Ações</th></tr></thead>
+  <tbody>
+  {{$w := .CanWrite}}{{range .Dias}}
+  <tr>
+    <td><strong>{{.Data.Format "02/01/2006"}}</strong></td>
+    <td>{{.Tipo}}</td>
+    <td>{{.Descricao}}{{if not .Ativo}} <span class="badge badge-warn">Inativo</span><br><small class="apoio">Motivo: {{.MotivoInativacao}}</small>{{end}}</td>
+    <td>{{if .ContaNaoUtil}}Sim{{else}}Não{{end}}</td>
+    <td>{{.FonteCitacao}}{{if .FonteURL}}<br><small><a href="{{.FonteURL}}" rel="noopener noreferrer" target="_blank">link da fonte</a></small>{{end}}</td>
+    <td>{{if .VerificadoPor}}{{.VerificadoPor}}{{else}}<span class="badge badge-warn">[VERIFICAR]</span>{{end}}</td>
+    <td class="acoes row-actions">{{if and $w .Ativo}}<a href="/calendario-forense/dias/{{.ID}}/inativar" data-drawer="/calendario-forense/dias/{{.ID}}/inativar">Inativar</a>{{end}}</td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+{{else}}<p class="apoio">Nenhum dia cadastrado neste calendário em {{.Ano}}. Enquanto não houver calendário verificado do tribunal, o cálculo considera só os feriados nacionais.</p>{{end}}
+{{else}}<p class="apoio">Nenhum calendário cadastrado.</p>{{end}}
+{{end}}{{end}}

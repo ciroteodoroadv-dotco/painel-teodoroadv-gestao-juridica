@@ -15,6 +15,7 @@ import (
 	"painelteodoro/internal/monitor"
 	"painelteodoro/internal/platform/coletas"
 	"painelteodoro/internal/platform/webx"
+	"painelteodoro/internal/prazos/calendario"
 	"painelteodoro/internal/processos"
 	"painelteodoro/internal/tarefas"
 )
@@ -33,6 +34,7 @@ type Servicos struct {
 	Intimacoes *intimacoes.Service
 	Monitor    *monitor.Service
 	Coletas    *coletas.Store
+	Calendario *calendario.Service
 }
 
 type options struct {

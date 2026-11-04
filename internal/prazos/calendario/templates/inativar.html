@@ -1,0 +1,9 @@
+{{define "inativar"}}<h2>Inativar dia de calendário</h2>
+    <p class="drawer-sub">{{.Data.Format "02/01/2006"}} · {{.Descricao}}. O dia deixa de contar no cálculo, mas a linha e o motivo ficam preservados.</p>
+    <form data-drawer-form method="post" action="/calendario-forense/dias/{{.ID}}/inativar">
+      <div class="field"><label>Motivo *</label><textarea name="motivo" required maxlength="500" placeholder="Ex.: data digitada errada; portaria revogada"></textarea></div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Voltar</button>
+        <button type="submit" class="btn btn-primary">Inativar dia</button>
+      </div>
+    </form>{{end}}

@@ -1,0 +1,22 @@
+{{define "dia"}}<h2>Novo dia de calendário</h2>
+    <p class="drawer-sub">Sem fonte, não grava. Cite a norma ou a portaria; o dia só entra no cálculo se contar como não útil.</p>
+    <form data-drawer-form method="post" action="/calendario-forense/dias">
+      <div class="field"><label>Calendário *</label>
+        <select name="calendario_id" required>{{$s := .Sel}}{{range .Calendarios}}<option value="{{.ID}}"{{if eq .ID $s}} selected{{end}}>{{.Sigla}} — {{.Nome}}</option>{{end}}</select></div>
+      <div class="row2">
+        <div class="field"><label>Data *</label><input type="date" name="data" required></div>
+        <div class="field"><label>Tipo *</label>
+          <select name="tipo" required>{{range .Tipos}}<option value="{{.Valor}}">{{.Rotulo}}</option>{{end}}</select></div>
+      </div>
+      <div class="field"><label>Descrição *</label><input type="text" name="descricao" required maxlength="200"></div>
+      <div class="field"><label>Fonte (norma/portaria) *</label><input type="text" name="fonte_citacao" required maxlength="300" placeholder="Ex.: Portaria nº 123/2026 do tribunal, art. 1º">
+        <p class="hint">Obrigatória: sem fonte o dia não é gravado.</p></div>
+      <div class="field"><label>Link da fonte</label><input type="text" name="fonte_url" maxlength="500" placeholder="https://…"></div>
+      <div class="field"><label class="radio-opt"><input type="checkbox" name="conta_nao_util" value="1"> Conta como dia não útil</label>
+        <p class="hint">Marque quando a fonte determinar que o dia não conta no prazo. Ponto facultativo só conta se um advogado marcar, com a fonte do tribunal{{if not .Advogado}} (seu papel não permite){{end}}.</p></div>
+      <div class="field"><label>Observação</label><textarea name="observacao" maxlength="500"></textarea></div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar dia</button>
+      </div>
+    </form>{{end}}

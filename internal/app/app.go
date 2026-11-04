@@ -4,6 +4,7 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -18,6 +19,7 @@ import (
 	"painelteodoro/internal/pessoas"
 	"painelteodoro/internal/platform/webx"
 	"painelteodoro/internal/prazos"
+	"painelteodoro/internal/prazos/calendario"
 	"painelteodoro/internal/processos"
 	"painelteodoro/internal/tarefas"
 )
@@ -81,11 +83,16 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	if err != nil {
 		return err
 	}
+	cal := &calendario.Service{Pool: pool}
+	if err := cal.Semear(context.Background(), webx.Hoje(time.Now()).Year()); err != nil {
+		return err
+	}
 	if o.out != nil {
-		*o.out = Servicos{Intimacoes: intim, Monitor: mon, Coletas: intim.Coletas}
+		*o.out = Servicos{Intimacoes: intim, Monitor: mon, Coletas: intim.Coletas, Calendario: cal}
 	}
 
 	(&prazos.Handler{A: a, S: praz}).Register(rt) // 1º: widget no topo de "Hoje"
+	(&calendario.Handler{A: a, S: cal}).Register(rt)
 	(&pessoas.Handler{A: a, S: pes}).Register(rt)
 	(&atendimentos.Handler{A: a, S: ate}).Register(rt)
 	(&processos.Handler{A: a, S: proc}).Register(rt)
