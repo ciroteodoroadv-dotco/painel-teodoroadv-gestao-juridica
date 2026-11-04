@@ -67,6 +67,11 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	ag := &agenda.Service{Pool: pool, Pessoas: pes, Vinculos: agendaVinculos{ate: ate, proc: proc}, Audiencias: agendaAudiencias{s: aud},
 		Diligencias: agendaDiligencias{s: dil}, Tarefas: agendaTarefas{s: tar}}
 	proc.Vinculos = []processos.VinculosLookup{tar, praz}
+	var monit processos.Monitoramento = monCiclo{t: tar}
+	if o.envolveMonit != nil {
+		monit = o.envolveMonit(monit)
+	}
+	proc.Monitor = monit
 	intim, err := montarIntimacoes(a, pool, proc, tar, &o)
 	if err != nil {
 		return err

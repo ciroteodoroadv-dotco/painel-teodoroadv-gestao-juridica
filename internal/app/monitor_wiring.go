@@ -14,7 +14,9 @@ import (
 	"painelteodoro/internal/monitor"
 	"painelteodoro/internal/monitor/datajud"
 	"painelteodoro/internal/platform/coletas"
+	"painelteodoro/internal/platform/webx"
 	"painelteodoro/internal/processos"
+	"painelteodoro/internal/tarefas"
 )
 
 // DataJud é a configuração do monitor do DataJud. O zero-valor é "desligado": sem rede, sem agendador.
@@ -115,4 +117,20 @@ func (a monOABs) Listar(ctx context.Context) ([]monitor.OABRef, error) {
 		out[i] = monitor.OABRef{ID: o.ID, Numero: o.Numero, UF: o.UF, AutorizacaoBase: o.AutorizacaoBase, AutorizacaoEm: o.AutorizacaoEm, Ativa: o.Ativa}
 	}
 	return out, err
+}
+
+// monCiclo liga o ciclo de vida do processo à tarefa de monitoramento.
+type monCiclo struct{ t *tarefas.Service }
+
+func (a monCiclo) Garantir(ctx context.Context, tx pgx.Tx, ac webx.Actor, p processos.MonitorProc) (bool, error) {
+	return a.t.GarantirMonitoramento(ctx, tx, ac, tarefas.MonitorIn{ProcessoID: p.ID, Numero: p.Numero, Titulo: p.Titulo})
+}
+
+func (a monCiclo) Baixar(ctx context.Context, tx pgx.Tx, ac webx.Actor, processoID, motivo string) (bool, error) {
+	return a.t.BaixarMonitoramento(ctx, tx, ac, processoID, motivo)
+}
+
+// WithMonitoramento envolve a tarefa de monitoramento do ciclo de vida (teste: forçar falha).
+func WithMonitoramento(f func(processos.Monitoramento) processos.Monitoramento) Option {
+	return func(o *options) { o.envolveMonit = f }
 }

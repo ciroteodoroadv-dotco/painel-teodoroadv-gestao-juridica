@@ -48,8 +48,8 @@ func obrigatorio(campo, v string, max int) (string, error) {
 }
 
 // MoverEstado muda o estado do processo (concorrência otimista). O motivo vai para a linha do tempo.
-// O efeito sobre a tarefa de monitoramento (baixar/criar em cadeia) só passa a valer no Plano 6;
-// até lá o servidor apenas registra a mudança.
+// A tarefa de monitoramento (baixar/criar em cadeia) é tratada na MESMA transação (Plano 6): ativo/sobrestado garantem a tarefa,
+// extinto/arquivado a baixam.
 func (s *Service) MoverEstado(ctx context.Context, ac webx.Actor, id string, version int, novo, motivo string) error {
 	if !estadoValido(novo) {
 		return webx.Invalidf("Escolha o novo estado do processo.")
@@ -86,7 +86,10 @@ func (s *Service) MoverEstado(ctx context.Context, ac webx.Actor, id string, ver
 			VALUES ($1, (now() AT TIME ZONE 'America/Sao_Paulo')::date, $2, $3)`, id, texto, ac.UserID); err != nil {
 			return err
 		}
-		return s.record(ctx, tx, ac, "processo.estado_movido", id, map[string]string{"de": antigo, "para": novo})
+		if err = s.record(ctx, tx, ac, "processo.estado_movido", id, map[string]string{"de": antigo, "para": novo}); err != nil {
+			return err
+		}
+		return s.efeitoMonitoramento(ctx, tx, ac, id, novo)
 	})
 }
 

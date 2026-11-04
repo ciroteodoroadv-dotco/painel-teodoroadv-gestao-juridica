@@ -19,6 +19,7 @@ type Service struct {
 	Pessoas      PessoaLookup
 	Atendimentos AtendimentoLookup // opcional: seletor e conferência do "Atendimento de origem"
 	Vinculos     []VinculosLookup  // tarefas, prazos… (opcional): quem tem trabalho em aberto ligado ao processo
+	Monitor      Monitoramento     // opcional: tarefa de monitoramento criada e baixada pelo ciclo de vida (Plano 6)
 }
 
 func (s *Service) record(ctx context.Context, tx pgx.Tx, ac webx.Actor, action, id string, meta map[string]string) error {
@@ -131,6 +132,9 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input) (id, codi
 	}
 	if err == nil {
 		err = s.record(ctx, tx, ac, "processo.criado", id, map[string]string{"partes": strconv.Itoa(len(n.partes))})
+	}
+	if err == nil {
+		err = s.efeitoMonitoramento(ctx, tx, ac, id, "ativo")
 	}
 	if err == nil && justificou {
 		err = s.record(ctx, tx, ac, "processo.duplicado_justificado", id, nil)

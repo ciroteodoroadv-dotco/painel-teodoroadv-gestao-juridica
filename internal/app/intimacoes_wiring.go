@@ -39,6 +39,7 @@ type options struct {
 	djen           DJEN
 	datajud        DataJud
 	sigiloso       intimacoes.ColetorPorNumero
+	envolveMonit   func(processos.Monitoramento) processos.Monitoramento
 	coletor        intimacoes.Coletor
 	agora          func() time.Time
 	envolveTarefas func(intimacoes.TarefaAutomatica) intimacoes.TarefaAutomatica

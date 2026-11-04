@@ -43,3 +43,32 @@ func (s *Service) RefParaMonitor(ctx context.Context, id string) (MonitorRef, bo
 	}
 	return m, err == nil, err
 }
+
+// MonitorProc é o processo para o qual a tarefa de monitoramento é garantida.
+type MonitorProc struct{ ID, Numero, Titulo string }
+
+// Monitoramento é o elo com a tarefa de monitoramento (implementado por Tarefas, via adaptador em internal/app). É chamado
+// DENTRO da transação de criar ou mover o estado: falhou a tarefa, a mudança do processo não acontece.
+type Monitoramento interface {
+	Garantir(ctx context.Context, tx pgx.Tx, ac webx.Actor, p MonitorProc) (criada bool, err error)
+	Baixar(ctx context.Context, tx pgx.Tx, ac webx.Actor, processoID, motivo string) (encontrada bool, err error)
+}
+
+// emAndamento: estados que exigem a tarefa de monitoramento (a tarefa do B; o MONITOR consulta todos, E1 do Plano 6).
+func emAndamento(situacao string) bool { return situacao == "ativo" || situacao == "sobrestado" }
+
+func (s *Service) efeitoMonitoramento(ctx context.Context, tx pgx.Tx, ac webx.Actor, id, situacao string) error {
+	if s.Monitor == nil {
+		return nil
+	}
+	if emAndamento(situacao) {
+		var numero, titulo string
+		if err := tx.QueryRow(ctx, `SELECT numero_cnj, titulo FROM processos WHERE id=$1::uuid`, id).Scan(&numero, &titulo); err != nil {
+			return err
+		}
+		_, err := s.Monitor.Garantir(ctx, tx, ac, MonitorProc{ID: id, Numero: numero, Titulo: titulo})
+		return err
+	}
+	_, err := s.Monitor.Baixar(ctx, tx, ac, id, situacao)
+	return err
+}
