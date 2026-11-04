@@ -26,6 +26,7 @@ type Input struct {
 	FaseExecucao, Observacoes                            string
 	Titulo, Polo, Projeto                                string // edição (na criação o título é derivado das partes)
 	AtendimentoOrigem                                    string // id do atendimento (opcional)
+	DuplicadoJustificativa                               string // exigida quando o número já existe em outro processo
 }
 
 type normalized struct {
@@ -37,6 +38,8 @@ type normalized struct {
 	datas                               [6]*time.Time // distribuição, citação, audiência, sentença, recursos, execução
 	obs, titulo, polo, projeto          string
 	atendimento                         string
+	duplicado                           bool
+	dupJust, dupDe                      string
 }
 
 func (n normalized) data(i int) *time.Time { return n.datas[i] }

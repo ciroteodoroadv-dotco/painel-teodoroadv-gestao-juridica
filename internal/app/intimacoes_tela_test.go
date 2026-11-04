@@ -61,12 +61,12 @@ func TestAgendaIntimacoesTabelaDoB(t *testing.T) {
 	}
 	// Advogado: Confirmar (btn-text) e Descartar (btn-danger-text), um formulário de envio para cada.
 	if !strings.Contains(pg, `action="/intimacoes/`+ids[0]+`/decidir"`) || !strings.Contains(pg, `class="btn-text">Confirmar</button>`) ||
-		!strings.Contains(pg, `class="btn-danger-text">Descartar</button>`) {
-		t.Error("o advogado deveria ver Confirmar e Descartar")
+		!strings.Contains(pg, `class="btn-danger-text" data-drawer="/intimacoes/`+ids[0]+`/cancelar">Cancelar</button>`) {
+		t.Error("o advogado deveria ver Confirmar e Cancelar")
 	}
 	for nome, b := range map[string]*browser{"assistente": ass, "administrador": adm} {
 		_, p := b.get("/agenda")
-		if strings.Contains(p, "/decidir") || strings.Contains(p, ">Confirmar<") || strings.Contains(p, ">Descartar<") {
+		if strings.Contains(p, "/decidir") || strings.Contains(p, ">Confirmar<") || strings.Contains(p, ">Cancelar<") {
 			t.Errorf("%s não decide intimação: botões não podem aparecer", nome)
 		}
 		if !strings.Contains(p, `<td class="row-actions">—</td>`) {
@@ -78,7 +78,7 @@ func TestAgendaIntimacoesTabelaDoB(t *testing.T) {
 	}
 }
 
-func TestDecidirPelaTelaRBACEToastsDoB(t *testing.T) {
+func TestDecidirPelaTelaRBACEToasts(t *testing.T) {
 	e, adv, ass, adm, ids := agendaComDuasIntimacoes(t)
 	for nome, b := range map[string]*browser{"assistente": ass, "administrador": adm} {
 		if r, _ := b.post("/intimacoes/"+ids[0]+"/decidir", url.Values{"status": {"confirmada"}}); r.StatusCode != 403 {
@@ -95,11 +95,11 @@ func TestDecidirPelaTelaRBACEToastsDoB(t *testing.T) {
 	if r.StatusCode != 200 || decodifica(t, r.Header.Get("X-Painel-Ok")) != "Intimação confirmada." {
 		t.Errorf("confirmar = %d %q", r.StatusCode, r.Header.Get("X-Painel-Ok"))
 	}
-	r, _ = adv.post("/intimacoes/"+ids[1]+"/decidir", url.Values{"status": {"descartada"}})
-	if r.StatusCode != 200 || decodifica(t, r.Header.Get("X-Painel-Ok")) != "Intimação descartada e mantida no histórico." {
-		t.Errorf("descartar = %d %q", r.StatusCode, r.Header.Get("X-Painel-Ok"))
+	r, _ = adv.post("/intimacoes/"+ids[1]+"/cancelar", url.Values{"motivo": {"Duplicada"}})
+	if r.StatusCode != 200 || decodifica(t, r.Header.Get("X-Painel-Ok")) != "Intimação cancelada e mantida no histórico." {
+		t.Errorf("cancelar = %d %q", r.StatusCode, r.Header.Get("X-Painel-Ok"))
 	}
-	if r, _ := adv.post("/intimacoes/"+ids[0]+"/decidir", url.Values{"status": {"descartada"}}); r.StatusCode != 400 {
+	if r, _ := adv.post("/intimacoes/"+ids[0]+"/decidir", url.Values{"status": {"confirmada"}}); r.StatusCode != 400 {
 		t.Errorf("decidir de novo = %d, esperado 400", r.StatusCode)
 	}
 	if r, _ := adv.post("/intimacoes/"+ids[0]+"/decidir", url.Values{"status": {"talvez"}}); r.StatusCode != 400 {
@@ -109,7 +109,7 @@ func TestDecidirPelaTelaRBACEToastsDoB(t *testing.T) {
 		t.Errorf("inexistente = %d", r.StatusCode)
 	}
 	_, pg := adv.get("/agenda")
-	if !strings.Contains(pg, `badge-ok">Confirmada</span>`) || !strings.Contains(pg, `badge-neutral">Descartada</span>`) ||
+	if !strings.Contains(pg, `badge-ok">Confirmada</span>`) || !strings.Contains(pg, `badge-neutral">Cancelada</span>`) ||
 		strings.Contains(pg, "/decidir") || !regexp.MustCompile(`<span>Intimações</span><span class="count">2</span>`).MatchString(pg) {
 		t.Error("decididas ficam no histórico, com selo e sem botões")
 	}

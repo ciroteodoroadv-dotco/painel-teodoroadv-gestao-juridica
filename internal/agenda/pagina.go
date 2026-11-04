@@ -31,6 +31,7 @@ var categorias = []categoriaDef{
 type CompromissoLinha struct {
 	ID, Tipo, Descricao, Data, Hora, Local, Processo, CriadoPor, Cliente, Atendimento string
 	Busca                                                                             string
+	Cancelado                                                                         bool
 }
 
 // Categoria é uma pílula com o seu painel.
@@ -46,6 +47,7 @@ type Categoria struct {
 	Compromissos  []CompromissoLinha
 
 	CanWrite, CanAudWrite, CanAudCancel, CanDilWrite, CanDecidir bool
+	CanCancel, CanDilCancel                                      bool
 }
 
 type paginaData struct{ Cats []Categoria }
@@ -74,6 +76,8 @@ func (h *Handler) pagina(w http.ResponseWriter, r *http.Request, s *auth.Session
 		c.CanAudCancel = auth.Can(s.Role, auth.PermAudienciaCancel)
 		c.CanDilWrite = auth.Can(s.Role, auth.PermDiligenciaWrite)
 		c.CanDecidir = auth.Can(s.Role, auth.PermIntimacaoDecide)
+		c.CanCancel = auth.Can(s.Role, auth.PermCompromissoCancel)
+		c.CanDilCancel = auth.Can(s.Role, auth.PermDiligenciaCancel)
 	})
 	if err != nil {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
@@ -170,7 +174,7 @@ func (s *Service) linhasCompromisso(ctx context.Context, comps []*Compromisso) (
 	out := make([]CompromissoLinha, len(comps))
 	for i, c := range comps {
 		l := CompromissoLinha{ID: c.ID, Tipo: c.Tipo, Descricao: c.Descricao, Data: webx.DataBR(c.Data), Hora: c.Hora, Local: c.Local,
-			Processo: pro[c.ProcessoID], Atendimento: ate[c.AtendimentoID]}
+			Processo: pro[c.ProcessoID], Atendimento: ate[c.AtendimentoID], Cancelado: c.Cancelado}
 		if r, ok := refs[c.ClienteID]; ok && c.ClienteID != "" {
 			l.Cliente = r.Rotulo()
 		}

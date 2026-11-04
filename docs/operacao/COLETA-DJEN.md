@@ -10,8 +10,8 @@ O painel pode **consultar o DJEN pelo número da OAB** dos advogados cadastrados
 2. abre uma **tarefa de análise** no estado **A confirmar**, com o título "Analisar intimação — tipo — número do processo";
 3. **não calcula nenhum prazo.** A tarefa nasce sem data. Quem apura o prazo, e o confirma, é o advogado.
 
-O painel **detecta e sugere; o advogado confirma.** Só o advogado pode **Confirmar** ou **Descartar** uma intimação; a descartada
-continua no histórico.
+O painel **detecta e sugere; o advogado confirma.** Só o advogado pode **Confirmar** ou **Cancelar** uma intimação (o cancelamento pede o motivo); a cancelada
+continua no histórico: nada se apaga.
 
 ## O que a coleta NÃO faz (leia isto)
 

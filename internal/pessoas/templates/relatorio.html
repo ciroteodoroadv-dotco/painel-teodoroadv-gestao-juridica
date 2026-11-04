@@ -6,7 +6,7 @@
   <dt>Tipo</dt><dd>{{$p.TipoLista}}</dd>
   <dt>{{if $p.Juridica}}CNPJ{{else}}CPF{{end}}</dt><dd>{{$p.DocLista}}</dd>
   {{if $p.RG}}<dt>RG</dt><dd>{{$p.RG}}</dd>{{end}}
-  {{if $p.RepresentanteCPF}}<dt>CPF do representante</dt><dd>{{$p.RepCPFMask}}</dd>{{end}}
+  {{if $p.RepresentanteCPF}}<dt>CPF do representante</dt><dd>{{$p.RepCPFFormatado}}</dd>{{end}}
   {{if $p.Nascimento}}<dt>Data de nascimento</dt><dd>{{$p.DataNascimento.Format "02/01/2006"}}</dd>{{end}}
   <dt>Endereço</dt><dd>{{$p.Logradouro}} {{$p.Numero}} {{$p.Complemento}} {{$p.Bairro}} {{$p.Cidade}}{{if $p.UF}}/{{$p.UF}}{{end}} {{if $p.CEP}}CEP {{$p.CEPMask}}{{end}}</dd>
   <dt>E-mail</dt><dd>{{if $p.Email}}{{$p.Email}}{{else}}—{{end}}</dd>

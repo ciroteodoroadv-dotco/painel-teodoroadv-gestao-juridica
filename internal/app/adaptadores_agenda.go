@@ -95,7 +95,7 @@ func (a agendaDiligencias) EmAberto(ctx context.Context, hoje time.Time) ([]agen
 	out := make([]agenda.DiligenciaLinha, len(ls))
 	for i, l := range ls {
 		out[i] = agenda.DiligenciaLinha{ID: l.ID, Codigo: l.Codigo, Titulo: l.Titulo, DataLimite: l.DataLimite, Hora: l.Hora, Local: l.Local,
-			Responsavel: l.Responsavel, Status: l.Status, Processo: l.Processo, Busca: l.Busca}
+			Responsavel: l.Responsavel, Status: l.Status, Processo: l.Processo, Busca: l.Busca, Cancelada: l.Cancelada}
 	}
 	return out, err
 }

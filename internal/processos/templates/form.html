@@ -36,9 +36,10 @@
         {{end}}
       </fieldset>
       <div class="row2">
-        <div class="field"><label for="prNumero">Número do processo (CNJ)</label><input type="text" id="prNumero" name="numero_processo" data-mask="cnj" placeholder="Em branco se ainda não distribuído" value="{{$p.Numero}}"></div>
+        <div class="field"><label for="prNumero">Número do processo (CNJ)</label><input type="text" id="prNumero" name="numero_processo" data-mask="cnj" data-verifica-duplicado="/processos/duplicado" data-ignorar="{{$p.ID}}" placeholder="Em branco se ainda não distribuído" value="{{$p.Numero}}"></div>
         <div class="field"><label for="prValor">Valor da causa</label><input type="text" id="prValor" name="valor_causa" data-mask="currency" value="{{$p.ValorBR}}"></div>
       </div>
+      <div data-duplicado-alvo>{{with .Dup}}{{template "duplicado" .}}{{end}}</div>
       <div class="row2">
         <div class="field"><label>Sistema</label>{{template "comOutro" .Sistema}}</div>
         <div class="field"><label>Instância</label>{{template "comOutro" .Instan}}</div>

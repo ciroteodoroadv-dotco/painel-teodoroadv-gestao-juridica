@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,6 +90,28 @@ func TestInstantaneosParaParidade(t *testing.T) {
 		if err := os.WriteFile(alvo, []byte(frag), 0o600); err != nil {
 			t.Fatal(err)
 		}
+	}
+	// Plano 4C: drawers de cancelamento e o bloco "PROCESSO DUPLICADO" (consulta antes de salvar).
+	var intim1, numProc1 string
+	if err := e.pool.QueryRow(context.Background(), `SELECT id::text FROM intimacoes WHERE status='triagem' LIMIT 1`).Scan(&intim1); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.pool.QueryRow(context.Background(), `SELECT numero_cnj FROM processos WHERE numero_cnj<>'' ORDER BY codigo LIMIT 1`).Scan(&numProc1); err != nil {
+		t.Fatal(err)
+	}
+	for _, caminho := range []string{"/agenda/" + cmp1 + "/cancelar", "/diligencias/" + dil1 + "/cancelar", "/intimacoes/" + intim1 + "/cancelar"} {
+		_, frag := adv.do("GET", caminho, nil, map[string]string{"HX-Request": "true"})
+		alvo := filepath.Join(out, filepath.FromSlash(strings.TrimPrefix(caminho, "/")))
+		if err := os.MkdirAll(filepath.Dir(alvo), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(alvo, []byte(frag), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_, bloco := adv.post("/processos/duplicado", url.Values{"numero": {numProc1}})
+	if err := os.WriteFile(filepath.Join(out, "duplicado-bloco.html"), []byte(bloco), 0o600); err != nil {
+		t.Fatal(err)
 	}
 	// Plano 5: a página Coleta DJEN (administrador) e os drawers da OAB.
 	adm, _ := e.user("adm@exemplo.test", auth.Administrador)

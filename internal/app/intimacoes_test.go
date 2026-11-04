@@ -321,7 +321,7 @@ func TestResumoLongoCortadoPorCaracteresELinkInseguroDescartado(t *testing.T) {
 	}
 }
 
-func TestDecidirConfirmaDescartaEAudita(t *testing.T) {
+func TestDecidirConfirmaCancelaEAudita(t *testing.T) {
 	f := &falsoDJEN{itens: []djen.Comunicacao{comunicacao("1", ""), comunicacao("2", "")}}
 	e, ac, _ := ambDJEN(t, f)
 	ctx := context.Background()
@@ -342,30 +342,37 @@ func TestDecidirConfirmaDescartaEAudita(t *testing.T) {
 	if err := svc.Decidir(ctx, acA, linhas[0].ID, "confirmada"); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.Decidir(ctx, acA, linhas[1].ID, "descartada"); err != nil {
+	if err := svc.Cancelar(ctx, acA, linhas[1].ID, " "); err == nil {
+		t.Error("cancelar exige motivo")
+	}
+	if err := svc.Cancelar(ctx, acA, linhas[1].ID, "Publicada em duplicidade"); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.Decidir(ctx, acA, linhas[0].ID, "descartada"); err == nil {
-		t.Error("intimação já decidida não pode ser decidida de novo")
+	if err := svc.Cancelar(ctx, acA, linhas[0].ID, "motivo qualquer"); err == nil {
+		t.Error("intimação já decidida não pode ser cancelada")
+	}
+	if err := svc.Decidir(ctx, acA, linhas[0].ID, "cancelada"); err == nil {
+		t.Error("cancelar não passa por Decidir")
 	}
 	if err := svc.Decidir(ctx, acA, linhas[0].ID, "talvez"); err == nil {
 		t.Error("decisão inválida")
 	}
 	linhas, _, _, _ = svc.Lista(ctx)
 	if len(linhas) != 2 {
-		t.Fatal("a descartada permanece no histórico")
+		t.Fatal("a cancelada permanece no histórico")
 	}
 	got := map[string]string{}
 	for _, l := range linhas {
 		got[l.Status] = l.StatusRotulo + "/" + l.StatusClasse
 	}
-	if got["confirmada"] != "Confirmada/badge-ok" || got["descartada"] != "Descartada/badge-neutral" {
+	if got["confirmada"] != "Confirmada/badge-ok" || got["cancelada"] != "Cancelada/badge-neutral" {
 		t.Errorf("rótulos/classes: %v", got)
 	}
-	if e.count(`SELECT count(*) FROM audit_events WHERE action IN ('intimacao.confirmada','intimacao.descartada') AND actor=$1`, adv) != 2 {
+	if e.count(`SELECT count(*) FROM audit_events WHERE action IN ('intimacao.confirmada','intimacao.cancelada') AND actor=$1`, adv) != 2 {
 		t.Error("quem decidiu deve ficar na auditoria")
 	}
-	if e.count(`SELECT count(*) FROM intimacoes WHERE status<>'triagem' AND decidida_por=$1::uuid AND decidida_em IS NOT NULL`, adv) != 2 {
+	if e.count(`SELECT count(*) FROM intimacoes WHERE status<>'triagem' AND decidida_por=$1::uuid AND decidida_em IS NOT NULL`, adv) != 2 ||
+		e.count(`SELECT count(*) FROM intimacoes WHERE status='cancelada' AND cancelado_por=$1::uuid AND cancelado_em IS NOT NULL AND cancelamento_motivo='Publicada em duplicidade'`, adv) != 1 {
 		t.Error("quem/quando devem ser gravados")
 	}
 }

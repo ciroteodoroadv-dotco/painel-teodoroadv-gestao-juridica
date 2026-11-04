@@ -11,6 +11,12 @@ func TestMatrizDePapeis(t *testing.T) {
 		p    Perm
 		want bool
 	}{
+		{Advogado, PermCompromissoCancel, true},
+		{Assistente, PermCompromissoCancel, false},
+		{Administrador, PermCompromissoCancel, false},
+		{Advogado, PermDiligenciaCancel, true},
+		{Assistente, PermDiligenciaCancel, false},
+		{Administrador, PermDiligenciaCancel, false},
 		{Advogado, PermIntimacaoDecide, true},
 		{Assistente, PermIntimacaoDecide, false},
 		{Administrador, PermIntimacaoDecide, false},

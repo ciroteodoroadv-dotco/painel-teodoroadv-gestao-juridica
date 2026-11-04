@@ -21,7 +21,7 @@ func TestSeedDemo(t *testing.T) {
 		t.Fatal("quantidades inesperadas na demonstração")
 	}
 	if e.count(`SELECT count(*) FROM intimacoes`) != 3 || e.count(`SELECT count(*) FROM intimacoes WHERE status='triagem'`) != 1 ||
-		e.count(`SELECT count(*) FROM intimacoes WHERE status='confirmada'`) != 1 || e.count(`SELECT count(*) FROM intimacoes WHERE status='descartada'`) != 1 ||
+		e.count(`SELECT count(*) FROM intimacoes WHERE status='confirmada'`) != 1 || e.count(`SELECT count(*) FROM intimacoes WHERE status='cancelada'`) != 1 ||
 		e.count(`SELECT count(*) FROM tarefas WHERE intimacao_id IS NOT NULL AND estado='a-confirmar' AND prazo_fatal IS NULL`) != 3 ||
 		e.count(`SELECT count(*) FROM oab_monitoradas`) != 1 || e.count(`SELECT count(*) FROM coletas`) != 2 ||
 		e.count(`SELECT count(*) FROM coletas WHERE status='sucesso'`) != 1 || e.count(`SELECT count(*) FROM coletas WHERE status='falha'`) != 1 {

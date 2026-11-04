@@ -1,0 +1,4 @@
+{{define "duplicado"}}<div class="form-block"><span class="badge badge-danger">PROCESSO DUPLICADO</span>
+        <p>Já existe o processo {{.Codigo}}{{if .Cliente}} ({{.Cliente}}){{end}} com este número.</p>
+        <div class="field"><label>Justificativa da duplicidade *</label><textarea name="duplicado_justificativa" required placeholder="Por que este número foi cadastrado de novo? Será preservado na ficha.">{{.Justificativa}}</textarea></div>
+      </div>{{end}}

@@ -28,10 +28,10 @@ func TestMigracao0011(t *testing.T) {
 		t.Error("OAB repetida (número+UF) deveria ser recusada")
 	}
 	ins := func(hash, status, resumo, link string) error {
-		return exec(`INSERT INTO intimacoes (hash, oab_id, status, resumo, link, decidida_por) VALUES ($1,$2,$3,$4,$5, CASE WHEN $3='triagem' THEN NULL ELSE $6::uuid END)`,
+		return exec(`INSERT INTO intimacoes (hash, oab_id, status, resumo, link, decidida_por, cancelamento_motivo) VALUES ($1,$2,$3,$4,$5, CASE WHEN $3='triagem' THEN NULL ELSE $6::uuid END, 'motivo')`,
 			hash, oab, status, resumo, link, uid)
 	}
-	for i, st := range []string{"triagem", "confirmada", "descartada"} {
+	for i, st := range []string{"triagem", "confirmada", "cancelada"} {
 		if err := ins("h"+string(rune('1'+i)), st, "resumo", "https://exemplo.test/a"); err != nil {
 			t.Errorf("status %q deveria ser aceito: %v", st, err)
 		}

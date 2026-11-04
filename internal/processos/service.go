@@ -104,6 +104,10 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input) (id, codi
 	if err != nil {
 		return "", "", err
 	}
+	justificou, err := s.decideDuplicidade(ctx, &n, in, "", "", false, "")
+	if err != nil {
+		return "", "", err
+	}
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return "", "", err
@@ -113,10 +117,12 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input) (id, codi
 		return "", "", err
 	}
 	args := append([]any{codigo, "ativo", ac.UserID}, n.valores(s.tituloDe(ctx, n))...)
+	args = append(args, n.duplicado, n.dupJust, webx.Nullable(n.dupDe))
 	err = tx.QueryRow(ctx, `INSERT INTO processos (codigo, situacao, created_by, updated_by, numero_cnj, titulo, polo, sistema,
 		instancia, classe_processual, materia_direito, comarca, juizo, tipo_contingencia, valor_causa, distribuicao,
-		citacao, audiencia, sentenca, recursos, fase_execucao, projeto_vinculado, observacoes, atendimento_origem_id)
-		VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23) RETURNING id`, args...).Scan(&id)
+		citacao, audiencia, sentenca, recursos, fase_execucao, projeto_vinculado, observacoes, atendimento_origem_id,
+		duplicado, duplicado_justificativa, duplicado_de)
+		VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26::uuid) RETURNING id`, args...).Scan(&id)
 	if webx.IsUniqueViolation(err) {
 		return "", "", webx.Invalidf("Já existe um processo cadastrado com este número.")
 	}
@@ -125,6 +131,9 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input) (id, codi
 	}
 	if err == nil {
 		err = s.record(ctx, tx, ac, "processo.criado", id, map[string]string{"partes": strconv.Itoa(len(n.partes))})
+	}
+	if err == nil && justificou {
+		err = s.record(ctx, tx, ac, "processo.duplicado_justificado", id, nil)
 	}
 	if err == nil {
 		err = tx.Commit(ctx)
@@ -141,16 +150,28 @@ func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version 
 	if err != nil {
 		return err
 	}
+	var atualNum, atualJust string
+	var atualDup bool
+	if err = s.Pool.QueryRow(ctx, `SELECT numero_cnj, duplicado, duplicado_justificativa FROM processos WHERE id=$1 AND excluido_em IS NULL`, id).
+		Scan(&atualNum, &atualDup, &atualJust); err != nil {
+		return s.whyNoRows(ctx, id)
+	}
+	justificou, err := s.decideDuplicidade(ctx, &n, in, id, atualNum, atualDup, atualJust)
+	if err != nil {
+		return err
+	}
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	args := append([]any{id, version, ac.UserID}, n.valores(s.tituloDe(ctx, n))...)
+	args = append(args, n.duplicado, n.dupJust, webx.Nullable(n.dupDe))
 	tag, err := tx.Exec(ctx, `UPDATE processos SET numero_cnj=$4, titulo=$5, polo=$6, sistema=$7, instancia=$8,
 		classe_processual=$9, materia_direito=$10, comarca=$11, juizo=$12, tipo_contingencia=$13, valor_causa=$14,
 		distribuicao=$15, citacao=$16, audiencia=$17, sentenca=$18, recursos=$19, fase_execucao=$20,
-		projeto_vinculado=$21, observacoes=$22, atendimento_origem_id=$23, updated_at=now(), updated_by=$3, version=version+1
+		projeto_vinculado=$21, observacoes=$22, atendimento_origem_id=$23, duplicado=$24, duplicado_justificativa=$25,
+		duplicado_de=$26::uuid, updated_at=now(), updated_by=$3, version=version+1
 		WHERE id=$1 AND version=$2 AND excluido_em IS NULL`, args...)
 	if webx.IsUniqueViolation(err) {
 		return webx.Invalidf("Já existe um processo cadastrado com este número.")
@@ -171,6 +192,11 @@ func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version 
 	}
 	if err = s.record(ctx, tx, ac, "processo.alterado", id, map[string]string{"partes": strconv.Itoa(len(n.partes))}); err != nil {
 		return err
+	}
+	if justificou {
+		if err = s.record(ctx, tx, ac, "processo.duplicado_justificado", id, nil); err != nil {
+			return err
+		}
 	}
 	return tx.Commit(ctx)
 }

@@ -18,7 +18,8 @@ const cols = `id, codigo, titulo, numero_cnj, situacao, polo, sistema, instancia
 	coalesce(to_char(audiencia,'YYYY-MM-DD'),''), coalesce(to_char(sentenca,'YYYY-MM-DD'),''),
 	coalesce(to_char(recursos,'YYYY-MM-DD'),''), coalesce(to_char(fase_execucao,'YYYY-MM-DD'),''),
 	coalesce(atendimento_origem_id::text,''), projeto_vinculado, observacoes, prox_o_que,
-	coalesce(to_char(prox_ate_quando,'YYYY-MM-DD'),''), prox_quem, version, created_at, updated_at`
+	coalesce(to_char(prox_ate_quando,'YYYY-MM-DD'),''), prox_quem, version, created_at, updated_at,
+	duplicado, duplicado_justificativa, coalesce(duplicado_de::text,'')`
 
 // limiteLista protege a tela: o acordeão do B mostra tudo, sem paginação.
 const limiteLista = 2000
@@ -28,7 +29,7 @@ func scan(row pgx.Row) (*Processo, error) {
 	err := row.Scan(&p.ID, &p.Codigo, &p.Titulo, &p.Numero, &p.Estado, &p.Polo, &p.Sistema, &p.Instancia, &p.Classe,
 		&p.Materia, &p.Comarca, &p.Juizo, &p.Contingencia, &p.Valor, &p.Distribuicao, &p.Citacao, &p.Audiencia,
 		&p.Sentenca, &p.Recursos, &p.FaseExecucao, &p.AtendimentoOrigem, &p.Projeto, &p.Observacoes, &p.ProxOQue,
-		&p.ProxAte, &p.ProxQuem, &p.Version, &p.CriadoEm, &p.AtualizadoEm)
+		&p.ProxAte, &p.ProxQuem, &p.Version, &p.CriadoEm, &p.AtualizadoEm, &p.Duplicado, &p.DuplicadoJustificativa, &p.DuplicadoDe)
 	return &p, err
 }
 

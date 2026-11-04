@@ -3,6 +3,8 @@ package diligencias
 import (
 	"context"
 	"fmt"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -110,6 +112,9 @@ func (s *Service) Atualizar(ctx context.Context, ac webx.Actor, id string, versi
 	if err != nil {
 		return err
 	}
+	if atual.Status == StatusCancelada {
+		return webx.Invalidf("Diligência cancelada não pode ser editada.")
+	}
 	in.ProcessoID = ""
 	n, err := in.normalize()
 	if err != nil {
@@ -135,6 +140,41 @@ func (s *Service) Atualizar(ctx context.Context, ac webx.Actor, id string, versi
 		return webx.ErrConflict
 	}
 	if err = s.record(ctx, tx, ac, "diligencia.atualizada", atual.ID); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+// Cancelar preserva a diligência com o motivo, quem cancelou e quando (nada se apaga). O status passa a Cancelada.
+func (s *Service) Cancelar(ctx context.Context, ac webx.Actor, id string, version int, motivo string) error {
+	if motivo = strings.TrimSpace(motivo); motivo == "" {
+		return webx.Invalidf("Informe o motivo do cancelamento.")
+	}
+	if utf8.RuneCountInString(motivo) > 1000 {
+		return webx.Invalidf("Texto longo demais.")
+	}
+	atual, err := s.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if atual.Status == StatusCancelada {
+		return webx.Invalidf("Esta diligência já está cancelada.")
+	}
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	tag, err := tx.Exec(ctx, `UPDATE diligencias SET status=$3, cancelado=true, cancelamento_motivo=$4, cancelado_em=now(), cancelado_por=$5::uuid,
+		updated_at=now(), updated_by=$5::uuid, version=version+1 WHERE id=$1::uuid AND version=$2 AND excluido_em IS NULL AND NOT cancelado`,
+		atual.ID, version, StatusCancelada, motivo, ac.UserID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return webx.ErrConflict
+	}
+	if err = s.record(ctx, tx, ac, "diligencia.cancelada", atual.ID); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)

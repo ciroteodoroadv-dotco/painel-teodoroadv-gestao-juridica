@@ -106,8 +106,8 @@ func (p Pessoa) CNPJMask() string {
 	return p.Documento
 }
 
-// RepCPFMask devolve o CPF do representante formatado.
-func (p Pessoa) RepCPFMask() string { return br.FormatDocumento(p.RepresentanteCPF) }
+// RepCPFFormatado devolve o CPF do representante formatado.
+func (p Pessoa) RepCPFFormatado() string { return br.FormatDocumento(p.RepresentanteCPF) }
 
 // CEPMask devolve o CEP como #####-###.
 func (p Pessoa) CEPMask() string { return MaskCEP(p.CEP) }

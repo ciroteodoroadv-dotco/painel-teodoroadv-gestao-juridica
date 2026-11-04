@@ -51,6 +51,7 @@ type formView struct {
 	Classes  []string
 	Materias []string
 	Origens  []Opcao
+	Dup      *DuplicadoView // bloco "PROCESSO DUPLICADO" (processo já marcado)
 }
 
 // montaForm monta o que o formulário precisa. p é zero na criação.
@@ -67,6 +68,12 @@ func (h *Handler) montaForm(w http.ResponseWriter, r *http.Request, s *auth.Sess
 		Sistema: novoComOutro("sistema", Sistemas, p.Sistema), Instan: novoComOutro("instancia", Instancias, p.Instancia)}
 	if h.S.Atendimentos != nil {
 		if f.Origens, err = h.S.Atendimentos.OpcoesOrigem(r.Context()); err != nil {
+			http.Error(w, "Erro interno.", http.StatusInternalServerError)
+			return formView{}, false
+		}
+	}
+	if p.Duplicado {
+		if f.Dup, err = h.S.duplicadoView(r.Context(), p.Numero, p.ID, p.DuplicadoJustificativa); err != nil {
 			http.Error(w, "Erro interno.", http.StatusInternalServerError)
 			return formView{}, false
 		}
@@ -89,7 +96,7 @@ func (h *Handler) montaForm(w http.ResponseWriter, r *http.Request, s *auth.Sess
 
 func (h *Handler) mostra(w http.ResponseWriter, f formView) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := fragmento("form.html").ExecuteTemplate(w, "form", f); err != nil {
+	if err := fragmento("form.html", "duplicado.html").ExecuteTemplate(w, "form", f); err != nil {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 	}
 }
@@ -148,7 +155,8 @@ func inputFrom(r *http.Request) (Input, bool) {
 		Classe: v("classe"), Materia: v("ramo"), Comarca: v("comarca"), Juizo: v("juizo"), Contingencia: v("tipo_contingencia"),
 		Distribuicao: v("distribuido_em"), Citacao: v("citacao"), Audiencia: v("audiencia"), Sentenca: v("sentenca"),
 		Recursos: v("recursos"), FaseExecucao: v("fase_execucao"), Observacoes: v("observacoes"),
-		Titulo: v("titulo"), Polo: v("polo"), Projeto: v("projeto_vinculado"), AtendimentoOrigem: v("atendimento_origem")}
+		Titulo: v("titulo"), Polo: v("polo"), Projeto: v("projeto_vinculado"), AtendimentoOrigem: v("atendimento_origem"),
+		DuplicadoJustificativa: v("duplicado_justificativa")}
 	for i := range pes {
 		in.Partes = append(in.Partes, ParteIn{PessoaID: pes[i], Papel: comOutro(pap[i], outro[i]), Cliente: cli[i] == "1"})
 	}

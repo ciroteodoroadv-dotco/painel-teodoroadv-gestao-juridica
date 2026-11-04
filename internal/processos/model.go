@@ -75,6 +75,8 @@ type Processo struct {
 	Distribuicao, Citacao, Audiencia, Sentenca, Recursos  string
 	FaseExecucao, AtendimentoOrigem, Projeto, Observacoes string
 	ProxOQue, ProxAte, ProxQuem                           string
+	DuplicadoJustificativa, DuplicadoDe                   string
+	Duplicado                                             bool
 	Partes                                                []Parte
 	Responsaveis                                          []string // ids de pessoa, na ordem
 	Version                                               int

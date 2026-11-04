@@ -107,4 +107,5 @@ type ConflitoLookup interface {
 type Linha struct {
 	ID, Codigo, Titulo, DataLimite, Hora, Local, Responsavel, Status, Processo string
 	Busca                                                                      string
+	Cancelada                                                                  bool
 }

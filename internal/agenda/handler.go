@@ -42,6 +42,8 @@ func (h *Handler) Register(rt *auth.Router) {
 	rt.Handle("POST /agenda", w, h.criar)
 	rt.Handle("GET /agenda/{id}/editar", w, h.editarForm)
 	rt.Handle("POST /agenda/{id}", w, h.atualizar)
+	rt.Handle("GET /agenda/{id}/cancelar", auth.PermCompromissoCancel, h.cancelarForm)
+	rt.Handle("POST /agenda/{id}/cancelar", auth.PermCompromissoCancel, h.cancelar)
 }
 
 // Seletor é um <select> de vínculo: a opção marcada e as opções (a primeira, "Sem vínculo", o template põe).
@@ -93,6 +95,10 @@ func (h *Handler) editarForm(w http.ResponseWriter, r *http.Request, _ *auth.Ses
 	if webx.Falha(w, err, "Item de agenda não encontrado.") {
 		return
 	}
+	if c.Cancelado {
+		http.Error(w, "Compromisso cancelado não pode ser editado.", http.StatusBadRequest)
+		return
+	}
 	h.montaForm(w, r, *c, false)
 }
 
@@ -134,4 +140,23 @@ func (h *Handler) atualizar(w http.ResponseWriter, r *http.Request, s *auth.Sess
 		return
 	}
 	webx.Ok(w, "Compromisso atualizado.")
+}
+
+func (h *Handler) cancelarForm(w http.ResponseWriter, r *http.Request, _ *auth.Session) {
+	c, err := h.S.Get(r.Context(), r.PathValue("id"))
+	if webx.Falha(w, err, "Item de agenda não encontrado.") {
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := fragmento("cancelar.html").ExecuteTemplate(w, "cancelar", c); err != nil {
+		http.Error(w, "Erro interno.", http.StatusInternalServerError)
+	}
+}
+
+func (h *Handler) cancelar(w http.ResponseWriter, r *http.Request, s *auth.Session) {
+	err := h.S.CancelarCompromisso(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"), webx.Int(r.PostFormValue("version")), r.PostFormValue("motivo"))
+	if webx.Falha(w, err, "Item de agenda não encontrado.", "Falha ao cancelar o compromisso.") {
+		return
+	}
+	webx.Ok(w, "Compromisso cancelado; o registro foi preservado.")
 }

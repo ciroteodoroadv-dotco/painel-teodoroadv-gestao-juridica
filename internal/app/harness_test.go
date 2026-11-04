@@ -33,6 +33,7 @@ type env struct {
 	srv  *httptest.Server
 	docs string // pasta dos documentos desta execução
 	svc  *Servicos
+	rt   *auth.Router
 }
 
 func newEnv(t *testing.T) *env { return newEnvOpts(t) }
@@ -75,7 +76,7 @@ func newEnvOpts(t *testing.T, opts ...Option) *env {
 	}
 	srv := httptest.NewServer(httpx.Chain(mux, a.Log)) // cadeia real: limites de corpo, cabeçalhos
 	t.Cleanup(srv.Close)
-	return &env{t: t, pool: pool, a: a, srv: srv, docs: docs, svc: &svc}
+	return &env{t: t, pool: pool, a: a, srv: srv, docs: docs, svc: &svc, rt: rt}
 }
 
 // user cria um usuário e devolve um navegador JÁ autenticado (sessão com 2FA concluído).

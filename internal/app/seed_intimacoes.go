@@ -57,7 +57,7 @@ func semearIntimacoes(ctx context.Context, pool *pgxpool.Pool, ac webx.Actor, pr
 	if err := svc.Decidir(ctx, ac, linhas[1].ID, "confirmada"); err != nil {
 		return err
 	}
-	if err := svc.Decidir(ctx, ac, linhas[2].ID, "descartada"); err != nil {
+	if err := svc.Cancelar(ctx, ac, linhas[2].ID, "Cancelada pelo advogado (exemplo)."); err != nil {
 		return err
 	}
 	return (&coletas.Store{Pool: pool}).Registrar(ctx, coletas.Estado{Modulo: "monitor", Origem: "DataJud", Status: "falha",

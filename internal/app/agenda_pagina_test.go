@@ -92,7 +92,7 @@ func TestPaginaAgendaSeteCategorias(t *testing.T) {
 	}
 	// Tabelas e textos do B: Aulas mostra compromissos e a tarefa de subtítulo "Aula" (a concluída não).
 	for _, s := range []string{"Aula A", "Aula B", "Preparar a aula de processo", `<th>Cliente(s) / PES</th>`, `<th>Prazo de entrega</th>`, `<th>Prazo fatal</th>`,
-		"Sustentação futura", "Protocolo físico", "Reunião com a cliente", "Ligação de retorno", `data-drawer="/agenda/`, "Ainda não implementado nesta fase do painel."} {
+		"Sustentação futura", "Protocolo físico", "Reunião com a cliente", "Ligação de retorno", `data-drawer="/agenda/`, `/cancelar">Cancelar</button>`} {
 		if !strings.Contains(pg, s) {
 			t.Errorf("Agenda sem %q", s)
 		}

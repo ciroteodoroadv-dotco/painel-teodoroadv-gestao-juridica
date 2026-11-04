@@ -95,8 +95,8 @@ func statusRotulo(s string) string {
 	switch s {
 	case "confirmada":
 		return "Confirmada"
-	case "descartada":
-		return "Descartada"
+	case "cancelada":
+		return "Cancelada"
 	}
 	return "Em triagem"
 }
@@ -105,7 +105,7 @@ func statusClasse(s string) string {
 	switch s {
 	case "confirmada":
 		return "badge-ok"
-	case "descartada":
+	case "cancelada":
 		return "badge-neutral"
 	}
 	return "badge-warn"

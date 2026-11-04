@@ -55,3 +55,11 @@
 | Página Coleta DJEN e drawers da OAB | sem equivalente no B (só vocabulário visual); testes HTTP; **não comparados no Chrome** |
 | Clique real em Confirmar/Descartar, capturas 1440/400 | **não feito** (testes HTTP cobrem o servidor) |
 | Conferência do advogado na tela real e teste manual orientado antes de ligar a coleta | pendente |
+
+## Plano 4C — Cancelar em vez de excluir; processo duplicado (04/11/2026)
+| Item | Estado |
+|---|---|
+| Estilo computado B x v2 dos drawers "Cancelar …" e do bloco "PROCESSO DUPLICADO" (13 seletores) | feito: 3 diferenças, todas justificadas (`paridade/RELATORIO-4C.md`) |
+| Cancelar compromisso/diligência/intimação, sem Excluir; tarefa sem exclusão | testes HTTP e enumeração de rotas |
+| Verificação ao sair do campo do número (JS), clique real nos botões, capturas 1440/400 | **não feito no Chrome** |
+| Conferência do advogado na tela real | pendente |

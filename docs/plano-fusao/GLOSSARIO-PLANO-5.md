@@ -8,10 +8,12 @@
 - **Janela** — intervalo de datas consultado. Recua 7 dias a partir do último sucesso para pegar publicações atrasadas; só avança
   quando a coleta inteira dá certo.
 - **Hash** — impressão digital de uma comunicação, usada para não registrar a mesma intimação duas vezes.
-- **Triagem / Confirmada / Descartada** — status da intimação: aguardando decisão do advogado / confirmada por ele / descartada, mas
-  mantida no histórico.
+- **Triagem / Confirmada / Cancelada** — status da intimação: aguardando decisão do advogado / confirmada por ele / cancelada com motivo, mas
+  mantida no histórico (nada se apaga; antes do Plano 4C chamava-se "Descartada").
 - **Tarefa de análise** — tarefa aberta automaticamente (estado "A confirmar", sem prazo) para o advogado analisar a intimação.
 - **Estado das coletas** — rodapé com a última tentativa, o último sucesso e a mensagem de cada coleta. É histórico local.
 - **Faixa de alerta (heartbeat)** — aviso na Agenda quando a coleta ligada fica mais de 6 horas sem sucesso.
 - **Teto de 10.000 resultados** — limite da consulta do DJEN; acima dele o painel divide a janela por dia.
 - **Segredo de justiça** — processos que a fonte pública pode não devolver; a conferência manual continua necessária.
+- **Cancelar (nada se apaga)** — tarefa, audiência, compromisso, diligência e intimação não são excluídos: ficam listados com selo, motivo, quem e quando cancelou.
+- **Processo duplicado** — processo cadastrado com número CNJ que já existe; o painel mostra o marcador "PROCESSO DUPLICADO" antes de salvar e exige justificativa.

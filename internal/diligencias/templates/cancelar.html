@@ -1,0 +1,10 @@
+{{define "cancelar"}}<h2>Cancelar diligência</h2>
+    <p class="drawer-sub">O registro é preservado com o motivo do cancelamento.</p>
+    <form data-drawer-form method="post" action="/diligencias/{{.ID}}/cancelar">
+      <input type="hidden" name="version" value="{{.Version}}">
+      <div class="field"><label>Motivo do cancelamento *</label><textarea name="motivo" required placeholder="Será preservado na ficha"></textarea></div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Voltar</button>
+        <button type="submit" class="btn btn-primary">Cancelar diligência</button>
+      </div>
+    </form>{{end}}

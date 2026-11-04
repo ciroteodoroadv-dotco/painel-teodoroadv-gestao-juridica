@@ -35,8 +35,8 @@ func TestProcessosCicloCompleto(t *testing.T) {
 	if e.count(`SELECT count(*) FROM processos WHERE numero_cnj=$1`, num) != 1 {
 		t.Fatal("o número deveria ser gravado normalizado")
 	}
-	if r, body := adv.post("/processos", processoForm(num)); r.StatusCode != 400 || !strings.Contains(body, "Já existe um processo cadastrado com este número.") {
-		t.Fatalf("processo duplicado = %d %q", r.StatusCode, body)
+	if r, body := adv.post("/processos", processoForm(num)); r.StatusCode != 400 || !strings.Contains(body, "Informe a justificativa da duplicidade.") {
+		t.Fatalf("processo duplicado sem justificativa = %d %q", r.StatusCode, body)
 	}
 	a := adv.criarProcesso(t, "")
 	b := adv.criarProcesso(t, "")

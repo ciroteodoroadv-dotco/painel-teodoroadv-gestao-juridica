@@ -12,7 +12,7 @@
     <th>Código</th><th>Nº processo</th><th>Classe / Matéria</th><th>Cliente</th><th>Parte contrária</th><th>Valor da causa</th><th>Distribuição</th><th>Pendências</th><th></th>
   </tr></thead><tbody>{{range .Processos}}<tr data-busca="{{.Busca}}">
     <td>{{if .Codigo}}{{.Codigo}}{{else}}—{{end}}</td>
-    <td class="tabular"><strong>{{if .Numero}}{{.Numero}}{{else}}—{{end}}</strong><div class="hint hint-tabela">{{.Titulo}}</div></td>
+    <td class="tabular"><strong>{{if .Numero}}{{.Numero}}{{else}}—{{end}}</strong><div class="hint hint-tabela">{{.Titulo}}</div>{{if .Duplicado}}<div class="hint hint-tabela"><span class="badge badge-danger" title="{{.DuplicadoJustificativa}}">PROCESSO DUPLICADO</span></div>{{end}}</td>
     <td>{{if .Classe}}{{.Classe}}{{else}}—{{end}}<div class="hint hint-tabela">{{if .Materia}}{{.Materia}}{{else}}—{{end}}</div></td>
     <td>{{.ClienteNome}}<div class="hint hint-tabela">{{.Polo}}</div></td>
     <td>{{with .ParteContraria}}{{range $i, $n := .}}{{if $i}}, {{end}}{{$n}}{{end}}{{else}}—{{end}}</td>

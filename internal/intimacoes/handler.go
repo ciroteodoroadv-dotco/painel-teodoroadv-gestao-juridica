@@ -36,6 +36,8 @@ func (h *Handler) Register(rt *auth.Router) {
 	h.A.AddNavSistema("Coleta DJEN", "/coleta-djen", auth.PermColetaManage)
 	g := auth.PermColetaManage
 	rt.Handle("POST /intimacoes/{id}/decidir", auth.PermIntimacaoDecide, h.decidir)
+	rt.Handle("GET /intimacoes/{id}/cancelar", auth.PermIntimacaoDecide, h.cancelarForm)
+	rt.Handle("POST /intimacoes/{id}/cancelar", auth.PermIntimacaoDecide, h.cancelar)
 	rt.Handle("GET /coleta-djen", g, h.pagina)
 	rt.Handle("GET /coleta-djen/nova", g, h.novaForm)
 	rt.Handle("POST /coleta-djen", g, h.criar)
@@ -47,21 +49,38 @@ func (h *Handler) Register(rt *auth.Router) {
 // Textos do B (App.atualizarStatusIntimacao).
 const (
 	msgConfirmada = "Intimação confirmada."
-	msgDescartada = "Intimação descartada e mantida no histórico."
+	msgCancelada  = "Intimação cancelada e mantida no histórico."
 	msgFalhaDecid = "Falha ao atualizar a intimação."
 )
 
 func (h *Handler) decidir(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	status := r.PostFormValue("status")
-	err := h.S.Decidir(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"), status)
+	err := h.S.Decidir(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"), r.PostFormValue("status"))
 	if webx.Falha(w, err, "Intimação não encontrada.", msgFalhaDecid) {
 		return
 	}
-	if status == "descartada" {
-		webx.Ok(w, msgDescartada)
+	webx.Ok(w, msgConfirmada)
+}
+
+type cancelarView struct{ ID string }
+
+func (h *Handler) cancelarForm(w http.ResponseWriter, r *http.Request, _ *auth.Session) {
+	id := r.PathValue("id")
+	if !webx.UUID(id) {
+		http.Error(w, "Intimação não encontrada.", http.StatusNotFound)
 		return
 	}
-	webx.Ok(w, msgConfirmada)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := fragmento("cancelar.html").ExecuteTemplate(w, "cancelar", cancelarView{ID: id}); err != nil {
+		http.Error(w, "Erro interno.", http.StatusInternalServerError)
+	}
+}
+
+func (h *Handler) cancelar(w http.ResponseWriter, r *http.Request, s *auth.Session) {
+	err := h.S.Cancelar(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"), r.PostFormValue("motivo"))
+	if webx.Falha(w, err, "Intimação não encontrada.", msgFalhaDecid) {
+		return
+	}
+	webx.Ok(w, msgCancelada)
 }
 
 // executar roda a coleta a pedido do administrador. O resultado nunca é apresentado como garantia de "nada novo".

@@ -26,16 +26,16 @@
  <td><span class="badge {{.StatusClasse}}">{{.StatusRotulo}}</span></td></tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhuma tarefa em aberto.</p></div></div>{{end}}{{end}}
 
 {{define "tabCompromissos"}}<table><thead><tr><th>Tipo</th><th>Descrição</th><th>Data</th><th>Hora</th><th>Local</th><th>Processo</th><th></th></tr></thead>
-    <tbody>{{$w := .CanWrite}}{{range .Compromissos}}<tr data-busca="{{.Busca}}">
+    <tbody>{{$w := .CanWrite}}{{$x := .CanCancel}}{{range .Compromissos}}<tr data-busca="{{.Busca}}">
     <td><span class="badge badge-neutral">{{.Tipo}}</span></td>
     <td>{{.Descricao}}{{if .CriadoPor}}<div class="hint">Criado por: {{.CriadoPor}}</div>{{end}}{{if .Cliente}}<div class="hint">{{.Cliente}}</div>{{end}}{{if .Atendimento}}<div class="hint">{{.Atendimento}}</div>{{end}}</td>
     <td class="tabular">{{.Data}}</td>
     <td class="tabular">{{if .Hora}}{{.Hora}}{{else}}—{{end}}</td>
     <td>{{if .Local}}{{.Local}}{{else}}—{{end}}</td>
     <td>{{if .Processo}}{{.Processo}}{{else}}—{{end}}</td>
-    <td class="row-actions">{{if $w}}
-      <button type="button" class="btn-text" data-drawer="/agenda/{{.ID}}/editar">Editar</button>
-      <button type="button" class="btn-danger-text" data-toast-erro="Ainda não implementado nesta fase do painel.">Excluir</button>{{end}}
+    <td class="row-actions">{{if .Cancelado}}<span class="badge badge-neutral">Cancelado</span>{{else}}{{if $w}}
+      <button type="button" class="btn-text" data-drawer="/agenda/{{.ID}}/editar">Editar</button>{{end}}{{if $x}}
+      <button type="button" class="btn-danger-text" data-drawer="/agenda/{{.ID}}/cancelar">Cancelar</button>{{end}}{{end}}
     </td>
   </tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhum item em aberto nesta categoria.</p></div>{{end}}
 
@@ -54,7 +54,7 @@
   </tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhuma audiência em aberto nesta categoria.</p></div>{{end}}
 
 {{define "tabDiligencias"}}{{if not .Diligencias}}<div class="empty"><p>Nenhuma diligência em aberto.</p></div>{{else}}<table><thead><tr><th>Código</th><th>Título</th><th>Data-limite</th><th>Hora</th><th>Local</th><th>Responsável</th><th>Status</th><th>Processo</th><th></th></tr></thead>
-    <tbody>{{$w := .CanDilWrite}}{{range .Diligencias}}<tr data-busca="{{.Busca}}">
+    <tbody>{{$w := .CanDilWrite}}{{$x := .CanDilCancel}}{{range .Diligencias}}<tr data-busca="{{.Busca}}">
     <td>{{if .Codigo}}{{.Codigo}}{{else}}—{{end}}</td>
     <td>{{.Titulo}}</td>
     <td class="tabular">{{.DataLimite}}</td>
@@ -63,7 +63,7 @@
     <td>{{if .Responsavel}}{{.Responsavel}}{{else}}—{{end}}</td>
     <td>{{if .Status}}{{.Status}}{{else}}—{{end}}</td>
     <td>{{if .Processo}}{{.Processo}}{{else}}—{{end}}</td>
-    <td class="row-actions">{{if $w}}<button type="button" class="btn-text" data-drawer="/diligencias/{{.ID}}/editar">Editar</button>{{end}}</td>
+    <td class="row-actions">{{if .Cancelada}}<span class="badge badge-neutral">Cancelada</span>{{else}}{{if $w}}<button type="button" class="btn-text" data-drawer="/diligencias/{{.ID}}/editar">Editar</button>{{end}}{{if $x}}<button type="button" class="btn-danger-text" data-drawer="/diligencias/{{.ID}}/cancelar">Cancelar</button>{{end}}{{end}}</td>
   </tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhuma diligência em aberto.</p></div>{{end}}{{end}}
 
 {{define "tabIntimacoes"}}{{if not .IntimOK}}<div class="form-block"><strong>Intimações indisponíveis.</strong><br>{{.IntimMsg}}</div>{{else if not .Intimacoes}}<div class="empty"><p>Nenhuma intimação registrada no histórico.</p></div>{{else}}<table><thead><tr><th>Origem</th><th>Processo</th><th>Data</th><th>Status</th><th>Tarefa de análise</th><th></th></tr></thead>
@@ -73,5 +73,5 @@
       <td class="tabular">{{.Data}}</td>
       <td><span class="badge {{.StatusClasse}}">{{.StatusRotulo}}</span></td>
       <td>{{if .Tarefa}}<strong>{{.Tarefa}}</strong><div class="hint">{{.TarefaEstado}}</div>{{else}}<span class="hint">Tarefa não localizada</span>{{end}}</td>
-      <td class="row-actions">{{if and $d (eq .Status "triagem")}}<form class="form-inline" data-drawer-form method="post" action="/intimacoes/{{.ID}}/decidir"><input type="hidden" name="status" value="confirmada"><button type="submit" class="btn-text">Confirmar</button></form><form class="form-inline" data-drawer-form method="post" action="/intimacoes/{{.ID}}/decidir"><input type="hidden" name="status" value="descartada"><button type="submit" class="btn-danger-text">Descartar</button></form>{{else}}—{{end}}</td>
+      <td class="row-actions">{{if and $d (eq .Status "triagem")}}<form class="form-inline" data-drawer-form method="post" action="/intimacoes/{{.ID}}/decidir"><input type="hidden" name="status" value="confirmada"><button type="submit" class="btn-text">Confirmar</button></form><button type="button" class="btn-danger-text" data-drawer="/intimacoes/{{.ID}}/cancelar">Cancelar</button>{{else}}—{{end}}</td>
     </tr>{{end}}</tbody></table><div class="empty" data-vazio-filtro hidden><p>Nenhuma intimação registrada no histórico.</p></div>{{end}}{{end}}

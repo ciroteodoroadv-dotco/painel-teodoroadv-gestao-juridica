@@ -39,6 +39,7 @@ func (h *Handler) Register(rt *auth.Router) {
 	rt.Handle("GET /processos", auth.PermProcRead, h.list)
 	rt.Handle("GET /processos/novo", w, h.newForm)
 	rt.Handle("POST /processos", w, h.create)
+	rt.Handle("POST /processos/duplicado", w, h.verificaDuplicado)
 	rt.Handle("GET /processos/{id}", auth.PermProcRead, h.detail)
 	rt.Handle("GET /processos/{id}/editar", w, h.editForm)
 	rt.Handle("POST /processos/{id}", w, h.update)

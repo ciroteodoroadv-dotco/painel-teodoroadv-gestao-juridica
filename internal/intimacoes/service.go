@@ -186,12 +186,27 @@ func (s *Service) oabs(ctx context.Context, soAtivas bool) ([]OAB, error) {
 	return out, rows.Err()
 }
 
-// Decidir confirma ou descarta a intimação (só a partir de "triagem"; a descartada permanece no histórico).
-// Quem pode decidir é decidido pela rota (só advogado); aqui fica a regra do dado e a auditoria.
+// Decidir confirma a intimação (só a partir de "triagem"). Cancelar tem motivo e vai por Cancelar. Quem pode decidir é
+// decidido pela rota (só advogado); aqui ficam a regra do dado e a auditoria.
 func (s *Service) Decidir(ctx context.Context, ac webx.Actor, id, status string) error {
-	if status != "confirmada" && status != "descartada" {
+	if status != "confirmada" {
 		return webx.Invalidf("Decisão inválida.")
 	}
+	return s.mudaStatus(ctx, ac, id, status, "", `status=$2, decidida_por=$3::uuid, decidida_em=now()`)
+}
+
+// Cancelar cancela a intimação com o motivo, registrando quem e quando; ela permanece no histórico (nada se apaga).
+func (s *Service) Cancelar(ctx context.Context, ac webx.Actor, id, motivo string) error {
+	if motivo = strings.TrimSpace(motivo); motivo == "" {
+		return webx.Invalidf("Informe o motivo do cancelamento.")
+	}
+	if utf8.RuneCountInString(motivo) > 1000 {
+		return webx.Invalidf("Texto longo demais.")
+	}
+	return s.mudaStatus(ctx, ac, id, "cancelada", motivo, `status=$2, decidida_por=$3::uuid, decidida_em=now(), cancelado_por=$3::uuid, cancelado_em=now(), cancelamento_motivo=$4`)
+}
+
+func (s *Service) mudaStatus(ctx context.Context, ac webx.Actor, id, status, motivo, set string) error {
 	if !webx.UUID(id) {
 		return webx.ErrNotFound
 	}
@@ -200,8 +215,11 @@ func (s *Service) Decidir(ctx context.Context, ac webx.Actor, id, status string)
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	tag, err := tx.Exec(ctx, `UPDATE intimacoes SET status=$2, decidida_por=$3::uuid, decidida_em=now() WHERE id=$1::uuid AND status='triagem'`,
-		id, status, ac.UserID)
+	args := []any{id, status, ac.UserID}
+	if motivo != "" {
+		args = append(args, motivo)
+	}
+	tag, err := tx.Exec(ctx, `UPDATE intimacoes SET `+set+` WHERE id=$1::uuid AND status='triagem'`, args...) // #nosec G202 -- fragmento constante
 	if err != nil {
 		return err
 	}

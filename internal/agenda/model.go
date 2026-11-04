@@ -40,6 +40,7 @@ type Compromisso struct {
 	Hora                                              string
 	ClienteID, AtendimentoID, ProcessoID, CriadoPorID string
 	Version                                           int
+	Cancelado                                         bool
 }
 
 // DataISO preenche o campo <input type="date">.
@@ -147,6 +148,7 @@ type AudienciaLinha struct {
 type DiligenciaLinha struct {
 	ID, Codigo, Titulo, DataLimite, Hora, Local, Responsavel, Status, Processo string
 	Busca                                                                      string
+	Cancelada                                                                  bool
 }
 
 // TarefaLinha é uma tarefa na tabela da Agenda (as colunas e os selos de tabelaTarefasCategoriaAgenda do B).

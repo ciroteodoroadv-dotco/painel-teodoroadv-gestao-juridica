@@ -82,7 +82,7 @@ func (s *Service) linhas(ctx context.Context, ds []*Diligencia) ([]Linha, error)
 	out := make([]Linha, len(ds))
 	for i, d := range ds {
 		l := Linha{ID: d.ID, Codigo: d.Codigo, Titulo: d.Titulo, DataLimite: webx.DataBR(d.DataLimite), Hora: d.Hora, Local: d.Local,
-			Responsavel: d.Responsavel, Status: d.Status, Processo: d.ProcessoNumero}
+			Responsavel: d.Responsavel, Status: d.Status, Processo: d.ProcessoNumero, Cancelada: d.Status == StatusCancelada}
 		l.Busca = webx.SemAcento(strings.Join([]string{d.Codigo, d.Titulo, d.ProcessoNumero, nomes[d.ClienteID], d.Local, d.Responsavel,
 			d.Status, d.DataISO(), l.DataLimite, d.Hora}, " "))
 		out[i] = l

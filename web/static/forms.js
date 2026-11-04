@@ -48,7 +48,10 @@
             pessoas: "Ação registrada, mas houve falha ao recarregar a lista de pessoas.",
             processos: "Ação registrada, mas houve falha ao recarregar a lista de processos.",
             atendimentos: "Ação registrada, mas houve falha ao recarregar os atendimentos.",
-            tarefas: "Ação registrada, mas houve falha ao recarregar a lista de tarefas."
+            tarefas: "Ação registrada, mas houve falha ao recarregar a lista de tarefas.",
+            agenda: "Ação registrada, mas houve falha ao recarregar a agenda.",
+            audiencias: "Ação registrada, mas houve falha ao recarregar as audiências.",
+            diligencias: "Ação registrada, mas houve falha ao recarregar as diligências."
           };
           window.PainelToast(falhas[document.body.getAttribute("data-tab")] || "Ação registrada, mas houve falha ao recarregar a lista.", true);
         });
@@ -204,6 +207,25 @@
     if (campo) campo.querySelectorAll("option").forEach(function (o) {
       o.hidden = !!o.value && !o.selected && normaliza(o.textContent).indexOf(q) < 0;
     });
+  });
+  // ---- Duplicidade do número do processo, ANTES de salvar: <input data-verifica-duplicado="/url" data-ignorar="ID">.
+  // Ao sair do campo, pergunta ao servidor (POST: o número não vai na URL) e troca o conteúdo de [data-duplicado-alvo]
+  // pelo bloco "PROCESSO DUPLICADO" (ou o esvazia). A justificativa já digitada é mantida se o bloco continuar.
+  document.addEventListener("change", function (ev) {
+    var i = ev.target;
+    if (!i.matches || !i.matches("input[data-verifica-duplicado]")) return;
+    var alvo = (i.form || document).querySelector("[data-duplicado-alvo]");
+    if (!alvo) return;
+    var corpo = new URLSearchParams({ numero: i.value, ignorar: i.getAttribute("data-ignorar") || "" });
+    fetch(i.getAttribute("data-verifica-duplicado"), {
+      method: "POST", body: corpo, credentials: "same-origin",
+      headers: { "X-CSRF-Token": App.csrf ? App.csrf() : "", "HX-Request": "true", "Content-Type": "application/x-www-form-urlencoded" }
+    }).then(function (r) { return r.ok ? r.text() : ""; }).then(function (html) {
+      var antes = alvo.querySelector("textarea"), digitado = antes ? antes.value : "";
+      alvo.replaceChildren.apply(alvo, App.nodesDeHTML(html));
+      var depois = alvo.querySelector("textarea");
+      if (depois && digitado && !depois.value) depois.value = digitado;
+    }).catch(function () { alvo.replaceChildren(); });
   });
   // ---- Botão que só avisa: <button data-toast-erro="texto"> (ex.: "Excluir" compromisso, que o B ainda não implementa).
   document.addEventListener("click", function (ev) {

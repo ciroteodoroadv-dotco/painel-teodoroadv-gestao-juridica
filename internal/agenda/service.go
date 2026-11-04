@@ -3,7 +3,9 @@ package agenda
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -142,6 +144,9 @@ func (s *Service) AtualizarCompromisso(ctx context.Context, ac webx.Actor, id st
 	if err != nil {
 		return err
 	}
+	if atual.Cancelado {
+		return webx.Invalidf("Compromisso cancelado não pode ser editado.")
+	}
 	n, err := in.normalize()
 	if err != nil {
 		return err
@@ -163,7 +168,7 @@ func (s *Service) AtualizarCompromisso(ctx context.Context, ac webx.Actor, id st
 	tag, err := tx.Exec(ctx, `UPDATE agenda_compromissos SET tipo=$3, descricao=$4, data=$5, hora=$6::time, local=$7,
 		cliente_pessoa_id=$8::uuid, atendimento_id=$9::uuid, processo_id=$10::uuid, criado_por_pessoa_id=$11::uuid,
 		updated_at=now(), updated_by=$12, version=version+1
-		WHERE id=$1 AND version=$2 AND excluido_em IS NULL`, atual.ID, version, n.tipo, n.descricao, n.data, n.hora, n.local,
+		WHERE id=$1 AND version=$2 AND excluido_em IS NULL AND NOT cancelado`, atual.ID, version, n.tipo, n.descricao, n.data, n.hora, n.local,
 		webx.Nullable(n.cliente), webx.Nullable(n.atend), webx.Nullable(n.proc), webx.Nullable(n.criadoPor), ac.UserID)
 	if err != nil {
 		return err
@@ -190,4 +195,40 @@ func (s *Service) CriarDiligencia(ctx context.Context, ac webx.Actor, in Input) 
 	}
 	return s.Diligencias.Criar(ctx, ac, DiligenciaNova{Titulo: n.descricao, ProcessoID: n.proc, ClienteID: n.cliente, Local: n.local,
 		DataLimite: n.data.Format("2006-01-02"), Hora: n.hora, Responsavel: in.Responsavel})
+}
+
+// CancelarCompromisso preserva o compromisso com o motivo, quem cancelou e quando (nada se apaga). Cancelado, ele
+// continua listado, com selo, e não pode mais ser editado.
+func (s *Service) CancelarCompromisso(ctx context.Context, ac webx.Actor, id string, version int, motivo string) error {
+	if motivo = strings.TrimSpace(motivo); motivo == "" {
+		return webx.Invalidf("Informe o motivo do cancelamento.")
+	}
+	if utf8.RuneCountInString(motivo) > 1000 {
+		return webx.Invalidf("Texto longo demais.")
+	}
+	atual, err := s.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if atual.Cancelado {
+		return webx.Invalidf("Este compromisso já está cancelado.")
+	}
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	tag, err := tx.Exec(ctx, `UPDATE agenda_compromissos SET cancelado=true, cancelamento_motivo=$3, cancelado_em=now(), cancelado_por=$4::uuid,
+		updated_at=now(), updated_by=$4::uuid, version=version+1 WHERE id=$1::uuid AND version=$2 AND excluido_em IS NULL AND NOT cancelado`,
+		atual.ID, version, motivo, ac.UserID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return webx.ErrConflict
+	}
+	if err = s.record(ctx, tx, ac, "compromisso.cancelado", atual.ID, atual.Tipo); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }

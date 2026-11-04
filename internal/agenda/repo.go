@@ -11,12 +11,12 @@ import (
 )
 
 const colsC = `id::text, tipo, descricao, data, to_char(hora,'HH24:MI'), local, coalesce(cliente_pessoa_id::text,''),
-	coalesce(atendimento_id::text,''), coalesce(processo_id::text,''), coalesce(criado_por_pessoa_id::text,''), version`
+	coalesce(atendimento_id::text,''), coalesce(processo_id::text,''), coalesce(criado_por_pessoa_id::text,''), version, cancelado`
 
 func scanC(row pgx.Row) (*Compromisso, error) {
 	var c Compromisso
 	err := row.Scan(&c.ID, &c.Tipo, &c.Descricao, &c.Data, &c.Hora, &c.Local, &c.ClienteID, &c.AtendimentoID, &c.ProcessoID,
-		&c.CriadoPorID, &c.Version)
+		&c.CriadoPorID, &c.Version, &c.Cancelado)
 	return &c, err
 }
 

@@ -58,8 +58,9 @@ func TestMigracao0008(t *testing.T) {
 	if err := proc("PRO. 0000005", "extinto", "0000101-93.2025.8.26.0100"); err != nil {
 		t.Errorf("processo com número: %v", err)
 	}
-	if err := proc("PRO. 0000006", "ativo", "0000101-93.2025.8.26.0100"); err == nil {
-		t.Error("mesmo número não vazio deveria ser recusado")
+	// Desde a 0012 o número não é mais único no banco: a regra de duplicidade (marcador + justificativa) vive no serviço.
+	if err := proc("PRO. 0000006", "ativo", "0000101-93.2025.8.26.0100"); err != nil {
+		t.Errorf("mesmo número é aceito pelo banco (a duplicidade é tratada pelo serviço): %v", err)
 	}
 
 	// Papel do banco: escreve nas tabelas novas, não apaga auditoria.
