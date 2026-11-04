@@ -99,7 +99,11 @@ func TestInstantaneosParaParidade(t *testing.T) {
 	if err := e.pool.QueryRow(context.Background(), `SELECT numero_cnj FROM processos WHERE numero_cnj<>'' ORDER BY codigo LIMIT 1`).Scan(&numProc1); err != nil {
 		t.Fatal(err)
 	}
-	for _, caminho := range []string{"/agenda/" + cmp1 + "/cancelar", "/diligencias/" + dil1 + "/cancelar", "/intimacoes/" + intim1 + "/cancelar"} {
+	// Plano 6: drawer "Intimação" (botão Ver) de uma linha do DataJud e de uma do DJEN.
+	var dj1, djen1 string
+	_ = e.pool.QueryRow(context.Background(), `SELECT id::text FROM intimacoes WHERE origem='DataJud' AND tipo='Intimação'`).Scan(&dj1)
+	_ = e.pool.QueryRow(context.Background(), `SELECT id::text FROM intimacoes WHERE origem='DJEN' AND status='triagem' LIMIT 1`).Scan(&djen1)
+	for _, caminho := range []string{"/agenda/" + cmp1 + "/cancelar", "/diligencias/" + dil1 + "/cancelar", "/intimacoes/" + intim1 + "/cancelar", "/intimacoes/" + dj1 + "/detalhe", "/intimacoes/" + djen1 + "/detalhe"} {
 		_, frag := adv.do("GET", caminho, nil, map[string]string{"HX-Request": "true"})
 		alvo := filepath.Join(out, filepath.FromSlash(strings.TrimPrefix(caminho, "/")))
 		if err := os.MkdirAll(filepath.Dir(alvo), 0o750); err != nil {
@@ -123,7 +127,7 @@ func TestInstantaneosParaParidade(t *testing.T) {
 	if err := e.pool.QueryRow(context.Background(), `SELECT id FROM oab_monitoradas LIMIT 1`).Scan(&oab1); err != nil {
 		t.Fatal(err)
 	}
-	for _, caminho := range []string{"/coleta-djen/nova", "/coleta-djen/" + oab1 + "/editar"} {
+	for _, caminho := range []string{"/coleta-djen/nova", "/coleta-djen/" + oab1 + "/editar", "/coleta-djen/sigilosos/novo"} {
 		_, frag := adm.do("GET", caminho, nil, map[string]string{"HX-Request": "true"})
 		alvo := filepath.Join(out, filepath.FromSlash(strings.TrimPrefix(caminho, "/")))
 		if err := os.MkdirAll(filepath.Dir(alvo), 0o750); err != nil {

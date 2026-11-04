@@ -63,3 +63,14 @@
 | Cancelar compromisso/diligência/intimação, sem Excluir; tarefa sem exclusão | testes HTTP e enumeração de rotas |
 | Verificação ao sair do campo do número (JS), clique real nos botões, capturas 1440/400 | **não feito no Chrome** |
 | Conferência do advogado na tela real | pendente |
+
+## Plano 6 — Monitor DataJud, emenda E1–E3 (04/11/2026)
+| Item | Estado |
+|---|---|
+| Intimações com origens DataJud/DJEN (linhas e ordem) x B | feito no Chrome: idênticas (`paridade/RELATORIO-6.md`) |
+| Rodapé com 3 linhas x B | feito: texto idêntico |
+| Botão "Ver" + drawer "Intimação" (JS executado) | feito: abre, mostra os campos e fecha |
+| Página Coleta DJEN (monitor e sigilosos), drawer do sigiloso | testes HTTP; texto lido no Chrome; **sem comparação de estilo** |
+| Capturas 1440/400 | **não feito** (só 1568) |
+| Teste manual orientado (chave, ligar com UM processo, conferir linha de base e formato real) | **pendente** — `docs/operacao/MONITOR-DATAJUD.md` |
+| Conferência do advogado na tela real | pendente |

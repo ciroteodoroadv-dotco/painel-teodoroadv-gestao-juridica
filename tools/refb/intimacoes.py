@@ -75,21 +75,21 @@ _DESC_JUD = ("Movimentação processual (DataJud). Esta fonte não fornece o teo
              "Prazo interno de confirmação (2 dias corridos). NÃO é o prazo processual: o advogado apura o prazo da intimação.")
 
 
-def _tarefa_jud(n, titulo, subtitulo, descricao):
+def _tarefa_jud(n, titulo, subtitulo, descricao, hash_=None):
     return {"arquivo": f"a-confirmar/tar-{n:04d}.md", "estado": "a-confirmar", "codigo": f"TAR. {n:07d}", "title": titulo,
             "subtitulo": subtitulo, "prioridade": "Normal", "prazo": "", "prazo_fatal": _PRAZO_INTERNO, "data_base": "",
-            "responsaveis": [], "criado_por": "", "origem_tipo": "processo", "origem_id": "PRO. 0000001", "tarefa_pai": "",
+            "responsaveis": [], "criado_por": "", "origem_tipo": "DataJud" if hash_ else "processo", "origem_id": hash_ or "PRO. 0000001", "tarefa_pai": "",
             "partes": [], "observacoes": "", "descricao": descricao}
 
 
 TAREFAS_DJEN += [
-    _tarefa_jud(10, f"Analisar movimentação — Intimação — {_NUM_P1}", "Análise de decisão", _DESC_JUD),
+    _tarefa_jud(10, f"Analisar movimentação — Intimação — {_NUM_P1}", "Análise de decisão", _DESC_JUD, "dj-1"),
     _tarefa_jud(11, f"Novidades do dia — {_NUM_P1}", "Análise consolidada do dia",
                 "Novidades coletadas no dia.\nDataJud: Intimação (G1)\nDataJud: Despacho (G2)"),
-    _tarefa_jud(12, f"Analisar movimentação — Despacho — {_NUM_P1}", "Análise de decisão", _DESC_JUD),
+    _tarefa_jud(12, f"Analisar movimentação — Despacho — {_NUM_P1}", "Análise de decisão", _DESC_JUD, "dj-2"),
 ]
 
-_MSG_MON = ("Processos: 3. Consultados com sucesso: 1. Sem registro ou parciais: 2. Sem número CNJ válido: 0. Falhas: 0. "
+_MSG_MON = ("Processos: 3. Consultados com sucesso: 1. Sem registro ou parciais: 1. Sem número CNJ válido: 1. Falhas: 0. "
             "Movimentações novas: 2. Linhas de base registradas: 0.")
 SINCRONIZACAO["fontes"] = [
     SINCRONIZACAO["fontes"][0],
