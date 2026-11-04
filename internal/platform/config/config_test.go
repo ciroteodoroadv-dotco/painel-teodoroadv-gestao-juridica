@@ -256,3 +256,31 @@ func TestCalculadoraRegrasValidadas(t *testing.T) {
 		t.Error("valor inválido deveria ser recusado")
 	}
 }
+
+func TestIndicesECEPVemDesligadosPorPadrao(t *testing.T) {
+	c, err := Load(envOf(baseVars(), nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	i := c.Indices
+	if i.Ativo || i.URL != "https://api.bcb.gov.br" || i.Intervalo != 24*time.Hour || i.ValidadeDias != 40 || c.CEP.Ativo || c.CEP.URL != "https://viacep.com.br" {
+		t.Fatalf("padrões: %+v %+v", i, c.CEP)
+	}
+}
+
+func TestIndicesECEPVariaveis(t *testing.T) {
+	v := baseVars()
+	v["PAINEL_INDICES_ATIVO"], v["PAINEL_INDICES_INTERVALO"], v["PAINEL_INDICES_VALIDADE_DIAS"], v["PAINEL_CEP_ATIVO"] = "true", "12h", "60", "1"
+	c, err := Load(envOf(v, nil))
+	if err != nil || !c.Indices.Ativo || c.Indices.Intervalo != 12*time.Hour || c.Indices.ValidadeDias != 60 || !c.CEP.Ativo {
+		t.Fatalf("variáveis: %+v %+v %v", c.Indices, c.CEP, err)
+	}
+	for nome, valor := range map[string]string{"PAINEL_INDICES_ATIVO": "talvez", "PAINEL_INDICES_INTERVALO": "5m", "PAINEL_INDICES_VALIDADE_DIAS": "0",
+		"PAINEL_INDICES_URL": "http://api.bcb.gov.br", "PAINEL_CEP_ATIVO": "sim", "PAINEL_CEP_URL": "http://viacep.com.br"} {
+		w := baseVars()
+		w[nome] = valor
+		if _, err := Load(envOf(w, nil)); err == nil {
+			t.Errorf("%s=%q deveria ser recusado", nome, valor)
+		}
+	}
+}

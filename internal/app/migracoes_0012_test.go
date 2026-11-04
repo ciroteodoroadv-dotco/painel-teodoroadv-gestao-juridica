@@ -76,7 +76,7 @@ func TestMigracao0012PreservaIntimacoesDescartadas(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
 	_, uid := e.user("m12b@exemplo.test", auth.Advogado)
-	for range 3 { // 0014, 0013 e 0012: volta ao esquema da 0011
+	for range 4 { // 0015, 0014, 0013 e 0012: volta ao esquema da 0011
 		if err := migrate.Down(ctx, e.pool); err != nil {
 			t.Fatal(err)
 		}

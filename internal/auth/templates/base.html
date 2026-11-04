@@ -54,10 +54,10 @@
 {{template "content" .}}
     </div>
 
-    <section id="syncStatus" class="sync-status" aria-label="Estado das coletas" data-refresh="/sync/estado">{{template "syncConteudo" .Sync}}</section>
+    <section id="syncStatus" class="sync-status" aria-label="Estado das coletas" data-refresh="/sync/estado" data-fragmento="sync" data-intervalo="60">{{template "syncConteudo" .Sync}}</section>
   </main>
 </div>
-<div id="idxTicker" class="idx-ticker" role="status" aria-label="Índices econômicos"><span class="idxt-status">Índices econômicos: não sincronizado</span></div>
+<div id="idxTicker" class="idx-ticker" role="status" aria-label="Índices econômicos" data-refresh="/fragmentos/indices" data-fragmento="indices" data-intervalo="30">{{if .Ticker}}{{.Ticker}}{{else}}<span class="idxt-status">Índices econômicos: não sincronizado</span>{{end}}</div>
 
 <div class="drawer-overlay hidden" id="drawerOverlay" aria-hidden="true">
   <div class="drawer" id="drawer" role="dialog" aria-modal="false" aria-labelledby="drawerTitle" tabindex="-1"></div>

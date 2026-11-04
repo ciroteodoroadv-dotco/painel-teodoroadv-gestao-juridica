@@ -42,6 +42,9 @@ type Config struct {
 
 	// Monitor do DataJud (Plano 6): DESLIGADO por padrão.
 	DataJud DataJud
+	// Índices do BCB e consulta de CEP (Plano 8): DESLIGADOS por padrão.
+	Indices Indices
+	CEP     CEP
 
 	// Plano 7: só o advogado liga, depois de validar docs/juridico/REGRAS-DE-PRAZO.md. Ausente = false.
 	CalculadoraRegrasValidadas bool
@@ -110,6 +113,7 @@ func Load(e Env) (Config, error) {
 
 	djenAtivo, djenURL, djenInt, djenAlerta := loadDJEN(e, &errs)
 	datajud := loadDataJud(e, &errs)
+	indices, cep := loadIndices(e, &errs), loadCEP(e, &errs)
 	var regrasValidadas bool
 	switch v := strings.ToLower(strings.TrimSpace(e.Getenv("PAINEL_CALCULADORA_REGRAS_VALIDADAS"))); v {
 	case "", "false", "0":
@@ -137,7 +141,7 @@ func Load(e Env) (Config, error) {
 		SessionKey:       sessionKey,
 		FieldKey:         fieldKey,
 		DJENAtivo:        djenAtivo, DJENURL: djenURL, DJENIntervalo: djenInt, DJENAlertaHoras: djenAlerta,
-		DataJud: datajud, CalculadoraRegrasValidadas: regrasValidadas,
+		DataJud: datajud, Indices: indices, CEP: cep, CalculadoraRegrasValidadas: regrasValidadas,
 	}, nil
 }
 

@@ -83,12 +83,16 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	if err != nil {
 		return err
 	}
+	ind, err := montarIndices(a, rt, pool, &o)
+	if err != nil {
+		return err
+	}
 	cal := &calendario.Service{Pool: pool}
 	if err := cal.Semear(context.Background(), webx.Hoje(time.Now()).Year()); err != nil {
 		return err
 	}
 	if o.out != nil {
-		*o.out = Servicos{Intimacoes: intim, Monitor: mon, Coletas: intim.Coletas, Calendario: cal}
+		*o.out = Servicos{Intimacoes: intim, Monitor: mon, Coletas: intim.Coletas, Calendario: cal, Indices: ind}
 	}
 
 	(&prazos.Handler{A: a, S: praz, Cal: cal, Validada: o.regrasValidadas, Agora: o.agora}).Register(rt) // 1º: widget no topo de "Hoje"

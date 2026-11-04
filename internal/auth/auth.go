@@ -51,6 +51,7 @@ type Auth struct {
 	faixas  []FaixaFunc
 	widgets []WidgetFunc
 	sync    func(context.Context) ([]coletas.Estado, error)
+	ticker  func(context.Context) (template.HTML, error)
 	gate    denyGate
 }
 
@@ -82,7 +83,8 @@ type PageData struct {
 	Faixas                          []Faixa
 	Widgets                         []Widget
 	Sync                            SyncView
-	Data                            any // dados específicos da página de um domínio
+	Ticker                          template.HTML // miolo do rodapé de índices (vem do domínio indices)
+	Data                            any           // dados específicos da página de um domínio
 }
 
 // Widget é um bloco da tela "Hoje" fornecido por um domínio (HTML já escapado pelo próprio domínio).
@@ -117,6 +119,7 @@ func (a *Auth) Render(w http.ResponseWriter, r *http.Request, status int, t *tem
 	d.Tab = tabOf(r.URL.Path)
 	if d.Role != "" {
 		d.Sync = a.syncView(r.Context())
+		d.Ticker = a.tickerView(r.Context())
 	}
 	if d.Head.Title == "" {
 		d.Head.Title = d.Title

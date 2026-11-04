@@ -132,7 +132,7 @@ func TestRodapeEstadoDasColetas(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, pg = adv.get("/agenda")
-	ordem(t, "rodapé", pg, `<section id="syncStatus" class="sync-status" aria-label="Estado das coletas" data-refresh="/sync/estado">`,
+	ordem(t, "rodapé", pg, `<section id="syncStatus" class="sync-status" aria-label="Estado das coletas" data-refresh="/sync/estado" data-fragmento="sync" data-intervalo="60">`,
 		`<strong>Estado das coletas</strong>`, `<p>Histórico local. Não comprova agendamento ativo nem substitui a conferência nas fontes oficiais.</p>`,
 		`<ul><li>DJEN: última coleta concluída. Tentativa: 03/11/2026, 12:04:05 (Brasília). Sucesso: 03/11/2026, 12:04:05 (Brasília). OABs: 1.</li></ul>`)
 	if strings.Contains(pg, `class="sync-error"`) {

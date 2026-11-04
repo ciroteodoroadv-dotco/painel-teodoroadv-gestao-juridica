@@ -4,7 +4,7 @@ import "time"
 
 // Rótulos e estados do rodapé, iguais aos de 16-sync-status.js do painel B.
 var (
-	rotulos = map[string]string{"intimacoes": "DJEN", "monitor": "DataJud", "monitor-segredos": "DJEN por processo sigiloso"}
+	rotulos = map[string]string{"intimacoes": "DJEN", "monitor": "DataJud", "monitor-segredos": "DJEN por processo sigiloso", "indices": "Índices (BCB)"}
 	estados = map[string]string{"sucesso": "última coleta concluída", "parcial": "coleta parcial", "falha": "erro",
 		"bloqueado": "bloqueado", "nao_sincronizado": "sem tentativa registrada"}
 )

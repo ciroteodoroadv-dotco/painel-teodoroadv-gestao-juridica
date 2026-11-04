@@ -69,9 +69,10 @@
       });
   };
 
-  // Rodapé "Estado das coletas" (16-sync-status.js do B): <section data-refresh="/sync/estado"> recarrega só o miolo,
-  // a cada 60 s e ao voltar à aba. Só lê o histórico local do painel; nunca dispara coleta nem consulta fonte externa.
-  var buscandoSync = false;
+  // Rodapés atualizáveis (16-sync-status.js e 13-indices.js do B): todo elemento com data-refresh="URL" recarrega só o miolo,
+  // a cada data-intervalo segundos (padrão 60) e ao voltar à aba. Só lê o último estado gravado; nunca dispara coleta nem
+  // consulta fonte externa. data-fragmento confere o cabeçalho X-Painel-Fragmento da resposta.
+  var buscando = {};
   function syncIndisponivel(el) {
     var t = document.createElement("strong");
     t.textContent = "Estado das coletas indisponível";
@@ -79,19 +80,25 @@
     p.textContent = "Não foi possível ler o histórico local. Não presuma que houve atualização. Confira as fontes oficiais.";
     el.replaceChildren(t, p);
   }
-  App.atualizarSync = function () {
-    var el = document.querySelector("[data-refresh]");
-    if (!el || buscandoSync) return Promise.resolve();
-    buscandoSync = true;
-    return fetch(el.getAttribute("data-refresh"), { cache: "no-store", credentials: "same-origin" })
+  function atualizar(el) {
+    var url = el.getAttribute("data-refresh");
+    if (buscando[url]) return Promise.resolve();
+    buscando[url] = true;
+    return fetch(url, { cache: "no-store", credentials: "same-origin" })
       .then(function (r) {
-        if (!r.ok || r.headers.get("X-Painel-Fragmento") !== "sync") throw new Error("indisponível");
+        if (!r.ok || r.headers.get("X-Painel-Fragmento") !== el.getAttribute("data-fragmento")) throw new Error("indisponível");
         return r.text();
       })
       .then(function (html) { el.replaceChildren.apply(el, App.nodesDeHTML(html)); })
-      .catch(function () { syncIndisponivel(el); })
-      .then(function () { buscandoSync = false; });
+      .catch(function () { if (el.id === "syncStatus") syncIndisponivel(el); /* o rodapé de índices mantém o último estado exibido */ })
+      .then(function () { buscando[url] = false; });
+  }
+  App.atualizarSync = function () {
+    return Promise.all(Array.prototype.map.call(document.querySelectorAll("[data-refresh]"), atualizar));
   };
   document.addEventListener("visibilitychange", function () { if (!document.hidden) App.atualizarSync(); });
-  setInterval(function () { if (!document.hidden) App.atualizarSync(); }, 60000);
+  Array.prototype.forEach.call(document.querySelectorAll("[data-refresh]"), function (el) {
+    var seg = parseInt(el.getAttribute("data-intervalo"), 10) || 60;
+    setInterval(function () { if (!document.hidden) atualizar(el); }, seg * 1000);
+  });
 })();

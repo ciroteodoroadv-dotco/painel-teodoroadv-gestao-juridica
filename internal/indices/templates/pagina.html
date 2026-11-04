@@ -1,0 +1,11 @@
+{{define "content"}}{{with .Data}}<div class="form-block">
+    <strong>{{if .Ativa}}Coleta ativa{{else}}Coleta desligada neste ambiente.{{end}}</strong><br>
+    {{.Estado}}<br>
+    O rodapé é informativo: índice não substitui a consulta à fonte oficial para cálculo judicial.
+  </div>
+  {{if .Ativa}}<form class="toolbar" data-drawer-form method="post" action="/admin/indices/atualizar">
+    <button type="submit" class="btn btn-primary btn-small">Atualizar índices agora</button>
+  </form>{{end}}
+  {{if .Linhas}}<table><thead><tr><th>Índice</th><th>Valor</th><th>Referência</th><th>Obtido em</th><th>Situação</th></tr></thead>
+    <tbody>{{range .Linhas}}<tr><td>{{.Rotulo}}</td><td class="tabular">{{.Valor}}</td><td class="tabular">{{.Ref}}</td><td class="tabular">{{.Obtido}}</td><td>{{.Situacao}}</td></tr>{{end}}</tbody></table>{{else}}<div class="empty"><p>Nenhum índice coletado ainda.</p></div>{{end}}
+{{end}}{{end}}

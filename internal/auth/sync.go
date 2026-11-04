@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"html/template"
 	"net/http"
 
 	"painelteodoro/internal/platform/coletas"
@@ -47,4 +48,19 @@ func (a *Auth) syncFragmento(w http.ResponseWriter, r *http.Request, _ *Session)
 	if err := BaseTemplate().ExecuteTemplate(w, "syncConteudo", a.syncView(r.Context())); err != nil {
 		a.Log.Error("falha ao renderizar o rodapé de coletas")
 	}
+}
+
+// SetTickerSource registra de onde vem o miolo do rodapé de índices (o último estado gravado; nunca consulta fonte externa).
+func (a *Auth) SetTickerSource(f func(context.Context) (template.HTML, error)) { a.ticker = f }
+
+func (a *Auth) tickerView(ctx context.Context) template.HTML {
+	if a.ticker == nil {
+		return ""
+	}
+	h, err := a.ticker(ctx)
+	if err != nil {
+		a.Log.Error("falha ao ler os índices do rodapé")
+		return template.HTML("<span class=\"idxt-status\">Índices econômicos: indisponível</span>")
+	}
+	return h
 }

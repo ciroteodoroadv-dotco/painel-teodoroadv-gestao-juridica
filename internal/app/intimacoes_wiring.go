@@ -10,6 +10,7 @@ import (
 
 	"painelteodoro/internal/agenda"
 	"painelteodoro/internal/auth"
+	"painelteodoro/internal/indices"
 	"painelteodoro/internal/intimacoes"
 	"painelteodoro/internal/intimacoes/djen"
 	"painelteodoro/internal/monitor"
@@ -35,12 +36,14 @@ type Servicos struct {
 	Monitor    *monitor.Service
 	Coletas    *coletas.Store
 	Calendario *calendario.Service
+	Indices    *indices.Service
 }
 
 type options struct {
 	regrasValidadas bool
 	djen            DJEN
 	datajud         DataJud
+	indices         Indices
 	sigiloso        intimacoes.ColetorPorNumero
 	envolveMonit    func(processos.Monitoramento) processos.Monitoramento
 	coletor         intimacoes.Coletor

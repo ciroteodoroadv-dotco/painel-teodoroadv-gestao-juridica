@@ -86,7 +86,9 @@ func serve() error {
 	djenCfg := app.DJEN{Ativo: cfg.DJENAtivo, BaseURL: cfg.DJENURL, Intervalo: cfg.DJENIntervalo, AlertaHoras: cfg.DJENAlertaHoras}
 	dj := cfg.DataJud
 	datajudCfg := app.DataJud{Ativo: dj.Ativo, BaseURL: dj.URL, Chave: func() string { return string(dj.Chave) }, Intervalo: dj.Intervalo, Pausa: dj.IntervaloEntreProcessos, AlertaHoras: dj.AlertaHoras}
-	if err := app.RegisterDomains(a, rt, pool, cfg.FieldKey, cfg.DocsDir, app.WithDJEN(djenCfg), app.WithDataJud(datajudCfg), app.WithCalculadoraValidada(cfg.CalculadoraRegrasValidadas), app.WithServicos(&svcs)); err != nil {
+	ix := cfg.Indices
+	indicesCfg := app.Indices{Ativo: ix.Ativo, BaseURL: ix.URL, Intervalo: ix.Intervalo, ValidadeDias: ix.ValidadeDias}
+	if err := app.RegisterDomains(a, rt, pool, cfg.FieldKey, cfg.DocsDir, app.WithDJEN(djenCfg), app.WithDataJud(datajudCfg), app.WithIndices(indicesCfg), app.WithCalculadoraValidada(cfg.CalculadoraRegrasValidadas), app.WithServicos(&svcs)); err != nil {
 		return fmt.Errorf("pasta de documentos ou coleta de intimações: %w", err)
 	}
 	// Coleta do DJEN: DESLIGADA por padrão. Desligada, só registra o estado "bloqueado" (sem rede e sem agendador).
@@ -107,6 +109,16 @@ func serve() error {
 		log.Warn("monitor do DataJud LIGADO", "intervalo", cfg.DataJud.Intervalo.String())
 	} else {
 		log.Info("monitor do DataJud desligado neste ambiente")
+	}
+
+	// Índices do BCB (rodapé): DESLIGADOS por padrão (PAINEL_INDICES_ATIVO). Desligados, só registram "bloqueado" (sem rede e sem agendador).
+	if err := svcs.Indices.IniciarEstado(ctx); err != nil {
+		return fmt.Errorf("estado dos índices: %w", err)
+	}
+	if svcs.Indices.Iniciar(ctx, log, 3*time.Minute) {
+		log.Warn("coleta dos índices do BCB LIGADA", "intervalo", cfg.Indices.Intervalo.String())
+	} else {
+		log.Info("coleta dos índices do BCB desligada neste ambiente")
 	}
 
 	srv := httpx.NewServer(cfg.Addr, httpx.Chain(cfaccess.Middleware(verifier(cfg, log), log, mux), log))
