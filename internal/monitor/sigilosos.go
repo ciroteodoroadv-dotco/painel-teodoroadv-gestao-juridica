@@ -90,7 +90,7 @@ func (s *Service) sigilosos(ctx context.Context, ator, reqID string) {
 		_ = s.Coletas.Registrar(ctx, estadoColeta(ModuloSigilosos, "DJEN", status, msg, &agora))
 	}
 	todos, err := s.ListarSigilosos(ctx)
-	if err != nil || s.Sigilosos == nil {
+	if err != nil {
 		reg("falha", "Não foi possível ler os processos em segredo de justiça.")
 		return
 	}
@@ -102,6 +102,10 @@ func (s *Service) sigilosos(ctx context.Context, ator, reqID string) {
 	}
 	if len(ativos) == 0 {
 		reg("nao_sincronizado", "Nenhum processo em segredo de justiça cadastrado.")
+		return
+	}
+	if s.Sigilosos == nil {
+		reg("bloqueado", "Consulta do DJEN desligada neste ambiente (PAINEL_DJEN_ATIVO).")
 		return
 	}
 	ok, falhas, novas := 0, 0, 0

@@ -69,8 +69,8 @@ func TestAgendaIntimacoesTabelaDoB(t *testing.T) {
 		if strings.Contains(p, "/decidir") || strings.Contains(p, ">Confirmar<") || strings.Contains(p, ">Cancelar<") {
 			t.Errorf("%s não decide intimação: botões não podem aparecer", nome)
 		}
-		if !strings.Contains(p, `<td class="row-actions">—</td>`) {
-			t.Errorf("%s: a coluna de ações deve mostrar —", nome)
+		if !strings.Contains(p, `<td class="row-actions"><button type="button" class="btn-text" data-drawer="/intimacoes/`+ids[0]+`/detalhe">Ver</button></td>`) {
+			t.Errorf("%s: a coluna de ações só traz o botão Ver", nome)
 		}
 	}
 	if regexp.MustCompile(`\son[a-z]+=|\sstyle=`).MatchString(pg) {

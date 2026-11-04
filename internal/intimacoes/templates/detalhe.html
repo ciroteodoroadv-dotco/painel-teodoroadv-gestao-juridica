@@ -1,0 +1,12 @@
+{{define "detalhe"}}<h2>Intimação</h2>
+    <p class="drawer-sub">Registro de leitura. A decisão (Confirmar ou Cancelar) continua na tabela.</p>
+    {{if .AvisoFonte}}<p class="aviso-fonte">{{.AvisoFonte}}</p>{{end}}
+    <div class="field"><label>Origem</label><div>{{.Origem}}</div></div>
+    <div class="field"><label>Tribunal</label><div>{{.Tribunal}}</div></div>
+    <div class="field"><label>Órgão</label><div>{{.Orgao}}</div></div>
+    <div class="field"><label>Processo</label><div class="tabular">{{.Processo}}</div></div>
+    <div class="field"><label>Data</label><div class="tabular">{{.Data}}</div></div>
+    <div class="field"><label>Tipo</label><div>{{.Tipo}}</div></div>
+    <div class="field"><label>Texto completo</label><div class="texto-integral">{{.Texto}}</div></div>
+    <div class="field"><label>Link</label><div>{{if .Link}}<a href="{{.Link}}" target="_blank" rel="noopener noreferrer">{{.Link}}</a>{{else}}—{{end}}</div></div>
+    <div class="drawer-actions"><button type="button" class="btn btn-ghost" data-drawer-fechar>Fechar</button></div>{{end}}

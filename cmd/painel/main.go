@@ -84,7 +84,9 @@ func serve() error {
 	a.RegisterPages(rt)
 	var svcs app.Servicos
 	djenCfg := app.DJEN{Ativo: cfg.DJENAtivo, BaseURL: cfg.DJENURL, Intervalo: cfg.DJENIntervalo, AlertaHoras: cfg.DJENAlertaHoras}
-	if err := app.RegisterDomains(a, rt, pool, cfg.FieldKey, cfg.DocsDir, app.WithDJEN(djenCfg), app.WithServicos(&svcs)); err != nil {
+	dj := cfg.DataJud
+	datajudCfg := app.DataJud{Ativo: dj.Ativo, BaseURL: dj.URL, Chave: func() string { return string(dj.Chave) }, Intervalo: dj.Intervalo, Pausa: dj.IntervaloEntreProcessos, AlertaHoras: dj.AlertaHoras}
+	if err := app.RegisterDomains(a, rt, pool, cfg.FieldKey, cfg.DocsDir, app.WithDJEN(djenCfg), app.WithDataJud(datajudCfg), app.WithServicos(&svcs)); err != nil {
 		return fmt.Errorf("pasta de documentos ou coleta de intimações: %w", err)
 	}
 	// Coleta do DJEN: DESLIGADA por padrão. Desligada, só registra o estado "bloqueado" (sem rede e sem agendador).
@@ -95,6 +97,16 @@ func serve() error {
 		log.Warn("coleta de intimações do DJEN LIGADA", "intervalo", cfg.DJENIntervalo.String())
 	} else {
 		log.Info("coleta de intimações do DJEN desligada neste ambiente")
+	}
+
+	// Monitor do DataJud: DESLIGADO por padrão (PAINEL_DATAJUD_ATIVO). Desligado, só registra "bloqueado" (sem rede e sem agendador).
+	if err := svcs.Monitor.IniciarEstado(ctx); err != nil {
+		return fmt.Errorf("estado do monitor do DataJud: %w", err)
+	}
+	if svcs.Monitor.Iniciar(ctx, log, 5*time.Minute) {
+		log.Warn("monitor do DataJud LIGADO", "intervalo", cfg.DataJud.Intervalo.String())
+	} else {
+		log.Info("monitor do DataJud desligado neste ambiente")
 	}
 
 	srv := httpx.NewServer(cfg.Addr, httpx.Chain(cfaccess.Middleware(verifier(cfg, log), log, mux), log))

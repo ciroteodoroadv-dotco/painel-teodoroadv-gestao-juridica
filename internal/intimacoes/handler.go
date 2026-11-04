@@ -37,6 +37,7 @@ func fragmento(names ...string) *template.Template {
 func (h *Handler) Register(rt *auth.Router) {
 	h.A.AddNavSistema("Coleta DJEN", "/coleta-djen", auth.PermColetaManage)
 	g := auth.PermColetaManage
+	rt.Handle("GET /intimacoes/{id}/detalhe", auth.PermAgendaRead, h.detalhe)
 	rt.Handle("POST /intimacoes/{id}/decidir", auth.PermIntimacaoDecide, h.decidir)
 	rt.Handle("GET /intimacoes/{id}/cancelar", auth.PermIntimacaoDecide, h.cancelarForm)
 	rt.Handle("POST /intimacoes/{id}/cancelar", auth.PermIntimacaoDecide, h.cancelar)
