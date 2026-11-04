@@ -3,10 +3,7 @@
 // docs/juridico/REGRAS-DE-PRAZO.md e quem valida é o advogado.
 package calculo
 
-import (
-	"errors"
-	"time"
-)
+import "time"
 
 // Regra é a forma de contar o prazo.
 type Regra string
@@ -63,11 +60,16 @@ type Resultado struct {
 }
 
 var (
-	ErrDias   = errors.New("Número de dias inválido.")
-	ErrEvento = errors.New("Data do evento inválida.")
-	ErrRegra  = errors.New("Regra do prazo desconhecida.")
-	ErrModo   = errors.New("Modo de contagem desconhecido.")
+	ErrDias   error = msgErro("Número de dias inválido.")
+	ErrEvento error = msgErro("Data do evento inválida.")
+	ErrRegra  error = msgErro("Regra do prazo desconhecida.")
+	ErrModo   error = msgErro("Modo de contagem desconhecido.")
 )
+
+// msgErro é um erro cujo texto é a frase mostrada ao usuário (por isso começa com maiúscula e termina com ponto).
+type msgErro string
+
+func (e msgErro) Error() string { return string(e) }
 
 // MaxDias é o teto aceito (evita laço sem fim por digitação errada).
 const MaxDias = 3650

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"html/template"
 	"net/http"
+	"net/url"
 
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/platform/webx"
@@ -165,7 +166,7 @@ func (h *Handler) removeForm(w http.ResponseWriter, r *http.Request, _ *auth.Ses
 	case 0:
 		h.fragmentoTpl(w, "confirmar", excluirView{P: *p})
 	case 1:
-		http.Redirect(w, r, "/processos/"+refs[0].ProcessoID+"/editar?da_pessoa="+id, http.StatusSeeOther)
+		http.Redirect(w, r, "/processos/"+url.PathEscape(refs[0].ProcessoID)+"/editar?da_pessoa="+url.QueryEscape(id), http.StatusSeeOther)
 	default:
 		h.fragmentoTpl(w, "escolha", excluirView{P: *p, Processos: refs})
 	}

@@ -167,6 +167,7 @@ func (h *Handler) download(w http.ResponseWriter, r *http.Request, s *auth.Sessi
 	hd.Set("X-Content-Type-Options", "nosniff")
 	hd.Set("Content-Security-Policy", "sandbox; default-src 'none'")
 	hd.Set("Content-Length", fmt.Sprint(len(data)))
+	// #nosec G705 -- falso positivo: o arquivo é cifrado em repouso e sai como anexo (attachment) com nosniff e CSP "sandbox; default-src 'none'"; nunca é interpretado como HTML.
 	_, _ = w.Write(data)
 }
 

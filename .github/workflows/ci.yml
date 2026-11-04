@@ -32,12 +32,8 @@ jobs:
         run: go test -race -count=1 -p 1 ./... # -p 1: os testes de integração recriam o banco
       - name: Limite de 300 linhas
         run: ./scripts/check-lines.sh
-      - name: Vulnerabilidades
-        run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
-      - name: Análise de segurança (gosec)
-        run: go run github.com/securego/gosec/v2/cmd/gosec@v2.22.4 -quiet -exclude-generated ./...
-      - name: Análise estática (staticcheck)
-        run: go run honnef.co/go/tools/cmd/staticcheck@2025.1.1 ./...
+      - name: Análise estática de segurança (gosec, staticcheck e govulncheck)
+        run: ./scripts/analise-estatica.sh # mesmas ferramentas e versões do relatório docs/plano-fusao/ANALISE-ESTATICA.md
       - name: Segredos no Git
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:

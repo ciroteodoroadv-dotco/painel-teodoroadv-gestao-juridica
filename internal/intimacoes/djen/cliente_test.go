@@ -133,7 +133,7 @@ func TestLimite429EsperaEMesmaPagina(t *testing.T) {
 }
 
 func TestLimite429PersistenteDesiste(t *testing.T) {
-	c, _, d := novo(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Error(w, "x", 429) }))
+	c, _, d := novo(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Error(w, "x", http.StatusTooManyRequests) }))
 	if _, err := c.Coletar(t.Context(), "123456", "SP", d1, d1); err == nil {
 		t.Fatal("429 sem fim deveria virar erro")
 	}

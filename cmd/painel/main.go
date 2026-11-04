@@ -88,7 +88,7 @@ func serve() error {
 	datajudCfg := app.DataJud{Ativo: dj.Ativo, BaseURL: dj.URL, Chave: func() string { return string(dj.Chave) }, Intervalo: dj.Intervalo, Pausa: dj.IntervaloEntreProcessos, AlertaHoras: dj.AlertaHoras}
 	ix := cfg.Indices
 	indicesCfg := app.Indices{Ativo: ix.Ativo, BaseURL: ix.URL, Intervalo: ix.Intervalo, ValidadeDias: ix.ValidadeDias}
-	if err := app.RegisterDomains(a, rt, pool, cfg.FieldKey, cfg.DocsDir, app.WithDJEN(djenCfg), app.WithDataJud(datajudCfg), app.WithIndices(indicesCfg), app.WithCalculadoraValidada(cfg.CalculadoraRegrasValidadas), app.WithServicos(&svcs)); err != nil {
+	if err := app.RegisterDomains(a, rt, pool, cfg.FieldKey, cfg.DocsDir, app.WithDJEN(djenCfg), app.WithDataJud(datajudCfg), app.WithIndices(indicesCfg), app.WithCEP(app.CEP{Ativo: cfg.CEP.Ativo, BaseURL: cfg.CEP.URL}), app.WithCalculadoraValidada(cfg.CalculadoraRegrasValidadas), app.WithServicos(&svcs)); err != nil {
 		return fmt.Errorf("pasta de documentos ou coleta de intimações: %w", err)
 	}
 	// Coleta do DJEN: DESLIGADA por padrão. Desligada, só registra o estado "bloqueado" (sem rede e sem agendador).
@@ -169,6 +169,7 @@ func healthcheck() int {
 		addr = ":8080"
 	}
 	c := http.Client{Timeout: 3 * time.Second}
+	// #nosec G704 -- falso positivo: host fixo (127.0.0.1) e porta vinda de PAINEL_ADDR, configuração do operador; não é entrada de usuário.
 	resp, err := c.Get("http://127.0.0.1" + addr + "/healthz")
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return 1

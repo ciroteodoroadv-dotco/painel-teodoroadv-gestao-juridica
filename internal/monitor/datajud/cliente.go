@@ -20,6 +20,11 @@ import (
 // BaseOficial é o endereço público do DataJud.
 const BaseOficial = "https://api-publica.datajud.cnj.jus.br"
 
+// msgErro é um erro cujo texto é a frase mostrada ao usuário (termina com ponto).
+type msgErro string
+
+func (e msgErro) Error() string { return string(e) }
+
 // MsgSemChave é o texto do estado quando a chave não foi configurada.
 const MsgSemChave = "Chave do DataJud não configurada."
 
@@ -93,7 +98,7 @@ func (c *Cliente) Consultar(ctx context.Context, alias, numeroCNJ string) (Resul
 		chave = strings.TrimSpace(c.cfg.Chave())
 	}
 	if chave == "" {
-		return Resultado{}, errors.New(MsgSemChave)
+		return Resultado{}, msgErro(MsgSemChave)
 	}
 	d := cnj.Digitos(numeroCNJ)
 	if len(d) != 20 || alias == "" || strings.ContainsAny(alias, "/?# ") {

@@ -64,7 +64,7 @@ func TestHashEstavelESemColisao(t *testing.T) {
 	if Hash(x) == Hash(y) {
 		t.Error("campos deslocados não podem colidir")
 	}
-	if Hash(x) != Hash(x) {
+	if h1, h2 := Hash(x), Hash(x); h1 != h2 {
 		t.Error("estável")
 	}
 	d := time.Date(2026, 11, 2, 0, 0, 0, 0, time.UTC)

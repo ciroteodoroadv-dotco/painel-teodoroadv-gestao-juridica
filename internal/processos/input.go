@@ -42,8 +42,6 @@ type normalized struct {
 	dupJust, dupDe                      string
 }
 
-func (n normalized) data(i int) *time.Time { return n.datas[i] }
-
 var rotulosData = [6]string{"Distribuição", "Citação", "Audiência", "Sentença", "Recursos", "Fase de execução"}
 
 func texto(campo, v string, max int) (string, error) {

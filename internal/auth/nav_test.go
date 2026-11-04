@@ -1,6 +1,9 @@
 package auth
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestMenuFiltraPorPermissaoEOrdena(t *testing.T) {
 	a := &Auth{}
@@ -9,7 +12,7 @@ func TestMenuFiltraPorPermissaoEOrdena(t *testing.T) {
 	a.AddNavCount("Segredo", "/segredo", PermUsersManage, nil)
 	a.AddNavSistema("Prazos", "/prazos", PermPrazoRead)
 
-	principal, sistema := a.menu(nil, Assistente, "/tarefas/abc")
+	principal, sistema := a.menu(context.Background(), Assistente, "/tarefas/abc")
 	if len(principal) != 2 || principal[0].Label != "Agenda" || principal[1].Label != "Tarefas" {
 		t.Fatalf("menu principal: %+v", principal)
 	}
@@ -19,7 +22,7 @@ func TestMenuFiltraPorPermissaoEOrdena(t *testing.T) {
 	if len(sistema) != 1 || sistema[0].Label != "Prazos" {
 		t.Errorf("menu do sistema: %+v", sistema)
 	}
-	if p, _ := a.menu(nil, Administrador, "/"); len(p) != 3 || !p[0].Active {
+	if p, _ := a.menu(context.Background(), Administrador, "/"); len(p) != 3 || !p[0].Active {
 		t.Errorf("a raiz deve marcar a Agenda: %+v", p)
 	}
 }

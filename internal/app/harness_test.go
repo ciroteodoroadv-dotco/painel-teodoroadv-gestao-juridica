@@ -150,19 +150,6 @@ func (e *env) count(sql string, args ...any) int {
 	return n
 }
 
-func idFrom(t *testing.T, r *http.Response, prefix string) string {
-	t.Helper()
-	loc := r.Header.Get("Location")
-	if !strings.HasPrefix(loc, prefix) {
-		t.Fatalf("redirecionamento inesperado: status=%d location=%q", r.StatusCode, loc)
-	}
-	id := strings.TrimPrefix(loc, prefix)
-	if i := strings.IndexAny(id, "?/"); i >= 0 {
-		id = id[:i]
-	}
-	return id
-}
-
 // semRede é o transporte HTTP dos testes: qualquer requisição de saída reprova o teste.
 type semRede struct{ t *testing.T }
 

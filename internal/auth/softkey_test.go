@@ -58,10 +58,11 @@ func (k *softKey) register(options []byte) []byte {
 	}
 	uid, _ := base64.RawURLEncoding.DecodeString(o.PublicKey.User.ID)
 	k.userID = uid
+	ponto, _ := k.priv.PublicKey.Bytes() // 0x04 || X || Y (formato não depreciado)
 	cose, _ := cbor.Marshal(map[int]any{
 		1: 2, 3: -7, -1: 1,
-		-2: k.priv.PublicKey.X.FillBytes(make([]byte, 32)),
-		-3: k.priv.PublicKey.Y.FillBytes(make([]byte, 32)),
+		-2: ponto[1:33],
+		-3: ponto[33:65],
 	})
 	rp := sha256.Sum256([]byte(k.rpID))
 	auth := append([]byte{}, rp[:]...)

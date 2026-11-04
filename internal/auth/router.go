@@ -87,6 +87,8 @@ func (rt *Router) Handle(pattern string, perm Perm, h HandlerFunc) {
 
 // parseMultipart lê o corpo multipart (já depois de sessão e permissão). Devolve false se respondeu erro.
 func (a *Auth) parseMultipart(w http.ResponseWriter, r *http.Request) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, 26<<20) // o httpx já limita; o limite explícito aqui deixa a regra visível (gosec G120)
+	// #nosec G120 -- o corpo já está limitado a 26 MiB pelo MaxBytesReader da linha anterior (e pelo httpx); a análise do gosec não reconhece essa atribuição.
 	err := r.ParseMultipartForm(26 << 20)
 	if err == nil {
 		return true

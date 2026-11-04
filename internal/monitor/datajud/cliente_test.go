@@ -191,7 +191,7 @@ func TestCorteTextoPorCaracteres(t *testing.T) {
 
 func TestChaveDoMovimento(t *testing.T) {
 	m := Movimento{Grau: "G1", Codigo: "26", Nome: "Distribuição", Complemento: "x", DataHora: time.Date(2025, 3, 10, 10, 0, 0, 0, time.UTC)}
-	if Chave(m) != Chave(m) || Chave(m) == "" {
+	if c1, c2 := Chave(m), Chave(m); c1 != c2 || c1 == "" {
 		t.Error("Chave instável")
 	}
 	a := Movimento{Grau: "G1", Nome: "a|b", Complemento: "c"}
