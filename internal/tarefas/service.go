@@ -18,12 +18,16 @@ type Service struct {
 	Vinculos VinculoLookup
 	Prazos   PrazoSync
 	Docs     DocumentoSink
-	Reauth   Reauth
 }
 
 func (s *Service) record(ctx context.Context, tx pgx.Tx, ac webx.Actor, action, id string) error {
 	return audit.Record(ctx, tx, audit.Event{Actor: ac.UserID, Action: action, TargetType: "tarefa",
 		TargetID: id, Result: audit.OK, RequestID: ac.RequestID})
+}
+
+func (s *Service) recordDePara(ctx context.Context, tx pgx.Tx, ac webx.Actor, action, id, de, para string) error {
+	return audit.Record(ctx, tx, audit.Event{Actor: ac.UserID, Action: action, TargetType: "tarefa", TargetID: id,
+		Result: audit.OK, RequestID: ac.RequestID, Meta: map[string]string{"de": de, "para": para}})
 }
 
 // msgSoAdvogado é a recusa a quem não é advogado e tenta tirar uma tarefa de "A confirmar".
@@ -161,7 +165,7 @@ func (s *Service) Mover(ctx context.Context, ac webx.Actor, id string, version i
 	if tag.RowsAffected() == 0 {
 		return s.whyNoRows(ctx, id)
 	}
-	if err = s.record(ctx, tx, ac, "tarefa.estado_movido", id); err == nil {
+	if err = s.recordDePara(ctx, tx, ac, "tarefa.estado_alterado", id, atual.Estado, novoEstado); err == nil {
 		err = tx.Commit(ctx)
 	}
 	if err != nil {

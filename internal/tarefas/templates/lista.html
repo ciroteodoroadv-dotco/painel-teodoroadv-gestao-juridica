@@ -26,8 +26,7 @@
         <option value="{{.Chave}}">{{.Rotulo}}</option>{{end}}
       </select>
       <button type="button" class="btn-text" data-drawer="/tarefas/{{$t.ID}}/editar">Editar</button>
-      <button type="button" class="btn-text" data-drawer="/tarefas/{{$t.ID}}/filha" data-drawer-sobrepor>Tarefa vinculada</button>{{if .CanDelete}}
-      <button type="button" class="btn-danger-text" data-drawer="/tarefas/{{$t.ID}}/excluir">Excluir</button>{{end}}{{end}}
+      <button type="button" class="btn-text" data-drawer="/tarefas/{{$t.ID}}/filha" data-drawer-sobrepor>Tarefa vinculada</button>{{end}}
     </td>
   </tr>{{end}}
 

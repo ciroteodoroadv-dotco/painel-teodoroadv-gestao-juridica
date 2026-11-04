@@ -122,8 +122,3 @@ type PrazoSync interface {
 type DocumentoSink interface {
 	Anexar(ctx context.Context, ac webx.Actor, tarefaID, origemTipo, origemID, nome string, conteudo io.Reader) error
 }
-
-// Reauth confere a senha do usuário logado antes de uma ação destrutiva.
-type Reauth interface {
-	Confirmar(ctx context.Context, ac webx.Actor, senha string) error
-}

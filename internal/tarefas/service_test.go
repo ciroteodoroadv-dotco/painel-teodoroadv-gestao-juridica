@@ -90,15 +90,6 @@ func (f *falsoPrazos) Confirmar(_ context.Context, _ webx.Actor, tarefaID string
 }
 func (f *falsoPrazos) ultima() chamada { return f.calls[len(f.calls)-1] }
 
-type falsoReauth struct{ senha string }
-
-func (f falsoReauth) Confirmar(_ context.Context, _ webx.Actor, senha string) error {
-	if senha != f.senha {
-		return webx.Invalidf("Senha incorreta.")
-	}
-	return nil
-}
-
 type falsoDocs struct{ nomes []string }
 
 func (f *falsoDocs) Anexar(_ context.Context, _ webx.Actor, _, _, _, nome string, c io.Reader) error {
@@ -169,7 +160,7 @@ func novoAmb(t *testing.T) *amb {
 		t.Fatal(err)
 	}
 	pz, dc := &falsoPrazos{}, &falsoDocs{}
-	s := &Service{Pool: pool, Pessoas: pes, Prazos: pz, Docs: dc, Reauth: falsoReauth{senha: "segredo-ok"},
+	s := &Service{Pool: pool, Pessoas: pes, Prazos: pz, Docs: dc,
 		Vinculos: falsoVinculos{ate: map[string][2]string{ate: {"ATE. 0000001", "MARIA EXEMPLO"}}, pro: map[string][2]string{pro: {"PRO. 0000001", "JOÃO FICTÍCIO"}}}}
 	return &amb{s: s, ac: ac, pool: pool, p: ids, ate: ate, pro: pro, prazos: pz, docs: dc}
 }
@@ -372,38 +363,37 @@ func TestTarefaFilha(t *testing.T) {
 	}
 }
 
-func TestExclusaoComSenha(t *testing.T) {
+func TestCancelarNaoApagaEAuditaDePara(t *testing.T) {
 	a := novoAmb(t)
 	ctx := context.Background()
-	in := a.in("A excluir")
+	in := a.in("A cancelar")
 	in.PrazoFatal = "2026-12-01"
 	id := a.criar(t, in, true)
-	invalido(t, a.s.Excluir(ctx, a.ac, id, 1, "senha-errada"), "Senha incorreta.")
-	if t1, err := a.s.Get(ctx, id); err != nil || t1 == nil {
-		t.Fatalf("senha errada não pode excluir: %v", err)
-	}
-	if err := a.s.Excluir(ctx, a.ac, id, 1, "segredo-ok"); err != nil {
+	antes, _ := a.s.Get(ctx, id)
+	if err := a.s.Mover(ctx, a.ac, id, 1, "canceladas", true); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.s.Get(ctx, id); !errors.Is(err, webx.ErrNotFound) {
-		t.Errorf("depois de excluir = %v", err)
+	dep, err := a.s.Get(ctx, id)
+	if err != nil || dep.Estado != "canceladas" || dep.Codigo != antes.Codigo || dep.Titulo != antes.Titulo {
+		t.Fatalf("a tarefa cancelada permanece, com o mesmo código e título: %+v %v", dep, err)
 	}
-	if c := a.prazos.ultima(); c.op != "encerrar" || c.motivo != "excluida" {
-		t.Errorf("excluir deveria encerrar o prazo: %+v", c)
+	if l, _ := a.s.Listar(ctx, ""); len(l) != 1 {
+		t.Errorf("a cancelada continua na lista (%d)", len(l))
 	}
-	var n int
-	_ = a.pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE action='tarefa.excluida'`).Scan(&n)
-	if n != 1 {
-		t.Errorf("auditoria tarefa.excluida = %d", n)
+	if c := a.prazos.ultima(); c.op != "encerrar" || c.motivo != "cancelada" {
+		t.Errorf("cancelar encerra o prazo ligado: %+v", c)
 	}
-	_ = a.pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE action='tarefa.exclusao_negada'`).Scan(&n)
-	if n != 1 {
-		t.Errorf("auditoria tarefa.exclusao_negada = %d", n)
+	var meta string
+	if err := a.pool.QueryRow(ctx, `SELECT meta::text FROM audit_events WHERE action='tarefa.estado_alterado' AND target_id=$1`, id).Scan(&meta); err != nil {
+		t.Fatalf("auditoria tarefa.estado_alterado: %v", err)
 	}
-	var excl bool
-	_ = a.pool.QueryRow(ctx, `SELECT excluido_em IS NOT NULL FROM tarefas WHERE id=$1`, id).Scan(&excl)
-	if !excl {
-		t.Error("a exclusão deve ser lógica")
+	if !strings.Contains(meta, "pendente") || !strings.Contains(meta, "canceladas") {
+		t.Errorf("a auditoria guarda de→para: %s", meta)
+	}
+	var apagadas int
+	_ = a.pool.QueryRow(ctx, `SELECT count(*) FROM tarefas WHERE excluido_em IS NOT NULL`).Scan(&apagadas)
+	if apagadas != 0 {
+		t.Error("nenhuma tarefa é apagada")
 	}
 }
 
@@ -442,7 +432,7 @@ func TestAgendaTarefas(t *testing.T) {
 	mk("A1", "Aula", "pendente", "2026-10-01")
 	mk("A2", "aulas", "pendente", "")
 	excl := mk("L5", "Ligação", "pendente", "")
-	if err := a.s.Excluir(ctx, a.ac, excl, 1, "segredo-ok"); err != nil {
+	if err := a.s.Mover(ctx, a.ac, excl, 1, "canceladas", true); err != nil {
 		t.Fatal(err)
 	}
 	for _, c := range []struct {

@@ -140,7 +140,7 @@ func TestTarefasPaginaEDrawersComOsTextosDoB(t *testing.T) {
 		`<span class="tarefa-meta-value tabular">10/11/2026</span>`, `<span class="badge prioridade-alta">Urgente</span>`,
 		`<span class="badge badge-danger">Prazo fatal: 12/11/2026</span>`, `Conferir os cálculos`, `<option value="">Mover para...</option>`,
 		`<option value="em-execucao">Em execução</option>`, `data-drawer="/tarefas/` + id + `/editar">Editar</button>`,
-		`data-drawer-sobrepor>Tarefa vinculada</button>`, `class="btn-danger-text" data-drawer="/tarefas/` + id + `/excluir">Excluir</button>`,
+		`data-drawer-sobrepor>Tarefa vinculada</button>`,
 		"Nenhuma tarefa neste estado."} {
 		if !strings.Contains(pg, w) {
 			t.Errorf("página sem %q", w)
@@ -217,37 +217,36 @@ func TestTarefasPaginaEDrawersComOsTextosDoB(t *testing.T) {
 		!strings.Contains(filha, `value="`+c.maria+`" selected`) || !strings.Contains(filha, `value="`+c.joao+`" selected`) {
 		t.Error("Tarefa vinculada deveria pré-preencher vínculo, partes e responsáveis")
 	}
-	// Excluir: texto adaptado (senha do usuário).
-	exc := c.adv.frag("/tarefas/" + id + "/excluir")
-	for _, w := range []string{"<h2>Excluir tarefa</h2>", "Sua senha *", "Confirme com a sua senha.", "Cancelar", ">Excluir</button>"} {
-		if !strings.Contains(exc, w) {
-			t.Errorf("Excluir sem %q", w)
-		}
+	// Tarefa é ata: não há como excluir (nem botão, nem drawer, nem rota).
+	if strings.Contains(c.adv.frag("/tarefas/"+id+"/editar"), "Excluir") {
+		t.Error("o drawer de edição não oferece exclusão")
+	}
+	if r, _ := c.adv.get("/tarefas/" + id + "/excluir"); r.StatusCode != 404 {
+		t.Errorf("GET /tarefas/{id}/excluir = %d, esperado 404", r.StatusCode)
 	}
 }
 
 func TestTarefasPermissoesEBotoes(t *testing.T) {
 	c := novoCenario(t)
 	id := c.adv.criarTarefa(t, tarefaForm("processo", c.pro, "Tarefa do processo"))
-	// Quem só lê (administrador) não vê botões; assistente escreve mas não exclui; advogado exclui.
+	// Quem só lê (administrador) não vê botões; assistente e advogado escrevem; ninguém exclui.
 	_, adm := c.adm.get("/tarefas")
-	for _, w := range []string{"Nova tarefa</a>", "/editar", "Mover para...", "Tarefa vinculada", "Excluir"} {
+	for _, w := range []string{"Nova tarefa</a>", "/editar", "Mover para...", "Tarefa vinculada"} {
 		if strings.Contains(adm, w) {
 			t.Errorf("administrador (só leitura) vê %q", w)
 		}
 	}
 	_, ass := c.ass.get("/tarefas")
-	if !strings.Contains(ass, "Editar</button>") || !strings.Contains(ass, "Mover para...") || strings.Contains(ass, ">Excluir</button>") {
+	if !strings.Contains(ass, "Editar</button>") || !strings.Contains(ass, "Mover para...") || strings.Contains(ass, "Excluir") {
 		t.Error("assistente deveria ver Editar e Mover, mas não Excluir")
 	}
 	if r, _ := c.adm.post("/tarefas", tarefaForm("processo", c.pro, "x")); r.StatusCode != 403 {
 		t.Errorf("administrador criando = %d", r.StatusCode)
 	}
-	if r, _ := c.ass.get("/tarefas/" + id + "/excluir"); r.StatusCode != 403 {
-		t.Errorf("assistente abrindo Excluir = %d, esperado 403", r.StatusCode)
-	}
-	if r, _ := c.ass.post("/tarefas/"+id+"/excluir", url.Values{"senha": {"cavalo-bateria-grampo-7"}, "version": {"1"}}); r.StatusCode != 403 {
-		t.Errorf("assistente excluindo = %d, esperado 403", r.StatusCode)
+	for nome, b := range map[string]*browser{"assistente": c.ass, "advogado": c.adv, "administrador": c.adm} {
+		if r, _ := b.post("/tarefas/"+id+"/excluir", url.Values{"senha": {"cavalo-bateria-grampo-7"}, "version": {"1"}}); r.StatusCode != 404 {
+			t.Errorf("%s excluindo = %d, esperado 404 (a rota não existe)", nome, r.StatusCode)
+		}
 	}
 	if st := c.adv.semCSRF("POST", "/tarefas", tarefaForm("processo", c.pro, "x")); st != 403 && st != 401 {
 		t.Errorf("sem CSRF = %d", st)
@@ -259,7 +258,7 @@ func TestTarefasPermissoesEBotoes(t *testing.T) {
 	}
 }
 
-func TestTarefasValidacoesMoverEExcluir(t *testing.T) {
+func TestTarefasValidacoesMoverECancelar(t *testing.T) {
 	c := novoCenario(t)
 	for nome, f := range map[string]url.Values{
 		"Título é obrigatório.":                          tarefaForm("atendimento", c.ate, " "),
@@ -303,25 +302,19 @@ func TestTarefasValidacoesMoverEExcluir(t *testing.T) {
 	if _, pg := c.adv.get("/tarefas"); !strings.Contains(pg, "Tarefa vinculada a: TAR. 0000001") {
 		t.Error("a lista deveria mostrar o código da tarefa-pai")
 	}
-	// Exclusão: senha errada não exclui; certa exclui logicamente, audita e some da lista.
-	r, body := c.adv.post("/tarefas/"+id+"/excluir", url.Values{"senha": {"senha-errada"}, "version": {"3"}})
-	if r.StatusCode != 400 || strings.TrimSpace(body) != "Não foi possível excluir a tarefa: Senha incorreta." {
-		t.Errorf("senha errada = %d %q", r.StatusCode, body)
+	// Cancelar (Mover para Cancelada): a tarefa permanece, com código e histórico; nada é apagado.
+	if r, _ := c.adv.post("/tarefas/"+id+"/mover", url.Values{"estado": {"canceladas"}, "version": {"3"}}); r.StatusCode != 200 {
+		t.Fatalf("cancelar = %d", r.StatusCode)
 	}
-	if c.e.count(`SELECT count(*) FROM tarefas WHERE id=$1 AND excluido_em IS NULL`, id) != 1 {
-		t.Fatal("senha errada não pode excluir")
+	_, pg := c.adv.get("/tarefas")
+	if !strings.Contains(pg, "Automática (editada)") || !strings.Contains(pg, `<span class="count">`) {
+		t.Error("a tarefa cancelada continua na lista")
 	}
-	if r, _ := c.adv.post("/tarefas/"+id+"/excluir", url.Values{"senha": {"cavalo-bateria-grampo-7"}, "version": {"3"}}); r.StatusCode != 200 ||
-		r.Header.Get("X-Painel-Ok") != "Tarefa exclu%C3%ADda." { // o texto vai em %XX: cabeçalho HTTP não carrega UTF-8
-		t.Fatalf("senha certa = %d %q", r.StatusCode, r.Header.Get("X-Painel-Ok"))
+	if c.e.count(`SELECT count(*) FROM tarefas WHERE id=$1 AND excluido_em IS NULL AND estado='canceladas'`, id) != 1 ||
+		c.e.count(`SELECT count(*) FROM tarefas WHERE excluido_em IS NOT NULL`) != 0 {
+		t.Error("cancelar não apaga nada")
 	}
-	if _, pg := c.adv.get("/tarefas"); strings.Contains(pg, "Automática (editada)") {
-		t.Error("tarefa excluída não pode aparecer na lista")
-	}
-	if c.e.count(`SELECT count(*) FROM tarefas WHERE id=$1 AND excluido_em IS NOT NULL`, id) != 1 {
-		t.Error("a exclusão deve ser lógica")
-	}
-	if c.e.count(`SELECT count(*) FROM audit_events WHERE action IN ('tarefa.excluida','tarefa.exclusao_negada','tarefa.criada','tarefa.alterada','tarefa.estado_movido')`) < 6 {
+	if c.e.count(`SELECT count(*) FROM audit_events WHERE action IN ('tarefa.criada','tarefa.alterada','tarefa.estado_alterado')`) < 5 {
 		t.Error("auditoria da tarefa incompleta")
 	}
 	if _, err := audit.Verify(context.Background(), c.e.pool); err != nil {

@@ -43,8 +43,6 @@ func (h *Handler) Register(rt *auth.Router) {
 	rt.Handle("POST /tarefas/{id}/mover", w, h.mover)
 	rt.Handle("POST /tarefas/{id}/documentos", w, h.documento)
 	rt.Handle("POST /tarefas/{id}/confirmar-prazo", auth.PermPrazoConfirm, h.confirmarPrazo)
-	rt.Handle("GET /tarefas/{id}/excluir", auth.PermTarefaDelete, h.excluirForm)
-	rt.Handle("POST /tarefas/{id}/excluir", auth.PermTarefaDelete, h.excluir)
 }
 
 // Grupo é um painel do acordeão: um dos 7 estados com as suas tarefas.
@@ -55,9 +53,9 @@ type Grupo struct {
 
 // Linha é uma tarefa na tabela, com o que a linha precisa para decidir os botões.
 type Linha struct {
-	T                                 *Tarefa
-	Outros                            []Estado // opções de "Mover para..." (os outros 6 estados)
-	CanWrite, CanDelete, CanConfirmar bool
+	T                      *Tarefa
+	Outros                 []Estado // opções de "Mover para..." (os outros 6 estados)
+	CanWrite, CanConfirmar bool
 }
 
 // Quantidade é o número do botão do grupo.
@@ -84,8 +82,7 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) 
 			if t.Estado != e.Chave {
 				continue
 			}
-			ln := Linha{T: t, CanWrite: escreve, CanDelete: escreve && auth.Can(s.Role, auth.PermTarefaDelete),
-				CanConfirmar: auth.Can(s.Role, auth.PermPrazoConfirm)}
+			ln := Linha{T: t, CanWrite: escreve, CanConfirmar: auth.Can(s.Role, auth.PermPrazoConfirm)}
 			for _, x := range Estados {
 				if x.Chave != e.Chave {
 					ln.Outros = append(ln.Outros, x)

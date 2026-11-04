@@ -77,7 +77,7 @@ func TestInstantaneosParaParidade(t *testing.T) {
 		}
 	}
 	for _, caminho := range []string{"/atendimentos/novo", "/atendimentos/" + ate1 + "/editar", "/atendimentos/pessoas", "/tarefas/nova",
-		"/tarefas/" + tar1 + "/editar", "/tarefas/" + tar1 + "/filha", "/tarefas/" + tar1 + "/excluir",
+		"/tarefas/" + tar1 + "/editar", "/tarefas/" + tar1 + "/filha",
 		"/pessoas/nova", "/pessoas/" + pAna + "/editar", "/processos/novo",
 		"/processos/" + pPro1 + "/editar", "/processos/" + pPro1 + "/estado", "/processos/" + pPro1 + "/andamento",
 		"/processos/" + pPro1 + "/financeiro", "/processos/" + pPro1 + "/providencia", "/processos/" + pPro1 + "/excluir"} {

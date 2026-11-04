@@ -28,7 +28,6 @@ const (
 	PermProcWrite        Perm = "processos:escrever"
 	PermTarefaRead       Perm = "tarefas:ler"
 	PermTarefaWrite      Perm = "tarefas:escrever"
-	PermTarefaDelete     Perm = "tarefas:excluir" // exclusão com reautenticação: advogado e administrador
 	PermAtendimentoRead  Perm = "atendimentos:ler"
 	PermAtendimentoWrite Perm = "atendimentos:escrever"
 	PermAgendaRead       Perm = "agenda:ler"
@@ -56,10 +55,10 @@ var matrix = func() map[Role]map[Perm]bool {
 	for _, p := range leitura {
 		m[Administrador][p], m[Advogado][p], m[Assistente][p] = true, true, true
 	}
-	for _, p := range []Perm{PermUsersManage, PermAuditRead, PermTarefaDelete, PermColetaManage} {
+	for _, p := range []Perm{PermUsersManage, PermAuditRead, PermColetaManage} {
 		m[Administrador][p] = true
 	}
-	for _, p := range []Perm{PermPessoasWrite, PermProcWrite, PermTarefaWrite, PermTarefaDelete, PermAtendimentoWrite, PermAgendaWrite, PermAudienciaWrite, PermAudienciaCancel, PermDiligenciaWrite, PermIntimacaoDecide, PermDocWrite, PermPrazoWrite, PermPrazoConfirm} {
+	for _, p := range []Perm{PermPessoasWrite, PermProcWrite, PermTarefaWrite, PermAtendimentoWrite, PermAgendaWrite, PermAudienciaWrite, PermAudienciaCancel, PermDiligenciaWrite, PermIntimacaoDecide, PermDocWrite, PermPrazoWrite, PermPrazoConfirm} {
 		m[Advogado][p] = true
 	}
 	for _, p := range []Perm{PermTarefaWrite, PermAtendimentoWrite, PermAgendaWrite, PermAudienciaWrite, PermDiligenciaWrite, PermPrazoWrite} {

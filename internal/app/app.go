@@ -60,7 +60,7 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	}
 	doc := &documentos.Service{Pool: pool, Store: store, Processos: proc, Pessoas: pes, Atendimentos: ate}
 	tar := &tarefas.Service{Pool: pool, Pessoas: pes, Vinculos: vinculos{ate: ate, proc: proc, pes: pes}, Prazos: prazoSync{p: praz},
-		Docs: docSink{d: doc}, Reauth: reauth{a: a}}
+		Docs: docSink{d: doc}}
 	aud := &audiencias.Service{Pool: pool, Pessoas: pes, Processos: proc, Reauth: reauth{a: a}}
 	dil := &diligencias.Service{Pool: pool, Pessoas: pes, Processos: proc, Conflitos: diligenciaConflitos{s: aud}}
 	ag := &agenda.Service{Pool: pool, Pessoas: pes, Vinculos: agendaVinculos{ate: ate, proc: proc}, Audiencias: agendaAudiencias{s: aud},

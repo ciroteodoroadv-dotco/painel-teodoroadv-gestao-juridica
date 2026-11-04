@@ -42,39 +42,5 @@ func (h *Handler) documento(w http.ResponseWriter, r *http.Request, s *auth.Sess
 	webx.Ok(w, "Documento guardado.")
 }
 
-type excluirView struct {
-	T Tarefa
-}
-
-func (h *Handler) excluirForm(w http.ResponseWriter, r *http.Request, _ *auth.Session) {
-	t, err := h.S.Get(r.Context(), r.PathValue("id"))
-	if webx.Falha(w, err, "Tarefa não encontrada.") {
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := fragmento("excluir.html").ExecuteTemplate(w, "excluir", excluirView{T: *t}); err != nil {
-		http.Error(w, "Erro interno.", http.StatusInternalServerError)
-	}
-}
-
-// excluir reautentica a senha do usuário logado, exige PermTarefaDelete (já na rota) e faz a exclusão lógica.
-func (h *Handler) excluir(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	err := h.S.Excluir(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"), webx.Int(r.PostFormValue("version")), r.PostFormValue("senha"))
-	if err != nil {
-		if webx.Falha(w, prefixo(err), "Tarefa não encontrada.", "Não foi possível excluir a tarefa.") {
-			return
-		}
-	}
-	webx.Ok(w, "Tarefa excluída.")
-}
-
-// prefixo acrescenta o texto do B ("Não foi possível excluir a tarefa: ") às recusas de validação.
-func prefixo(err error) error {
-	if inv, ok := err.(webx.Invalid); ok {
-		return webx.Invalidf("Não foi possível excluir a tarefa: " + inv.Msg)
-	}
-	return err
-}
-
 // maxUpload é o limite do corpo de um envio de PDF (25 MiB do domínio Documentos, mais o cabeçalho do multipart).
 const maxUpload = 26 << 20
