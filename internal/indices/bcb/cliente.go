@@ -97,7 +97,7 @@ func (c *Cliente) Ultimo(ctx context.Context, codigo int) (Ponto, error) {
 	if err != nil {
 		return Ponto{}, fmt.Errorf("bcb: falha de rede (%s)", classe(err))
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	b, rerr := io.ReadAll(io.LimitReader(resp.Body, c.cfg.MaxBytes+1))
 	switch {
 	case resp.StatusCode != http.StatusOK:

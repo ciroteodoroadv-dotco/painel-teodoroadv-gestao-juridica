@@ -128,7 +128,7 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request, s *auth.Session
 		h.renderForm(w, r, s, http.StatusBadRequest, f, "Escolha um arquivo.")
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	data, err := io.ReadAll(io.LimitReader(file, MaxArquivo+1))
 	if err != nil {
 		http.Error(w, "Erro ao ler o arquivo.", http.StatusBadRequest)

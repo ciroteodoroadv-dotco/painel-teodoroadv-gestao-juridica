@@ -188,7 +188,7 @@ func TestProcessoAcoesMoverAndamentoFinanceiroProvidencia(t *testing.T) {
 	}
 	_, det := adv.get("/processos/" + pid)
 	i1, i2, i3 := strings.Index(det, "Evento de 2026-03-05"), strings.Index(det, "Evento de 2026-02-01"), strings.Index(det, "Evento de 2026-01-10")
-	if i1 < 0 || !(i1 < i2 && i2 < i3) {
+	if i1 < 0 || i1 >= i2 || i2 >= i3 {
 		t.Errorf("andamentos fora de ordem: %d %d %d", i1, i2, i3)
 	}
 

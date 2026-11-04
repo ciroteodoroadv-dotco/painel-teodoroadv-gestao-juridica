@@ -25,7 +25,7 @@ func TestFragmentoDeIndicesExigeSessao(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 	if r.Request.URL.Path != "/login" && r.StatusCode != 401 && r.StatusCode != 403 {
 		t.Errorf("sem sessão: %d %s", r.StatusCode, r.Request.URL.Path)
 	}

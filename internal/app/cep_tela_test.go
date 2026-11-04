@@ -103,7 +103,7 @@ func TestCEPExigeSessaoPermissaoCSRFELimite(t *testing.T) {
 	e := newEnvOpts(t, WithCEP(CEP{Ativo: true, Transport: f, PermitirHTTP: true, BaseURL: "http://viacep.test", LimitePorMinuto: 3}))
 	e.a.Log = slog.New(slog.NewJSONHandler(&logs, nil))
 	if r, err := http.Post(e.srv.URL+"/pessoas/cep", "application/x-www-form-urlencoded", strings.NewReader("cep=01001000")); err == nil {
-		r.Body.Close()
+		_ = r.Body.Close()
 		if r.StatusCode == 200 {
 			t.Error("sem sessão não pode consultar")
 		}

@@ -98,7 +98,7 @@ func compute(prev []byte, at time.Time, ev Event, meta map[string]string) ([]byt
 	}
 	s := sha256.New()
 	s.Write(prev)
-	fmt.Fprintf(s, "|%d|%s|%s|%s|%s|%s|%s|", at.UnixMicro(), ev.Actor, ev.Action, ev.TargetType, ev.TargetID, ev.Result, ev.RequestID)
+	_, _ = fmt.Fprintf(s, "|%d|%s|%s|%s|%s|%s|%s|", at.UnixMicro(), ev.Actor, ev.Action, ev.TargetType, ev.TargetID, ev.Result, ev.RequestID)
 	s.Write(m)
 	return s.Sum(nil), nil
 }
