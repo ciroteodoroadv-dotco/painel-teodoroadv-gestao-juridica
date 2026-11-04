@@ -4,7 +4,7 @@
 set -uo pipefail
 cd "$(dirname "$0")"
 P="${COMPOSE_PROJECT_NAME:-painel}"
-IMG_B=painel-backup:dev; IMG_A=painel-app:latest
+IMG_B=painel-backup:dev; IMG_A="${IMAGE_APP_TESTE:-painel-app:latest}"
 work="$(mktemp -d)"; chmod 755 "$work"; mkdir -p "$work/bk" "$work/keys"; chmod 777 "$work/bk"
 trap 'rm -rf "$work"' EXIT
 ok=1
@@ -40,10 +40,17 @@ echo "$saida" | grep -q 'AVISO: nenhuma cópia externa' && passa "avisou que nã
 sleep 1; fazer_backup >/dev/null; sleep 1; fazer_backup >/dev/null
 [[ "$(ls "$work/bk"/painel-*.tar.age | wc -l)" == 3 ]] && passa "3 backups guardados (retenção não apaga os recentes)" || falha "contagem de backups inesperada"
 
+# Referência do original: contagem de cada tabela e hash de cada documento cifrado do volume.
+TABELAS="users pessoas processos processo_partes atendimentos tarefas agenda_compromissos audiencias diligencias documentos prazos intimacoes oab_monitoradas processo_movimentos monitor_processos calendarios calendario_dias indices_valores coletas"
+ref="$work/referencia.txt"
+for t in $TABELAS; do echo "T $t $(docker exec "${P}-db-1" psql -U painel -d painel -Atc "SELECT count(*) FROM $t")"; done > "$ref"
+docker run --rm -v "${P}_docs":/d:ro alpine sh -c 'cd /d && sha256sum * 2>/dev/null' | awk '{print "F",$1,$2}' >> "$ref"
+
 echo "== 2. Restauração com a chave certa (banco + documentos + conferência)"
-saida="$(BACKUP_DIR="$work/bk" AGE_IDENTITY="$work/keys/identity.txt" FIELD_KEY_FILE="$PWD/secrets/field_key" IMAGE_BACKUP="$IMG_B" IMAGE_APP="$IMG_A" ./restore-test.sh 2>&1)"; rc=$?
+saida="$(REFERENCIA="$ref" BACKUP_DIR="$work/bk" AGE_IDENTITY="$work/keys/identity.txt" FIELD_KEY_FILE="$PWD/secrets/field_key" IMAGE_BACKUP="$IMG_B" IMAGE_APP="$IMG_A" ./restore-test.sh 2>&1)"; rc=$?
 echo "$saida" | sed 's/^/    /'
 [[ $rc == 0 ]] && echo "$saida" | grep -q 'RESULTADO: cópia restaurada íntegra' && passa "restauração conferida" || falha "restauração falhou (rc=$rc)"
+echo "$saida" | grep -q 'comparação: contagens e hashes dos documentos IDÊNTICOS' && passa "contagens de todas as tabelas e hash dos documentos cifrados idênticos ao original" || falha "a cópia restaurada não foi comparada ou difere do original"
 echo "$saida" | grep -qE 'cadeia ÍNTEGRA' && passa "cadeia de auditoria íntegra na cópia" || falha "cadeia de auditoria não confirmada"
 echo "$saida" | grep -qE 'documentos: [1-9][0-9]* registrado' && passa "documentos decifrados e conferidos" || falha "nenhum documento conferido"
 
@@ -71,6 +78,20 @@ if [[ -n "$arq_doc" ]]; then
 else
   echo "  (sem documentos no volume: etapa pulada)"
 fi
+
+echo "== 6. Chaves e variáveis PAINEL_* não entram no backup nem no log"
+mkdir -p "$work/aberto"; chmod 777 "$work/aberto"
+docker run --rm -v "$work/bk":/bk:ro -v "$work/keys/identity.txt":/id:ro -v "$work/aberto":/out --entrypoint sh "$IMG_B" -c \
+  "age -d -i /id /bk/$b > /out/b.tar && tar -C /out -xf /out/b.tar" 2>/dev/null
+vazou=0
+for seg in db_password db_app_password session_key field_key; do
+  v="$(tr -d '\n' < "secrets/$seg")"; [[ -n "$v" ]] || continue
+  if docker run --rm -v "$work/aberto":/o:ro alpine sh -c "grep -rqaF -- '$v' /o --exclude=b.tar"; then vazou=1; echo "    segredo $seg apareceu no conteúdo do backup"; fi
+  echo "$saida" | grep -qF -- "$v" && { vazou=1; echo "    segredo $seg apareceu no log"; }
+done
+docker run --rm -v "$work/aberto":/o:ro alpine sh -c "grep -rqaE 'PAINEL_[A-Z_]*(ATIVO|KEY|PASSWORD)' /o --exclude=b.tar" && { vazou=1; echo "    variável PAINEL_* apareceu no backup"; }
+((vazou)) && falha "segredo ou variável de ambiente dentro do backup/log" || passa "nenhum segredo nem PAINEL_* no conteúdo do backup nem no log"
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then passa "(cópia fora do repositório: confira com git check-ignore deploy/secrets/field_key)"; elif git check-ignore -q secrets/field_key; then passa "deploy/secrets/ continua ignorado pelo Git"; else falha "deploy/secrets/ NÃO está ignorado"; fi
 
 echo
 ((ok)) && echo "RESULTADO GERAL: todos os testes de backup/restauração passaram." || { echo "RESULTADO GERAL: HOUVE FALHAS."; exit 1; }

@@ -1,11 +1,15 @@
 package app
 
 import (
+	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"painelteodoro/internal/auth"
+	"painelteodoro/internal/documentos"
 )
 
 func TestSeedDemo(t *testing.T) {
@@ -39,5 +43,37 @@ func TestSeedDemo(t *testing.T) {
 	}
 	if _, body := adv.get("/tarefas"); !strings.Contains(body, "Protocolar embargos à execução (exemplo)") || !strings.Contains(body, "A CONFERIR") {
 		t.Error("a tela de Tarefas deveria mostrar a demonstração, com o selo A CONFERIR")
+	}
+}
+
+// O backup precisa de documento cifrado de verdade para provar a restauração: a demonstração traz um PDF fictício.
+func TestSeedDemoDocumentos(t *testing.T) {
+	e := newEnv(t)
+	_, id := e.user("adv@exemplo.test", auth.Advogado)
+	ctx := context.Background()
+	if err := SeedDemo(ctx, e.pool, fieldKey, e.a.Store, id); err != nil {
+		t.Fatal(err)
+	}
+	if err := SeedDemoDocumentos(ctx, e.pool, fieldKey, e.docs, id); err != nil {
+		t.Fatal(err)
+	}
+	if e.count(`SELECT count(*) FROM documentos`) != 1 {
+		t.Fatal("a demonstração deveria ter 1 documento")
+	}
+	arquivos, _ := os.ReadDir(e.docs)
+	if len(arquivos) != 1 {
+		t.Fatalf("arquivos na pasta de documentos = %d", len(arquivos))
+	}
+	bruto, _ := os.ReadFile(filepath.Join(e.docs, arquivos[0].Name()))
+	if bytes.Contains(bruto, []byte("%PDF")) || bytes.Contains(bruto, []byte("fictício")) {
+		t.Error("o arquivo no disco precisa estar cifrado")
+	}
+	store, _ := documentos.NewStore(e.docs, fieldKey)
+	v, err := (&documentos.Service{Pool: e.pool, Store: store}).Verificar(ctx)
+	if err != nil || v.Total != 1 || v.OK != 1 {
+		t.Errorf("verificação: %+v %v", v, err)
+	}
+	if err := SeedDemoDocumentos(ctx, e.pool, fieldKey, e.docs, id); err == nil {
+		t.Error("não pode duplicar o documento da demonstração")
 	}
 }

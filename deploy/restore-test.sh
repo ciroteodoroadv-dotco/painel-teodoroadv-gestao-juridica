@@ -47,6 +47,23 @@ docker run --rm --network "$net" -v "$(dirname "$arq")":/backups:ro -v "$AGE_IDE
   -e PGDATABASE=painel -e PGPASSWORD="$dbpass" -e DOCS_DIR=/restored/docs \
   --entrypoint /usr/local/bin/restore.sh "$IMAGE_BACKUP" "/backups/$(basename "$arq")"
 
+# Comparação opcional com o original (Plano 8): REFERENCIA é um arquivo com linhas "T tabela N" (contagens) e "F sha256 arquivo"
+# (hash de cada documento CIFRADO do volume). A cópia restaurada precisa voltar com as mesmas contagens e os mesmos hashes.
+if [[ -n "${REFERENCIA:-}" ]]; then
+  echo "== Comparando contagens e hashes com o original"
+  atual="$tmp/atual.txt"; : > "$atual"
+  while read -r tipo nome _; do
+    [[ "$tipo" == T ]] || continue
+    echo "T $nome $(docker exec "$dbc" psql -U painel -d painel -Atc "SELECT count(*) FROM $nome")" >> "$atual"
+  done < "$REFERENCIA"
+  docker run --rm -v "$tmp/docs":/d:ro alpine sh -c 'cd /d && sha256sum * 2>/dev/null' | awk '{print "F",$1,$2}' >> "$atual"
+  if diff <(sort "$REFERENCIA") <(sort "$atual") >/dev/null; then
+    echo "comparação: contagens e hashes dos documentos IDÊNTICOS ao original ($(grep -c '^T' "$REFERENCIA") tabelas, $(grep -c '^F' "$REFERENCIA") documento(s))"
+  else
+    echo "FALHA: a cópia restaurada difere do original:"; diff <(sort "$REFERENCIA") <(sort "$atual") || true; exit 1
+  fi
+fi
+
 echo "== 2/2 Conferindo a cópia restaurada (somente leitura, sem internet)"
 docker run --rm --network "$net" -v "$tmp/docs":/restored/docs:ro -v "$(readlink -f "$FIELD_KEY_FILE")":/run/secrets/field_key:ro \
   -e PAINEL_ENV=dev -e PAINEL_DB_HOST="$dbc" -e PAINEL_DB_NAME=painel -e PAINEL_DB_USER=painel \

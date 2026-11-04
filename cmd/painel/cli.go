@@ -178,7 +178,10 @@ func seedDemo(ctx context.Context, cfg config.Config, st *auth.Store, pool *pgxp
 	if err := app.SeedDemo(ctx, pool, cfg.FieldKey, st, u.ID); err != nil {
 		return err
 	}
-	fmt.Println("Dados fictícios criados: 4 pessoas, 3 processos, 3 atendimentos e 6 tarefas (todos marcados como exemplo).")
+	if err := app.SeedDemoDocumentos(ctx, pool, cfg.FieldKey, cfg.DocsDir, u.ID); err != nil {
+		return err
+	}
+	fmt.Println("Dados fictícios criados: 4 pessoas, 3 processos, 3 atendimentos, tarefas, agenda, intimações, calendários e 1 documento cifrado (todos marcados como exemplo).")
 	return nil
 }
 

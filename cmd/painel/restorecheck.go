@@ -12,6 +12,11 @@ import (
 	"painelteodoro/internal/platform/config"
 )
 
+// tabelasConferidas: uma por domínio do esquema final (Plano 8). Tabela ilegível reprova a conferência.
+var tabelasConferidas = []string{"users", "pessoas", "processos", "processo_partes", "atendimentos", "tarefas", "agenda_compromissos",
+	"audiencias", "diligencias", "documentos", "prazos", "intimacoes", "oab_monitoradas", "processo_movimentos", "monitor_processos",
+	"calendarios", "calendario_dias", "indices_valores", "coletas"}
+
 // restoreCheck prova que uma cópia restaurada está inteira: cadeia de auditoria íntegra, contagens por
 // tabela e TODOS os documentos decifrados e conferidos. Só lê; usado pelo teste mensal de restauração.
 func restoreCheck(ctx context.Context, cfg config.Config, pool *pgxpool.Pool) error {
@@ -23,7 +28,7 @@ func restoreCheck(ctx context.Context, cfg config.Config, pool *pgxpool.Pool) er
 	}
 	fmt.Printf("auditoria: %d eventos, cadeia %s\n", n, map[bool]string{true: "ÍNTEGRA", false: "QUEBRADA"}[err == nil])
 
-	for _, t := range []string{"users", "pessoas", "processos", "processo_partes", "tarefas", "agenda_eventos", "documentos", "prazos"} {
+	for _, t := range tabelasConferidas {
 		var c int
 		if err := pool.QueryRow(ctx, "SELECT count(*) FROM "+t).Scan(&c); err != nil {
 			falhas = append(falhas, fmt.Sprintf("tabela %s ilegível: %v", t, err))
