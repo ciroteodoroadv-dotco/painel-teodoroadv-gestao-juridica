@@ -23,8 +23,9 @@ var proibido = map[string][]string{
 	"diligencias":  {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "documentos", "prazos", "intimacoes"},
 	"documentos":   {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "prazos", "intimacoes"},
 	"prazos":       {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "intimacoes"},
-	"audit":        {"auth", "intimacoes", "pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos", "app"},
+	"audit":        {"auth", "intimacoes", "monitor", "pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos", "app"},
 	"intimacoes":   {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos"},
+	"monitor":      {"pessoas", "processos", "atendimentos", "tarefas", "agenda", "audiencias", "diligencias", "documentos", "prazos", "intimacoes"},
 }
 
 func TestFronteirasEntreDominios(t *testing.T) {
@@ -62,7 +63,7 @@ func TestFronteirasEntreDominios(t *testing.T) {
 func TestSQLNaoCruzaDominios(t *testing.T) {
 	outrosDominios := func(minha ...string) []string {
 		todas := []string{"pessoas", "processos", "processo_partes", "atendimentos", "atendimento_pessoas", "tarefas", "tarefa_partes",
-			"tarefa_responsaveis", "agenda_compromissos", "audiencias", "diligencias", "documentos", "prazos", "intimacoes", "oab_monitoradas"}
+			"tarefa_responsaveis", "agenda_compromissos", "audiencias", "diligencias", "documentos", "prazos", "intimacoes", "oab_monitoradas", "monitor_processos", "processo_movimentos", "monitor_sigilosos"}
 		var out []string
 		for _, t := range todas {
 			proprio := false
@@ -86,6 +87,7 @@ func TestSQLNaoCruzaDominios(t *testing.T) {
 		"documentos":   outrosDominios("documentos"),
 		"prazos":       outrosDominios("prazos"),
 		"intimacoes":   outrosDominios("intimacoes", "oab_monitoradas", "coletas"),
+		"monitor":      outrosDominios("monitor_processos", "processo_movimentos", "monitor_sigilosos"),
 	}
 	for dom, outras := range tabelas {
 		files, _ := filepath.Glob(filepath.Join("..", dom, "*.go"))

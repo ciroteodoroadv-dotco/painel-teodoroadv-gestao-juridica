@@ -12,6 +12,7 @@ import (
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/intimacoes"
 	"painelteodoro/internal/intimacoes/djen"
+	"painelteodoro/internal/monitor"
 	"painelteodoro/internal/platform/coletas"
 	"painelteodoro/internal/platform/webx"
 	"painelteodoro/internal/processos"
@@ -30,11 +31,14 @@ type DJEN struct {
 // Servicos devolve ao chamador os serviços montados (o main liga o agendador; os testes chamam direto).
 type Servicos struct {
 	Intimacoes *intimacoes.Service
+	Monitor    *monitor.Service
 	Coletas    *coletas.Store
 }
 
 type options struct {
 	djen           DJEN
+	datajud        DataJud
+	sigiloso       intimacoes.ColetorPorNumero
 	coletor        intimacoes.Coletor
 	agora          func() time.Time
 	envolveTarefas func(intimacoes.TarefaAutomatica) intimacoes.TarefaAutomatica

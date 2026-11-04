@@ -27,6 +27,8 @@ func coletasEstado(status, msg string, tentativa *time.Time) coletas.Estado {
 	return coletas.Estado{Modulo: Modulo, Origem: OrigemDJEN, Status: status, Mensagem: msg, UltimaTentativa: tentativa}
 }
 
+var errParcial = webxErro("O DJEN devolveu o teto de resultados; coleta não confirmada.")
+
 // ErrOcupada: já existe uma coleta em andamento.
 var ErrOcupada = webx.Invalidf("Já existe uma coleta em andamento. Aguarde terminar.")
 

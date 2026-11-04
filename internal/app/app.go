@@ -14,6 +14,7 @@ import (
 	"painelteodoro/internal/diligencias"
 	"painelteodoro/internal/documentos"
 	"painelteodoro/internal/intimacoes"
+	"painelteodoro/internal/monitor"
 	"painelteodoro/internal/pessoas"
 	"painelteodoro/internal/platform/webx"
 	"painelteodoro/internal/prazos"
@@ -71,8 +72,12 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 		return err
 	}
 	ag.Intimacoes = agendaIntimacoes{s: intim}
+	mon, err := montarMonitor(a, pool, proc, intim, &o)
+	if err != nil {
+		return err
+	}
 	if o.out != nil {
-		*o.out = Servicos{Intimacoes: intim, Coletas: intim.Coletas}
+		*o.out = Servicos{Intimacoes: intim, Monitor: mon, Coletas: intim.Coletas}
 	}
 
 	(&prazos.Handler{A: a, S: praz}).Register(rt) // 1º: widget no topo de "Hoje"
@@ -81,7 +86,9 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	(&processos.Handler{A: a, S: proc}).Register(rt)
 	(&tarefas.Handler{A: a, S: tar}).Register(rt)
 	(&agenda.Handler{A: a, S: ag}).Register(rt)
-	(&intimacoes.Handler{A: a, S: intim}).Register(rt)
+	monH := &monitor.Handler{A: a, S: mon}
+	(&intimacoes.Handler{A: a, S: intim, Extra: monH.Secao}).Register(rt)
+	monH.Register(rt)
 	(&audiencias.Handler{A: a, S: aud}).Register(rt)
 	(&diligencias.Handler{A: a, S: dil}).Register(rt)
 	(&documentos.Handler{A: a, S: doc}).Register(rt)

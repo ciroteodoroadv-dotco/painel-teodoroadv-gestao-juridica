@@ -17,6 +17,8 @@ var tplFS embed.FS
 type Handler struct {
 	A *auth.Auth
 	S *Service
+	// Extra devolve seções adicionais da página Coleta DJEN (o monitor do DataJud e os processos em segredo de justiça).
+	Extra func(r *http.Request) (template.HTML, error)
 }
 
 func page(name string) *template.Template {

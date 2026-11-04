@@ -1,6 +1,7 @@
 package intimacoes
 
 import (
+	"html/template"
 	"net/http"
 
 	"painelteodoro/internal/auth"
@@ -18,6 +19,7 @@ type paginaData struct {
 	Estado    string
 	EstadoErr bool
 	Linhas    []linhaOAB
+	Extra     template.HTML
 }
 
 func (h *Handler) pagina(w http.ResponseWriter, r *http.Request, s *auth.Session) {
@@ -49,6 +51,14 @@ func (h *Handler) pagina(w http.ResponseWriter, r *http.Request, s *auth.Session
 	pd := auth.PageData{Title: "Coleta DJEN", Email: s.Email, Role: string(s.Role)}
 	pd.Head = auth.Head{Title: "Coleta DJEN", Sub: "OABs monitoradas e estado da coleta de intimações do DJEN.",
 		ActionLabel: "Nova OAB", ActionHref: "/coleta-djen/nova", ActionDrawer: true}
+	if h.Extra != nil {
+		x, err := h.Extra(r)
+		if err != nil {
+			http.Error(w, "Erro interno.", http.StatusInternalServerError)
+			return
+		}
+		d.Extra = x
+	}
 	pd.Data = d
 	h.A.Render(w, r, http.StatusOK, page("oabs.html"), pd)
 }

@@ -1,0 +1,11 @@
+{{define "sigiloso"}}<h2>Novo processo em segredo de justiça</h2>
+    <p class="drawer-sub">O processo precisa estar cadastrado e ter número CNJ válido. A consulta ao DJEN usa a OAB escolhida filtrando pelo número do processo.</p>
+    <form data-drawer-form data-protege method="post" action="/coleta-djen/sigilosos">
+      <div class="field"><label>Processo *</label><select name="processo_id" required><option value="">Selecione…</option>{{range .Processos}}<option value="{{.ID}}">{{.Rotulo}}</option>{{end}}</select></div>
+      <div class="field"><label>OAB *</label><select name="oab_id" required><option value="">Selecione…</option>{{range .OABs}}<option value="{{.ID}}">{{.Rotulo}}</option>{{end}}</select>
+        <p class="hint">Só aparecem OABs ativas, com base e data da autorização.</p></div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" data-drawer-fechar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>{{end}}

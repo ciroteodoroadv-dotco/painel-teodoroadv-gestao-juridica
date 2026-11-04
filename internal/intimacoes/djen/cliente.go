@@ -98,6 +98,20 @@ func Novo(cfg Config) (*Cliente, error) {
 // Coletar devolve todas as comunicações da OAB entre desde e ate (datas civis, inclusive). Em qualquer erro, devolve
 // Resultado vazio: um pedaço da coleta nunca pode ser tomado pela coleta inteira.
 func (c *Cliente) Coletar(ctx context.Context, oab, uf string, desde, ate time.Time) (Resultado, error) {
+	return c.coletar(ctx, oab, uf, "", desde, ate)
+}
+
+// ColetarPorNumero faz o mesmo FILTRADO pelo número do processo (a pauta inteira da OAB nunca é consultada). Usado para os
+// processos em segredo de justiça. O número vai como numeroProcesso (formato do swagger do DJEN a conferir: ele respondeu 403).
+func (c *Cliente) ColetarPorNumero(ctx context.Context, oab, uf, numeroProcesso string, desde, ate time.Time) (Resultado, error) {
+	numeroProcesso = strings.TrimSpace(numeroProcesso)
+	if numeroProcesso == "" {
+		return Resultado{}, errors.New("djen: o número do processo é obrigatório nesta consulta")
+	}
+	return c.coletar(ctx, oab, uf, numeroProcesso, desde, ate)
+}
+
+func (c *Cliente) coletar(ctx context.Context, oab, uf, proc string, desde, ate time.Time) (Resultado, error) {
 	oab, uf = strings.TrimSpace(oab), strings.ToUpper(strings.TrimSpace(uf))
 	if !soDigitos.MatchString(oab) || !soLetras.MatchString(uf) {
 		return Resultado{}, errors.New("djen: OAB ou UF inválida")
@@ -106,7 +120,7 @@ func (c *Cliente) Coletar(ctx context.Context, oab, uf string, desde, ate time.T
 	if ate.Before(desde) {
 		return Resultado{}, errors.New("djen: janela de datas invertida")
 	}
-	itens, parcial, motivo, err := c.janela(ctx, oab, uf, desde, ate)
+	itens, parcial, motivo, err := c.janela(ctx, oab, uf, proc, desde, ate)
 	if err != nil {
 		return Resultado{}, err
 	}
@@ -114,8 +128,8 @@ func (c *Cliente) Coletar(ctx context.Context, oab, uf string, desde, ate time.T
 }
 
 // janela coleta [desde, ate]; se estourar o teto de resultados e houver mais de um dia, refaz dia a dia.
-func (c *Cliente) janela(ctx context.Context, oab, uf string, desde, ate time.Time) (itens []Comunicacao, parcial bool, motivo string, err error) {
-	itens, estourou, err := c.paginas(ctx, oab, uf, desde, ate)
+func (c *Cliente) janela(ctx context.Context, oab, uf, proc string, desde, ate time.Time) (itens []Comunicacao, parcial bool, motivo string, err error) {
+	itens, estourou, err := c.paginas(ctx, oab, uf, proc, desde, ate)
 	if err != nil {
 		return nil, false, "", err
 	}
@@ -127,7 +141,7 @@ func (c *Cliente) janela(ctx context.Context, oab, uf string, desde, ate time.Ti
 	}
 	var todos []Comunicacao
 	for d := desde; !d.After(ate); d = d.AddDate(0, 0, 1) {
-		it, p, m, err := c.janela(ctx, oab, uf, d, d)
+		it, p, m, err := c.janela(ctx, oab, uf, proc, d, d)
 		if err != nil {
 			return nil, false, "", err
 		}
@@ -147,10 +161,10 @@ type paginaJSON struct {
 }
 
 // paginas lê todas as páginas de uma janela. estourou=true quando o DJEN anuncia o teto (os itens lidos são descartáveis).
-func (c *Cliente) paginas(ctx context.Context, oab, uf string, desde, ate time.Time) (out []Comunicacao, estourou bool, err error) {
+func (c *Cliente) paginas(ctx context.Context, oab, uf, proc string, desde, ate time.Time) (out []Comunicacao, estourou bool, err error) {
 	vistos := map[string]bool{}
 	for pag := 1; pag <= c.cfg.MaxPaginas; pag++ {
-		corpo, err := c.pedir(ctx, oab, uf, pag, desde, ate)
+		corpo, err := c.pedir(ctx, oab, uf, proc, pag, desde, ate)
 		if err != nil {
 			return nil, false, err
 		}
@@ -193,11 +207,14 @@ func (c *Cliente) paginas(ctx context.Context, oab, uf string, desde, ate time.T
 }
 
 // pedir faz uma requisição (esperando o intervalo mínimo desde a anterior) e repete a mesma página no 429.
-func (c *Cliente) pedir(ctx context.Context, oab, uf string, pagina int, desde, ate time.Time) (paginaJSON, error) {
+func (c *Cliente) pedir(ctx context.Context, oab, uf, proc string, pagina int, desde, ate time.Time) (paginaJSON, error) {
 	u, _ := url.Parse(c.cfg.BaseURL)
 	q := u.Query()
 	q.Set("numeroOab", oab)
 	q.Set("ufOab", uf)
+	if proc != "" {
+		q.Set("numeroProcesso", proc)
+	}
 	q.Set("pagina", strconv.Itoa(pagina))
 	q.Set("itensPorPagina", strconv.Itoa(c.cfg.ItensPorPagina))
 	q.Set("dataDisponibilizacaoInicio", desde.Format("2006-01-02"))

@@ -1,0 +1,32 @@
+{{define "secao"}}<section class="bloco"><h2>Monitor de processos (DataJud)</h2>
+  <div class="form-block">
+    <strong>{{if .Ativa}}Monitor ligado{{else}}Monitor desligado neste ambiente.{{end}}</strong><br>
+    {{.Estado}}<br>
+    O DataJud traz as <em>movimentações</em> do processo, não o teor da intimação; não é em tempo real. Sem registro não significa sem movimentação, e sem resultado nunca significa sem prazo: a conferência nas fontes oficiais continua necessária.
+  </div>
+  {{if .Ativa}}{{if .Admin}}<form class="toolbar" data-drawer-form method="post" action="/coleta-djen/monitor/executar">
+    <button type="submit" class="btn btn-primary btn-small">Executar monitor agora</button>
+  </form>{{end}}{{end}}
+  {{if .Linhas}}<table><thead><tr><th>Processo</th><th>Tribunal</th><th>Último resultado</th><th>Última consulta</th><th>Base</th></tr></thead>
+    <tbody>{{range .Linhas}}<tr>
+      <td class="tabular">{{.Numero}}</td>
+      <td>{{.Tribunal}}</td>
+      <td><span class="badge {{.Classe}}">{{.Resultado}}</span>{{if .Mensagem}}<div class="hint">{{.Mensagem}}</div>{{end}}</td>
+      <td class="tabular">{{.UltimaConsulta}}</td>
+      <td>{{.Base}}</td>
+    </tr>{{end}}</tbody></table>{{else}}<div class="empty"><p>Nenhum processo cadastrado.</p></div>{{end}}
+</section>
+<section class="bloco"><h2>Processos em segredo de justiça</h2>
+  <div class="form-block">
+    <strong>{{.EstadoSig}}</strong><br>
+    A consulta usa a OAB cadastrada <em>filtrada pelo número do processo</em>; a pauta inteira da OAB nunca é consultada por aqui. Cada processo exige uma OAB ativa, com a base da autorização.
+  </div>
+  <div class="toolbar"><button type="button" class="btn btn-primary btn-small" data-drawer="/coleta-djen/sigilosos/novo">Novo processo em segredo de justiça</button></div>
+  {{if .Sigilosos}}<table><thead><tr><th>Processo</th><th>OAB</th><th>Situação</th><th></th></tr></thead>
+    <tbody>{{range .Sigilosos}}<tr>
+      <td class="tabular">{{.Numero}}</td>
+      <td class="tabular">{{.OAB}}</td>
+      <td><span class="badge {{.Classe}}">{{.Situacao}}</span></td>
+      <td class="row-actions">{{if .Ativo}}<form class="form-inline" data-drawer-form method="post" action="/coleta-djen/sigilosos/{{.ID}}/desativar"><button type="submit" class="btn-danger-text">Desativar</button></form>{{else}}—{{end}}</td>
+    </tr>{{end}}</tbody></table>{{else}}<div class="empty"><p>Nenhum processo em segredo de justiça cadastrado.</p></div>{{end}}
+</section>{{end}}

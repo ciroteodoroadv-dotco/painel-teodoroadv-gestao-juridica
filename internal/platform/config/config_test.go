@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -204,5 +205,37 @@ func TestDJENVariaveis(t *testing.T) {
 	w["PAINEL_DJEN_INTERVALO"] = "abc"
 	if _, err := Load(envOf(w, nil)); err == nil {
 		t.Error("intervalo inválido deveria ser recusado")
+	}
+}
+
+func TestDataJudVemDesligadoPorPadraoESemChave(t *testing.T) {
+	c, err := Load(envOf(baseVars(), nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := c.DataJud
+	if d.Ativo || d.Chave != "" || d.URL != "https://api-publica.datajud.cnj.jus.br" || d.Intervalo != 24*time.Hour || d.AlertaHoras != 36 || d.IntervaloEntreProcessos != time.Second {
+		t.Fatalf("padrões do DataJud: %+v", d)
+	}
+}
+
+func TestDataJudVariaveisEChaveSoPorSegredo(t *testing.T) {
+	v := baseVars()
+	v["PAINEL_DATAJUD_ATIVO"], v["PAINEL_DATAJUD_INTERVALO"], v["PAINEL_DATAJUD_ALERTA_HORAS"], v["PAINEL_DATAJUD_PAUSA"] = "true", "6h", "48", "2s"
+	v["PAINEL_DATAJUD_KEY"] = "CHAVE-DE-TESTE-FICTICIA"
+	c, err := Load(envOf(v, nil))
+	if err != nil || !c.DataJud.Ativo || c.DataJud.Intervalo != 6*time.Hour || c.DataJud.AlertaHoras != 48 || c.DataJud.Chave != "CHAVE-DE-TESTE-FICTICIA" || c.DataJud.IntervaloEntreProcessos != 2*time.Second {
+		t.Fatalf("variáveis do DataJud: %+v %v", c.DataJud, err)
+	}
+	if strings.Contains(c.String(), "CHAVE-DE-TESTE-FICTICIA") || strings.Contains(fmt.Sprintf("%+v %#v", c, c), "CHAVE-DE-TESTE-FICTICIA") {
+		t.Error("a chave do DataJud não pode aparecer na representação da configuração")
+	}
+	for nome, valor := range map[string]string{"PAINEL_DATAJUD_ATIVO": "talvez", "PAINEL_DATAJUD_INTERVALO": "5s", "PAINEL_DATAJUD_ALERTA_HORAS": "0",
+		"PAINEL_DATAJUD_URL": "http://api-publica.datajud.cnj.jus.br", "PAINEL_DATAJUD_PAUSA": "0s"} {
+		w := baseVars()
+		w[nome] = valor
+		if _, err := Load(envOf(w, nil)); err == nil {
+			t.Errorf("%s=%q deveria ser recusado", nome, valor)
+		}
 	}
 }

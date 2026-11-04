@@ -39,6 +39,9 @@ type Config struct {
 	DJENURL         string
 	DJENIntervalo   time.Duration
 	DJENAlertaHoras int
+
+	// Monitor do DataJud (Plano 6): DESLIGADO por padrão.
+	DataJud DataJud
 }
 
 // String é seguro para log: não revela nenhum segredo.
@@ -103,6 +106,7 @@ func Load(e Env) (Config, error) {
 	}
 
 	djenAtivo, djenURL, djenInt, djenAlerta := loadDJEN(e, &errs)
+	datajud := loadDataJud(e, &errs)
 
 	if len(errs) > 0 {
 		return Config{}, errors.Join(errs...)
@@ -122,6 +126,7 @@ func Load(e Env) (Config, error) {
 		SessionKey:       sessionKey,
 		FieldKey:         fieldKey,
 		DJENAtivo:        djenAtivo, DJENURL: djenURL, DJENIntervalo: djenInt, DJENAlertaHoras: djenAlerta,
+		DataJud: datajud,
 	}, nil
 }
 

@@ -156,3 +156,8 @@ func classe(err error) string {
 	}
 	return "conexão"
 }
+
+// TemChave diz se há chave configurada (sem fazer nenhuma requisição).
+func (c *Cliente) TemChave() bool {
+	return c.cfg.Chave != nil && strings.TrimSpace(c.cfg.Chave()) != ""
+}
