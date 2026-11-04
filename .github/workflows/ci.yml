@@ -28,6 +28,10 @@ jobs:
         run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
       - name: Análise estática
         run: go vet ./...
+      - name: Lint (golangci-lint v2.5.0)
+        run: |
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0
+          "$(go env GOPATH)/bin/golangci-lint" run ./...
       - name: Testes
         run: go test -race -count=1 -p 1 ./... # -p 1: os testes de integração recriam o banco
       - name: Limite de 300 linhas
@@ -38,6 +42,26 @@ jobs:
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  migracoes:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: teste
+          POSTGRES_DB: teste
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PAINEL_TEST_DB: postgres://postgres:teste@127.0.0.1:5432/teste?sslmode=disable
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with: { go-version-file: go.mod }
+      - name: Ciclo up→down→up das migrações (M1)
+        run: go test -count=1 -v -run TestCicloUpDownUp ./internal/platform/migrate/
 
   docker:
     runs-on: ubuntu-latest
