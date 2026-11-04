@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teodoro Advocacia Estratégica — Painel Processual</title>
+<link rel="stylesheet" href="/css/painel.css?v=20261031-agenda3-arial">
+</head>
+<body>
+<a class="skip-link" href="#content">Pular para o conteúdo</a>
+<div id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <img class="seal-logo" src="/assets/logo-lateral-escuro.png" alt="Teodoro Advocacia Estratégica">
+    </div>
+    <nav class="tabs" id="navTabs" aria-label="Seções do painel"></nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar" id="topbar"></div>
+    <div class="stats" id="stats"></div>
+    <div id="content"></div>
+
+    <section id="syncStatus" class="sync-status" aria-label="Estado das coletas"><strong>Estado das coletas</strong><p>Consultando histórico local. Isso não ativa atualizações automáticas.</p></section>
+  </main>
+</div>
+<div id="idxTicker" class="idx-ticker" role="status" aria-label="Índices econômicos"></div>
+
+<div class="drawer-overlay hidden" id="drawerOverlay" aria-hidden="true">
+  <div class="drawer" id="drawer" role="dialog" aria-modal="false" aria-labelledby="drawerTitle" tabindex="-1"></div>
+</div>
+
+<div class="toast hidden" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script src="/shared/client.js?v=20260915-admin-auth"></script>
+<!-- JS modular (etapa 4b, 2026-10-30): scripts classicos em ordem de dependencia,
+     sem toolchain de build. Compartilham o escopo global lexico, como na IIFE unica anterior. -->
+<script src="/js/00-fetch-auth.js?v=20261031-agenda3"></script>
+<script src="/js/01-estado.js?v=20261031-agenda3"></script>
+<script src="/js/02-util.js?v=20261031-agenda3"></script>
+<script src="/js/03-api-mapa.js?v=20261031-agenda3"></script>
+<script src="/js/04-api-carga.js?v=20261031-agenda3"></script>
+<script src="/js/05-dominio.js?v=20261031-agenda3"></script>
+<script src="/js/06-helpers-vinculos.js?v=20261031-agenda3"></script>
+<script src="/js/07-app-core.js?v=20261031-agenda3"></script>
+<script src="/js/08-tarefas.js?v=20261031-agenda3"></script>
+<script src="/js/09-processos.js?v=20261031-agenda3"></script>
+<script src="/js/10-atendimentos.js?v=20261031-agenda3"></script>
+<script src="/js/11-agenda.js?v=20261031-agenda3"></script>
+<script src="/js/12-prazo.js?v=20261031-agenda3"></script>
+<script src="/js/13-indices.js?v=20261031-agenda3"></script>
+<script src="/js/14-pessoas.js?v=20261031-agenda3"></script>
+<script src="/js/15-drawers.js?v=20261031-agenda3"></script>
+<script src="/js/16-sync-status.js?v=20261031-lote1"></script>
+<script src="/js/99-init.js?v=20261031-agenda3"></script>
+
+</body>
+</html>
