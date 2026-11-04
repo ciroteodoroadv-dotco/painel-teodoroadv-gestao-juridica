@@ -39,4 +39,4 @@ Capturas 1440/400; envio real de formulário por clique contra o servidor (cober
 
 ## Errata (conferência independente de 04/11/2026)
 
-- A justificativa das 3 mensagens "falha ao recarregar" (agenda, audiências, diligências) está **errada**:  só tem a tabela para pessoas, processos, atendimentos e tarefas, mais um fallback genérico ("…recarregar a lista."). Os textos específicos do B para agenda/audiências/diligências **não existem no v2**; é uma divergência real, ainda a decidir (adicionar as 3 mensagens ou aceitar o fallback).
+- A justificativa das 3 mensagens "falha ao recarregar" (agenda, audiências, diligências) está **errada**: `forms.js` só tem a tabela para pessoas, processos, atendimentos e tarefas, mais um fallback genérico ("…recarregar a lista."). Os textos específicos do B para agenda/audiências/diligências **não existem no v2**; é uma divergência real, ainda a decidir (adicionar as 3 mensagens ou aceitar o fallback).

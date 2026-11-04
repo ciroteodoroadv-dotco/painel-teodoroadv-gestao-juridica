@@ -30,5 +30,5 @@ Capturas: `V2-processos-drawer-novo.jpg` (v2, drawer Novo processo). Capturas do
 
 ## Errata (conferência independente de 04/11/2026)
 
-- A contagem de textos ausentes está errada neste relatório: o script atual () lista **18** ausências no commit; a lista acima soma 20 e cita itens que o script atual não lista. Valem as 18 do script.
-- A captura  **não existe** no repositório (só há 3 imagens em ). Não há captura de Pessoas/Processos versionada.
+- A contagem de textos ausentes está errada neste relatório: o script atual (`textos.py`) lista **18** ausências no commit; a lista acima soma 20 e cita itens que o script atual não lista. Valem as 18 do script.
+- A captura `V2-processos-drawer-novo.jpg` **não existe** no repositório (só há 3 imagens em `paridade/`). Não há captura de Pessoas/Processos versionada.
