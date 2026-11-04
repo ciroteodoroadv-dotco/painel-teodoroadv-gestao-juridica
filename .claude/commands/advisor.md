@@ -48,8 +48,9 @@ Na dúvida, COMPLEXO. Se um passo MECÂNICO falhar duas vezes, reclassifique com
 5. EXECUÇÃO
 Cada passo vai para um subagente general-purpose com instrução fechada: arquivos exatos, ação exata, critério de pronto e comando de verificação. model "haiku" para MECÂNICO, "sonnet" para COMPLEXO. Passos dependentes rodam em sequência; independentes podem ir em paralelo.
 
-6. PROVA REAL (você, Opus)
-Confira por conta própria. Leia os arquivos alterados e rode a verificação, nunca aceite o relato de subagente. Verificação do projeto, na ordem:
+6. PROVA REAL (subagente Sonnet; você, Opus, só se necessário)
+A prova real é feita por um subagente Sonnet com instrução fechada: arquivos alterados, comandos abaixo e critério de aprovação. O Sonnet devolve, para cada comando, a saída real e o resultado (passou ou falhou). Nenhum resultado é aceito sem a saída que o comprova.
+Você, Opus, chama a si mesmo só se: o Sonnet reportar falha que exige julgamento; o resultado contradizer a especificação; ou a mudança tocar auth, CSRF, upload, banco ou criptografia. Nesses casos, você lê os arquivos e decide. Verificação do projeto, na ordem:
 - test -z "$(gofmt -l .)"
 - go vet ./...
 - go test -race -count=1 -p 1 ./...
