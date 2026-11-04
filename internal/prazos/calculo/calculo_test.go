@@ -82,13 +82,17 @@ func TestDourado2_Recesso(t *testing.T) {
 	}
 }
 
-// Caso 3 (CPC art. 224 §1º; Sexta-feira Santa 2027 = 26/03, Páscoa 28/03/2027).
-// Ciência qui 25/03 -> o dia seguinte (sex 26/03) é feriado, 27 e 28 fim de semana -> dia 1 = seg 29/03; 1 dia útil -> 29/03/2027.
+// Caso 3 (ajuste conservador 04/11: a Sexta-feira Santa NÃO é excluída no calendário nacional; Lei 9.093/1995 art. 2º).
+// Sexta-feira Santa 2027 = 26/03 (Páscoa 28/03/2027). Ciência qui 25/03 + 1 dia útil: dia 1 = sex 26/03 (não excluída) -> 26/03/2027.
+// Alternativa (tribunal sem expediente na Sexta Santa): 26/03 fora, 27 e 28 fim de semana -> seg 29/03/2027.
 func TestDourado3_SextaSanta(t *testing.T) {
 	r := venc(t, Entrada{Evento: D(2027, 3, 25), Modo: Ciencia, Regra: CPCUteis, Dias: 1, Hoje: D(2027, 3, 25)})
-	quer(t, "vencimento", r.Vencimento, D(2027, 3, 29))
-	if len(r.Excluidos) != 1 || !r.Excluidos[0].Data.Equal(D(2027, 3, 26)) {
-		t.Errorf("excluídos = %+v, quer Sexta-feira Santa 26/03", r.Excluidos)
+	quer(t, "vencimento", r.Vencimento, D(2027, 3, 26))
+	if len(r.Excluidos) != 0 {
+		t.Errorf("excluídos = %+v, quer nenhum", r.Excluidos)
+	}
+	if !strings.Contains(strings.Join(r.Alternativas, "|"), "29/03/2027") {
+		t.Errorf("alternativas = %v, quer citar 29/03/2027", r.Alternativas)
 	}
 }
 
@@ -119,18 +123,25 @@ func TestDourado5b_CPPDJeMostraOMaisCurto(t *testing.T) {
 	}
 }
 
-// Caso 6a (CC art. 132): exclui o dia do começo, inclui o do vencimento, prorroga se cair em domingo/feriado.
-// Evento sex 06/11/2026 + 2 = dom 08/11 -> seg 09/11.  Evento sex 13/11 + 7 = sex 20/11 (feriado) -> seg 23/11.
-// Sábado não é prorrogado (dúvida): evento qua 04/11 + 3 = sáb 07/11 (exibido), alternativa seg 09/11.
+// Caso 6a (CC art. 132 §1º, ajuste conservador 04/11: só "feriado" prorroga; domingo e sábado NÃO prorrogam e vão às alternativas).
+// Evento sex 06/11/2026 + 2 = dom 08/11 (exibido); alternativa seg 09/11 (se domingo for tido como feriado).
+// Evento qua 04/11 + 3 = sáb 07/11 (exibido), alternativa seg 09/11.
+// Evento qui 12/11 + 3 = dom 15/11, que TAMBÉM é feriado (Proclamação da República) -> prorroga: seg 16/11, sem alternativa.
 func TestDourado6a_MaterialCivel(t *testing.T) {
 	r := venc(t, Entrada{Evento: D(2026, 11, 6), Modo: Ciencia, Regra: MaterialCivel, Dias: 2, Hoje: D(2026, 11, 6)})
-	quer(t, "domingo", r.Vencimento, D(2026, 11, 9))
-	r = venc(t, Entrada{Evento: D(2026, 11, 13), Modo: Ciencia, Regra: MaterialCivel, Dias: 7, Hoje: D(2026, 11, 13)})
-	quer(t, "feriado", r.Vencimento, D(2026, 11, 23))
+	quer(t, "domingo", r.Vencimento, D(2026, 11, 8))
+	if !strings.Contains(strings.Join(r.Alternativas, "|"), "09/11/2026") {
+		t.Errorf("alternativas = %v, quer citar 09/11/2026", r.Alternativas)
+	}
 	r = venc(t, Entrada{Evento: D(2026, 11, 4), Modo: Ciencia, Regra: MaterialCivel, Dias: 3, Hoje: D(2026, 11, 4)})
 	quer(t, "sábado", r.Vencimento, D(2026, 11, 7))
 	if !strings.Contains(strings.Join(r.Alternativas, "|"), "09/11/2026") {
 		t.Errorf("alternativas = %v, quer citar 09/11/2026", r.Alternativas)
+	}
+	r = venc(t, Entrada{Evento: D(2026, 11, 12), Modo: Ciencia, Regra: MaterialCivel, Dias: 3, Hoje: D(2026, 11, 12)})
+	quer(t, "domingo feriado", r.Vencimento, D(2026, 11, 16))
+	if len(r.Alternativas) != 0 {
+		t.Errorf("alternativas = %v, quer nenhuma", r.Alternativas)
 	}
 }
 

@@ -19,6 +19,8 @@ func recesso(d time.Time) bool {
 type contador struct {
 	cal       Calendario
 	excluidos []DiaNaoUtil
+	// sextaSanta=true trata a Sexta-Feira Santa como dia sem expediente (só na leitura alternativa; ver Calcular).
+	sextaSanta bool
 }
 
 // feriado devolve o dia não útil (nacional, depois o do tribunal). Nos prazos que não são do CPC só vale
@@ -31,6 +33,9 @@ func (c *contador) feriado(d time.Time, soFeriado bool) (DiaNaoUtil, bool) {
 		if x, ok := c.cal.NaoUtil(d); ok && (!soFeriado || x.Tipo == "feriado") {
 			return x, true
 		}
+	}
+	if c.sextaSanta && ehSextaSanta(d) {
+		return DiaNaoUtil{Data: d, Tipo: "feriado", Descricao: "Sexta-Feira Santa (Paixão de Cristo)", Fonte: FonteSextaSanta}, true
 	}
 	return DiaNaoUtil{}, false
 }
@@ -71,7 +76,21 @@ func Calcular(e Entrada) (Resultado, error) {
 		return Resultado{}, ErrModo
 	}
 	e.Evento = dia(e.Evento)
-	c := &contador{cal: e.Cal}
+	r, err := calcula(e, false)
+	if err != nil {
+		return r, err
+	}
+	// Sexta-Feira Santa: a Lei 9.093/1995 art. 2º a trata como feriado religioso de lei municipal; no calendário
+	// nacional ela não é excluída (vencimento mais curto). A leitura em que o tribunal a adota vai como alternativa.
+	if alt, _ := calcula(e, true); !alt.Vencimento.Equal(*r.Vencimento) {
+		r.Alternativas = append(r.Alternativas, fmt.Sprintf("Se o tribunal adotar a Sexta-Feira Santa como dia sem expediente, o vencimento seria %s.", fmtD(*alt.Vencimento)))
+		r.Duvidas = append(r.Duvidas, "[VERIFICAR] Sexta-Feira Santa: a Lei 9.093/1995, art. 2º, trata os feriados religiosos por lei municipal; o sistema NÃO a excluiu (vencimento mais curto). Confira no calendário do tribunal.")
+	}
+	return r, nil
+}
+
+func calcula(e Entrada, sextaSanta bool) (Resultado, error) {
+	c := &contador{cal: e.Cal, sextaSanta: sextaSanta}
 	var r Resultado
 	switch e.Regra {
 	case CPCUteis:
@@ -121,97 +140,6 @@ func (c *contador) cpc(e Entrada, r *Resultado) {
 		fmt.Sprintf("Início da contagem em %s, o primeiro dia útil depois do termo inicial; o dia do começo não conta e o do vencimento conta (CPC arts. 219, 224 e 224, §3º).", fmtD(*r.Inicio)),
 		fmt.Sprintf("Regra: CPC, %d dia(s) útil(eis), sem sábados, domingos e feriados (CPC art. 216).", e.Dias),
 		"Suspensão de 20/12 a 20/01 aplicada: nesses dias o prazo não corre (CPC art. 220).")
-}
-
-// corridos trata CPP, prazo material cível e prazo material penal.
-func (c *contador) corridos(e Entrada, r *Resultado) {
-	type cand struct {
-		ancora time.Time
-		rotulo string
-	}
-	cands := []cand{{e.Evento, "da data do evento"}}
-	switch e.Regra {
-	case CPPCorridos:
-		if e.Modo == DJe {
-			pub := c.proximoUtil(e.Evento)
-			r.Publicacao = &pub
-			cands = []cand{{pub, "da publicação (dia útil seguinte à disponibilização)"}, {e.Evento, "da própria disponibilização"}}
-			r.Duvidas = append(r.Duvidas, "[VERIFICAR] termo inicial pelo Diário no processo penal: adotada a publicação no dia útil seguinte à disponibilização (Lei 11.419/2006, art. 4º, §§3º e 4º; texto não consultado nesta rodada); mostrado o vencimento mais curto.")
-		}
-	case MaterialCivel, MaterialPenal:
-		r.Premissas = append(r.Premissas, "Prazo material: conta da data do evento informada; o modo de contagem (Diário ou ciência) não altera o termo.")
-	}
-	var venc []time.Time
-	for _, k := range cands {
-		venc = append(venc, c.corridoDe(e.Regra, k.ancora, e.Dias, r, len(cands) == 1))
-	}
-	best := 0
-	for i := range venc {
-		if venc[i].Before(venc[best]) {
-			best = i
-		}
-	}
-	for i, k := range cands {
-		if i != best && !venc[i].Equal(venc[best]) {
-			r.Alternativas = append(r.Alternativas, fmt.Sprintf("Se o prazo correr %s, o vencimento seria %s.", k.rotulo, fmtD(venc[i])))
-		}
-	}
-	v := venc[best]
-	r.Vencimento = &v
-	ini := cands[best].ancora
-	if e.Regra != MaterialPenal {
-		ini = ini.AddDate(0, 0, 1)
-	}
-	r.Inicio = &ini
-	r.Premissas = append(r.Premissas, regraTexto(e.Regra, e.Dias, cands[best].rotulo))
-	r.Duvidas = append(r.Duvidas, duvidasCorridos(e.Regra)...)
-}
-
-// corridoDe devolve o vencimento contando dias corridos a partir da âncora. registra=true grava os feriados pulados.
-func (c *contador) corridoDe(regra Regra, ancora time.Time, dias int, r *Resultado, registra bool) time.Time {
-	if regra == MaterialPenal { // CP art. 10: inclui o dia do começo; sem prorrogação
-		return ancora.AddDate(0, 0, dias-1)
-	}
-	d := ancora.AddDate(0, 0, dias)
-	moveu := false // depois da 1ª prorrogação, o dia final tem de ser útil (sábado também é pulado)
-	for {
-		x, f := c.feriado(d, true)
-		if (!moveu && d.Weekday() != time.Sunday && !f) || (moveu && !fimDeSemana(d) && !f) {
-			break
-		}
-		moveu = true
-		if f && registra {
-			c.registra(x)
-		}
-		d = d.AddDate(0, 0, 1)
-	}
-	if d.Weekday() == time.Saturday {
-		alt := d
-		for !c.util(alt) {
-			alt = alt.AddDate(0, 0, 1)
-		}
-		r.Alternativas = append(r.Alternativas, fmt.Sprintf("Se o tribunal não tiver expediente no sábado, o vencimento seria %s (dia útil seguinte).", fmtD(alt)))
-		r.Duvidas = append(r.Duvidas, "[VERIFICAR] vencimento em sábado: o texto legal prorroga domingo e feriado; o sistema NÃO prorrogou o sábado.")
-	}
-	return d
-}
-
-func regraTexto(regra Regra, dias int, rotulo string) string {
-	switch regra {
-	case CPPCorridos:
-		return fmt.Sprintf("Regra: CPP art. 798, %d dia(s) corrido(s) a contar %s; não se computa o dia do começo; computa-se o do vencimento; prorroga se vencer em domingo ou feriado.", dias, rotulo)
-	case MaterialCivel:
-		return fmt.Sprintf("Regra: prazo material cível, Código Civil art. 132, %d dia(s) corrido(s); exclui o dia do começo, inclui o do vencimento; prorroga se vencer em domingo ou feriado.", dias)
-	default:
-		return fmt.Sprintf("Regra: prazo material penal, Código Penal art. 10, %d dia(s); inclui o dia do começo; sem prorrogação.", dias)
-	}
-}
-
-func duvidasCorridos(regra Regra) []string {
-	if regra == MaterialPenal {
-		return []string{"[VERIFICAR] suspensão de 20/12 a 20/01 e suspensões por portaria NÃO aplicadas (prazo material penal)."}
-	}
-	return []string{"[VERIFICAR] suspensão de 20/12 a 20/01 NÃO aplicada (a regra do CPC art. 220 não foi estendida a este prazo); suspensões por portaria também não."}
 }
 
 // fecha acrescenta calendário, ordenação, lista fixa e a contagem de dias úteis até hoje.
