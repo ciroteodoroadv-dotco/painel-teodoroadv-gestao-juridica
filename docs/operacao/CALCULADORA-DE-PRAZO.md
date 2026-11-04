@@ -10,7 +10,12 @@ nenhuma: só calcula e mostra.
 
 - **CPC, dias úteis**: não conta sábado, domingo, feriado nem o período de 20/12 a 20/01.
 - **CPP, dias corridos**, e **prazo material cível** e **penal**.
-- Feriados nacionais por lei, com a norma ao lado de cada data excluída.
+- Feriados nacionais por lei, com a norma ao lado de cada data excluída. A **Sexta-Feira Santa** não é excluída por
+  padrão (a lei a trata como feriado religioso municipal): o resultado mostra o vencimento mais curto e, em
+  "alternativas", o vencimento se o tribunal a adotar como dia sem expediente. Se o calendário do tribunal a trouxer
+  com fonte, ela é excluída.
+- Em prazo corrido (CPP e material cível), **sábado não é prorrogado**; no material cível **domingo também não**
+  (só feriado prorroga). Cada leitura mais longa aparece em "alternativas", com `[VERIFICAR]`.
 - Feriados e suspensões **do tribunal**, se estiverem cadastrados em **Calendário forense** (cada data com a fonte).
 
 ## O que ela NÃO calcula (e avisa em todo resultado)

@@ -49,5 +49,19 @@ Onde o plano foi ambíguo ou duvidoso foi escolhido o caminho conservador (venci
     incluem as tabelas novas; texto de aviso de `prazos/lista.html` e `form.html`.
 22. **Conferência manual no Chrome**: teste gated `TestServirParaConferenciaManual` (só com `PAINEL_SERVIR_MANUAL=1`) sobe o v2 com banco descartável e
     proxy para `web/static`. Sem o 18080, sem credencial real.
+24. **Ajuste conservador 04/11** (decisão do advogado "pode"; provisório, a validar por ele; nenhuma questão jurídica foi decidida; coluna "Validado por"
+    segue vazia). Nos 3 pontos em que o código podia indicar vencimento mais LONGO, passou-se a exibir o mais CURTO e listar a alternativa com `[VERIFICAR]`:
+    (a) **sábado coerente** (CPP 798 §3º; CC 132 §1º): o sábado nunca é prorrogado, nem depois de uma prorrogação por feriado (antes `moveu` pulava o sábado);
+    (b) **CC 132 §1º**: só feriado prorroga; domingo vira alternativa ("se o domingo for tido como feriado"); (c) **Sexta-Feira Santa**: saiu de
+    `Nacional.NaoUtil`; `Calcular` roda a leitura com ela como dia sem expediente (`contador.sextaSanta`) e, se o vencimento mudar, lista a alternativa;
+    calendário de tribunal com fonte continua a excluí-la. A semente (`FixosDoAno`) nunca gravou a Sexta Santa (é móvel). Citações corrigidas: 12/10 =
+    Lei 6.802/1980 art. 1º; Sexta Santa = Lei 9.093/1995 art. 2º (sem inciso II). O código dos prazos corridos foi para `corridos.go` (limite de 300 linhas).
+    **Testes antigos que codificavam o comportamento anterior, ajustados:** `TestDourado3_SextaSanta` (2027: antes vencia seg 29/03 com a Sexta Santa
+    excluída; agora sex 26/03, alternativa 29/03); `TestDourado6a_MaterialCivel` (domingo 08/11: antes seg 09/11, agora dom 08/11 com alternativa 09/11;
+    removido o caso sex 13/11+7, que antes dava seg 23/11, substituído por qua 18/11+2 = sáb 21/11 nos testes novos; acrescentado o domingo-feriado 15/11 → seg 16/11).
+    **Testes novos** (`ajuste_conservador_test.go`, valores calculados à mão nos comentários): CPP sábado após feriado (19/11/2026+1 → sáb 21/11, alt. 23/11);
+    cível domingo (06/11+2 → 08/11, alt. 09/11); cível feriado (18/11+2 → 21/11, alt. 23/11); CPC com a Sexta Santa de 03/04/2026 (01/04+3 úteis → 06/04, alt. 07/04);
+    tribunal com a Sexta Santa e fonte (→ 07/04, excluída, sem alternativa); CPP em Sexta Santa (01/04+2 → 03/04, alt. 04/04); fonte do 12/10 e ausência da Sexta Santa no nacional.
+    Vermelho observado antes da implementação: 8 testes falhando.
 23. **Paridade**: único ajuste de CSS por comparação de estilo: `input[type=number]` do B é nativo (178 px, borda 2px inset); o `compat.css` estilizava
     todo input, e foi neutralizado como já era feito para senha/arquivo.
