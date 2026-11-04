@@ -37,6 +37,7 @@ type AnaliseIn struct {
 	IntimacaoID, ProcessoID, Titulo, Descricao string
 	CriadoPor, AuditActor, RequestID           string
 	PrazoFatal                                 *time.Time // prazo INTERNO de confirmação (E3 do Plano 6)
+	Fonte                                      string     // DJEN, DataJud ou DJEN (sigiloso)
 }
 
 // TarefaAutomatica cria a tarefa de análise dentro da transação da intimação. Idempotente por intimação.

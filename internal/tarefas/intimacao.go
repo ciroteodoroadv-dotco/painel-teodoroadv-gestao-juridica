@@ -22,6 +22,7 @@ type AnaliseIn struct {
 	IntimacaoID, ProcessoID, Titulo, Descricao string
 	CriadoPor, AuditActor, RequestID           string
 	PrazoFatal                                 *time.Time // prazo INTERNO de confirmação (criação + 2 dias corridos); nil = sem prazo
+	Fonte                                      string     // DJEN, DataJud ou DJEN (sigiloso)
 }
 
 // CriarAnaliseDeIntimacao abre, DENTRO da transação do chamador, a tarefa de análise em "A confirmar", sem nenhuma data.
@@ -45,9 +46,9 @@ func (s *Service) CriarAnaliseDeIntimacao(ctx context.Context, tx pgx.Tx, in Ana
 		origem, proc = "processo", in.ProcessoID
 	}
 	err = tx.QueryRow(ctx, `INSERT INTO tarefas (codigo, titulo, subtitulo, estado, origem_tipo, processo_id, intimacao_id,
-		descricao, prioridade, created_by, updated_by)
-		VALUES ($1,$2,'Análise de decisão','a-confirmar',$3,$4::uuid,$5::uuid,$6,'Normal',$7::uuid,$7::uuid) RETURNING id::text`,
-		codigo, in.Titulo, origem, proc, in.IntimacaoID, descricaoComPrazoInterno(in.Descricao, in.PrazoFatal), in.CriadoPor).Scan(&id)
+		descricao, prioridade, fonte_automatica, created_by, updated_by)
+		VALUES ($1,$2,'Análise de decisão','a-confirmar',$3,$4::uuid,$5::uuid,$6,'Normal',$8,$7::uuid,$7::uuid) RETURNING id::text`,
+		codigo, in.Titulo, origem, proc, in.IntimacaoID, descricaoComPrazoInterno(in.Descricao, in.PrazoFatal), in.CriadoPor, in.Fonte).Scan(&id)
 	if err != nil {
 		return "", err
 	}

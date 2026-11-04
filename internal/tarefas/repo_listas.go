@@ -22,7 +22,7 @@ func (s *Service) enrich(ctx context.Context, list []*Tarefa) error {
 		if tipo == OrigemIntimacao { // não há ficha para consultar: a origem é o próprio DJEN
 			for _, t := range list {
 				if t.OrigemTipo == tipo {
-					t.OrigemCodigo = "DJEN"
+					t.OrigemCodigo = fonteOu(t.Fonte)
 				}
 			}
 			continue
@@ -35,7 +35,7 @@ func (s *Service) enrich(ctx context.Context, list []*Tarefa) error {
 			if v, ok := m[t.OrigemID]; ok && t.OrigemTipo == tipo {
 				t.OrigemCodigo, t.ClienteNome = v[0], v[1]
 				if t.IntimacaoID != "" {
-					t.OrigemCodigo += " · DJEN"
+					t.OrigemCodigo += " · " + fonteOu(t.Fonte)
 				}
 			}
 		}
@@ -180,10 +180,11 @@ func (s *Service) Listar(ctx context.Context, q string) ([]*Tarefa, error) {
 	return out, nil
 }
 
-// AbertosDoProcesso conta as tarefas em aberto ligadas ao processo (pede confirmação extra ao excluí-lo).
+// AbertosDoProcesso conta as tarefas em aberto ligadas ao processo (pede confirmação extra ao excluí-lo). A tarefa automática de
+// monitoramento não conta: ela existe por causa do processo e não é trabalho pendente do advogado.
 func (s *Service) AbertosDoProcesso(ctx context.Context, processoID string) (int, error) {
 	var n int
 	err := s.Pool.QueryRow(ctx, `SELECT count(*) FROM tarefas WHERE processo_id=$1::uuid AND excluido_em IS NULL
-		AND estado NOT IN ('concluidas-com-sucesso','concluidas-sem-sucesso','canceladas')`, processoID).Scan(&n)
+		AND NOT monitoramento AND estado NOT IN ('concluidas-com-sucesso','concluidas-sem-sucesso','canceladas')`, processoID).Scan(&n)
 	return n, err
 }

@@ -8,7 +8,9 @@ O painel pode **consultar o DJEN pelo número da OAB** dos advogados cadastrados
 
 1. registra a intimação na lista (status **Em triagem**);
 2. abre uma **tarefa de análise** no estado **A confirmar**, com o título "Analisar intimação — tipo — número do processo";
-3. **não calcula nenhum prazo.** A tarefa nasce sem data. Quem apura o prazo, e o confirma, é o advogado.
+3. **não calcula o prazo processual.** A tarefa nasce com um **prazo interno de confirmação de 2 dias corridos** (data da criação + 2 dias, data civil de São Paulo), com o selo **A CONFERIR** no campo Prazo fatal. A descrição diz: "Prazo interno de confirmação (2 dias corridos). NÃO é o prazo processual: o advogado apura o prazo da intimação." O prazo interno acaba quando o advogado tira a tarefa de "A confirmar" ou decide a intimação (Confirmar/Cancelar); se vencer, aparece como atrasado na Agenda. Quem apura o prazo processual, e o confirma, é o advogado.
+4. quando o número do processo já está cadastrado, abre também **uma tarefa consolidada por processo e por dia de coleta com novidades**, que lista as novidades do dia (também com o prazo interno).
+5. guarda o **texto integral** da comunicação (teto de segurança de 100.000 caracteres, com a marca "[texto cortado]" se for atingido) e mostra tudo no botão **Ver** da tabela, que abre o painel lateral "Intimação" (Origem, Tribunal, Órgão, Processo, Data, Tipo, Texto completo e Link).
 
 O painel **detecta e sugere; o advogado confirma.** Só o advogado pode **Confirmar** ou **Cancelar** uma intimação (o cancelamento pede o motivo); a cancelada
 continua no histórico: nada se apaga.
@@ -65,6 +67,6 @@ e-mail de usuário.
 
 ## Dados pessoais (LGPD)
 
-O texto de uma intimação pode conter dados pessoais. O painel guarda só um resumo (até 2.000 caracteres) e o link oficial (só
+O texto de uma intimação pode conter dados pessoais. O painel guarda o texto integral da comunicação (até 100.000 caracteres), um resumo de 2.000 caracteres para as listas e o link oficial (só
 https), não escreve esse texto em logs e limita o acesso por papel: assistente e administrador veem a lista, só o advogado
 decide, só o administrador cadastra OAB e roda a coleta.

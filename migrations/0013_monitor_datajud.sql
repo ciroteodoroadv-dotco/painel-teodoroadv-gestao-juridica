@@ -60,6 +60,8 @@ UPDATE intimacoes SET texto = resumo WHERE texto = '';
 ALTER TABLE tarefas ADD COLUMN monitoramento boolean NOT NULL DEFAULT false;
 ALTER TABLE tarefas ADD COLUMN consolidada_dia date;
 ALTER TABLE tarefas ADD COLUMN prazo_interno boolean NOT NULL DEFAULT false;
+-- Fonte da tarefa de análise (mostrada na Origem da lista de tarefas): vazio = tarefa comum.
+ALTER TABLE tarefas ADD COLUMN fonte_automatica text NOT NULL DEFAULT '' CHECK (fonte_automatica IN ('', 'DJEN', 'DataJud', 'DJEN (sigiloso)'));
 CREATE UNIQUE INDEX tarefas_monitoramento_aberta_uq ON tarefas (processo_id)
     WHERE monitoramento AND estado NOT IN ('concluidas-com-sucesso', 'concluidas-sem-sucesso', 'canceladas');
 CREATE UNIQUE INDEX tarefas_consolidada_uq ON tarefas (processo_id, consolidada_dia) WHERE consolidada_dia IS NOT NULL;
@@ -69,7 +71,7 @@ CREATE UNIQUE INDEX tarefas_consolidada_uq ON tarefas (processo_id, consolidada_
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM monitor_processos) OR EXISTS (SELECT 1 FROM processo_movimentos) OR EXISTS (SELECT 1 FROM monitor_sigilosos)
-       OR EXISTS (SELECT 1 FROM tarefas WHERE monitoramento OR consolidada_dia IS NOT NULL OR prazo_interno)
+       OR EXISTS (SELECT 1 FROM tarefas WHERE monitoramento OR consolidada_dia IS NOT NULL OR prazo_interno OR fonte_automatica <> '')
        OR EXISTS (SELECT 1 FROM intimacoes WHERE origem <> 'DJEN' OR char_length(texto) > 2000) THEN
         RAISE EXCEPTION 'migração 0013 não é reversível com dados: nada se apaga (esvazie o monitor e as tarefas automáticas antes)';
     END IF;
@@ -78,6 +80,7 @@ $$;
 -- +goose StatementEnd
 DROP INDEX tarefas_consolidada_uq;
 DROP INDEX tarefas_monitoramento_aberta_uq;
+ALTER TABLE tarefas DROP COLUMN fonte_automatica;
 ALTER TABLE tarefas DROP COLUMN prazo_interno;
 ALTER TABLE tarefas DROP COLUMN consolidada_dia;
 ALTER TABLE tarefas DROP COLUMN monitoramento;

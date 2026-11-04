@@ -92,6 +92,7 @@ func novoCenario(t *testing.T) *cenario {
 	c.joao = c.adv.criarPessoa(t, "João Fictício", "111.444.777-35")
 	c.ate = c.adv.criarAtendimento(t, "Demanda de exemplo", []string{c.maria})
 	c.pro = c.adv.criarProcesso(t, "", [3]string{c.joao, "Autor", "1"})
+	e.semMonitoramento() // estes testes contam tarefas: a de monitoramento (Plano 6) tem testes próprios
 	return c
 }
 

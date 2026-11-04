@@ -17,3 +17,6 @@
 - **Segredo de justiça** — processos que a fonte pública pode não devolver; a conferência manual continua necessária.
 - **Cancelar (nada se apaga)** — tarefa, audiência, compromisso, diligência e intimação não são excluídos: ficam listados com selo, motivo, quem e quando cancelou.
 - **Processo duplicado** — processo cadastrado com número CNJ que já existe; o painel mostra o marcador "PROCESSO DUPLICADO" antes de salvar e exige justificativa.
+
+> Atualização do Plano 6 (emenda do advogado, 04/11/2026): a tarefa de análise agora nasce com **prazo interno de confirmação** (criação + 2 dias
+> corridos), e a intimação guarda o **texto integral**. Ver `GLOSSARIO-PLANO-6.md`.

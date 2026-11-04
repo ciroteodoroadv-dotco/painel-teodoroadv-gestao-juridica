@@ -65,7 +65,7 @@ func (s *Service) RegistrarNaTx(ctx context.Context, tx pgx.Tx, n Nova) (id stri
 	}
 	prazo := s.prazoInterno()
 	if _, err = s.Tarefas.CriarAnaliseDeIntimacao(ctx, tx, AnaliseIn{IntimacaoID: id, ProcessoID: n.ProcessoID, Titulo: n.TituloAnalise,
-		Descricao: n.DescricaoAnalise, CriadoPor: n.CriadoPor, AuditActor: n.Ator, RequestID: n.RequestID, PrazoFatal: prazo}); err != nil {
+		Descricao: n.DescricaoAnalise, CriadoPor: n.CriadoPor, AuditActor: n.Ator, RequestID: n.RequestID, PrazoFatal: prazo, Fonte: n.Origem}); err != nil {
 		return "", false, err
 	}
 	if n.ProcessoID != "" {

@@ -125,3 +125,11 @@ func (s *Service) encerraPrazoInterno(ctx context.Context, ac webx.Actor, id str
 	}
 	return nil
 }
+
+// fonteOu devolve a fonte da tarefa de análise; vazia (registro anterior à 0013) é DJEN.
+func fonteOu(f string) string {
+	if f == "" {
+		return "DJEN"
+	}
+	return f
+}

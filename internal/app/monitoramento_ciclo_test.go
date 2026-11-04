@@ -104,3 +104,14 @@ func TestFalhaNaTarefaDesfazAMudancaDeEstado(t *testing.T) {
 		t.Errorf("tudo ou nada: situacao=%s abertas=%d", sit, ab)
 	}
 }
+
+// semMonitoramento tira do banco de teste as tarefas de monitoramento já criadas e devolve o contador de códigos ao ponto anterior,
+// para os testes antigos (que contam tarefas e códigos) não dependerem da tarefa automática.
+func (e *env) semMonitoramento() {
+	e.t.Helper()
+	ctx := context.Background()
+	var n int
+	_ = e.pool.QueryRow(ctx, `SELECT count(*) FROM tarefas WHERE monitoramento`).Scan(&n)
+	_, _ = e.pool.Exec(ctx, `DELETE FROM tarefas WHERE monitoramento`)
+	_, _ = e.pool.Exec(ctx, `UPDATE codigos_contador SET ultimo = ultimo - $1 WHERE prefixo='TAR'`, n)
+}

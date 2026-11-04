@@ -38,7 +38,8 @@ type Tarefa struct {
 	Partes                                            []ParteTarefa
 	Responsaveis                                      []Ref
 	Version                                           int
-	PrazoInterno                                      bool // prazo fatal interno de confirmação (2 dias), não o prazo processual
+	PrazoInterno                                      bool   // prazo fatal interno de confirmação (2 dias), não o prazo processual
+	Fonte                                             string // DJEN, DataJud ou DJEN (sigiloso), nas tarefas de análise
 }
 
 func br(t *time.Time) string {

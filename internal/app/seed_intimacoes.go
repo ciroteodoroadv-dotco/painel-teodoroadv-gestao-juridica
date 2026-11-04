@@ -60,6 +60,5 @@ func semearIntimacoes(ctx context.Context, pool *pgxpool.Pool, ac webx.Actor, pr
 	if err := svc.Cancelar(ctx, ac, linhas[2].ID, "Cancelada pelo advogado (exemplo)."); err != nil {
 		return err
 	}
-	return (&coletas.Store{Pool: pool}).Registrar(ctx, coletas.Estado{Modulo: "monitor", Origem: "DataJud", Status: "falha",
-		Mensagem: "Dado fictício de exemplo.", UltimaTentativa: &agora})
+	return semearMonitor(ctx, pool, ac, proc, svc, agora)
 }

@@ -188,7 +188,7 @@ func TestCancelarIntimacaoNaoDescarta(t *testing.T) {
 		t.Error("auditoria intimacao.cancelada")
 	}
 	_, pg = adv.get("/agenda")
-	if !strings.Contains(pg, `<span class="badge badge-neutral">Cancelada</span>`) || strings.Contains(pg, `/intimacoes/`+ids[0]+`/`) ||
+	if !strings.Contains(pg, `<span class="badge badge-neutral">Cancelada</span>`) || strings.Contains(pg, `/intimacoes/`+ids[0]+`/cancelar`) || strings.Contains(pg, `/intimacoes/`+ids[0]+`/decidir`) ||
 		!regexp.MustCompile(`<span>Intimações</span><span class="count">2</span>`).MatchString(pg) {
 		t.Error("a cancelada permanece no histórico, com selo e sem ações")
 	}
