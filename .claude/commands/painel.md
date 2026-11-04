@@ -58,6 +58,14 @@ Você, Opus, chama a si mesmo só se: o Sonnet reportar falha que exige julgamen
 - ./scripts/analise-estatica.sh
 Se o Go local for menor que 1.26.10, o contêiner não consegue baixar a versão exigida. Nesse caso, a verificação oficial é o job `go` do GitHub Actions, e nenhuma mudança é declarada verificada sem log dele.
 
+PROTOCOLO DA PROVA REAL EXATA (vale para todo número, lista, contagem e afirmação de estado):
+- Cada afirmação verificável é recalculada por comando executado agora. Nunca se copia número de memória, de resumo anterior ou de saída de outra sessão.
+- Toda contagem é feita com comando (ex.: git ls-files | wc -l), e a soma das partes é conferida contra o total. Se a soma não bater, a prova falhou.
+- A saída do comando é colada literalmente no relatório do subagente. Resumo no lugar da saída não conta.
+- Compara-se com o critério antes de dizer "passou". Divergência de um único item é falha, não arredondamento.
+- Afirmação sem comando que a prove vira [Chute] e fica marcada como não verificada.
+- A árvore de trabalho é verificada limpa (git status) antes e depois da prova, para que o resultado reflita o commit testado.
+
 7. AUDITORIA DO PLANO
 Ao fechar um plano, rode spec-to-code-compliance contra a especificação e registre o que não bate. Para mudança sensível, rode security-review e differential-review.
 
