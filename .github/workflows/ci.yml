@@ -8,6 +8,9 @@ permissions:
 jobs:
   go:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     services:
       postgres:
         image: postgres:17-alpine
