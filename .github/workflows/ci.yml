@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: read # gitleaks-action lista os commits do PR pela API (sem isso: 403 em pull_request)
     services:
       postgres:
         image: postgres:17-alpine
@@ -25,22 +25,48 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { fetch-depth: 0 }
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with: { go-version-file: go.mod }
       - name: Formatação
         run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
       - name: Análise estática
         run: go vet ./...
+      - name: Lint (golangci-lint v2.5.0)
+        run: |
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0
+          "$(go env GOPATH)/bin/golangci-lint" run ./...
       - name: Testes
         run: go test -race -count=1 -p 1 ./... # -p 1: os testes de integração recriam o banco
       - name: Limite de 300 linhas
         run: ./scripts/check-lines.sh
+      - name: Referências internas da documentação
+        run: ./scripts/check-links.sh
       - name: Análise estática de segurança (gosec, staticcheck e govulncheck)
         run: ./scripts/analise-estatica.sh # mesmas ferramentas e versões do relatório docs/plano-fusao/ANALISE-ESTATICA.md
       - name: Segredos no Git
-        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  migracoes:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: teste
+          POSTGRES_DB: teste
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PAINEL_TEST_DB: postgres://postgres:teste@127.0.0.1:5432/teste?sslmode=disable
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with: { go-version-file: go.mod }
+      - name: Ciclo up→down→up das migrações (M1)
+        run: go test -count=1 -v -run TestCicloUpDownUp ./internal/platform/migrate/
 
   docker:
     runs-on: ubuntu-latest
@@ -52,6 +78,19 @@ jobs:
         run: docker compose -f deploy/docker-compose.yml config -q
       - name: Construir a imagem (sem publicar)
         run: docker build -f deploy/Dockerfile -t painel:ci .
+      - name: Varredura de vulnerabilidades da imagem (falha em CRÍTICA/ALTA com correção disponível)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: painel:ci
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: SBOM da imagem (SPDX)
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: painel:ci
+          format: spdx-json
+          output-file: sbom.spdx.json
 
   scripts:
     runs-on: ubuntu-latest

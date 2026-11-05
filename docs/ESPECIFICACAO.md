@@ -1,6 +1,8 @@
 # Especificação técnica — Painel Teodoro v2
 
-Base: `PLANO-REESCRITA-PAINEL-TEODORO-LINUX-LGPD.md` (auditoria de 31/10/2026). Nesta etapa não há código,
+> **Histórico.** Governa: `docs/plano-fusao/ESPECIFICACAO-FUSAO.md` e `docs/plano-fusao/00-SEQUENCIA.md`. Itens abertos foram migrados para `docs/plano-fusao/PENDENCIAS.md`.
+
+Base: `PLANO-REESCRITA-PAINEL-TEODORO-LINUX-LGPD.md` (documento externo, não versionado; auditoria de 31/10/2026). Nesta etapa não há código,
 dados reais, segredos, WhatsApp, e-mail, DataJud nem DJEN.
 
 > LGPD não é selo obtido por código. O sistema fornece controles e evidências técnicas; a conformidade

@@ -58,7 +58,7 @@ var (
 // Novo valida a configuração e prepara o cliente. Redirecionamento a outro host é recusado.
 func Novo(cfg Config) (*Cliente, error) {
 	u, err := url.Parse(cfg.BaseURL)
-	if err != nil || u.Host == "" || (u.Scheme != "https" && !(cfg.PermitirHTTP && u.Scheme == "http")) {
+	if err != nil || u.Host == "" || (u.Scheme != "https" && (!cfg.PermitirHTTP || u.Scheme != "http")) {
 		return nil, errors.New("djen: a URL base precisa ser https")
 	}
 	if cfg.Timeout <= 0 {

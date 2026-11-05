@@ -42,7 +42,7 @@ Comportamento (forma do B, rótulos novos):
 - Adicionar a `forms.js` as mensagens do B "Ação registrada, mas houve falha ao recarregar a agenda / as audiências / as diligências."; teste que lê a tabela.
 - Teste que enumera **todas** as rotas (`rt.Routes()`) e prova: nenhuma POST/DELETE sem permissão; nenhuma rota com "excluir"/"apagar"/"remover" para tarefa, audiência, compromisso, diligência, intimação.
 - Corrigir o nome do campo `RepCPFMask` (ou aplicar máscara) e o comentário do `rbac.go` ("assistente escreve só em tarefas e agenda" está desatualizado).
-- Atualizar `RELATORIO-*`/`NOTAS-PLANO-4C.md`, a ficha do acervo (estado) e `ACEITE-VISUAL.md`.
+- Atualizar `RELATORIO-*`/`docs/arquivo/plano-fusao/NOTAS-PLANO-4C.md`, a ficha do acervo (estado) e `ACEITE-VISUAL.md`.
 
 ## Verificação
 

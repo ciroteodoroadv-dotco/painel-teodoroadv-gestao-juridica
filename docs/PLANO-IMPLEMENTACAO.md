@@ -1,5 +1,7 @@
 # Plano de implementação — Painel Teodoro v2
 
+> **Histórico.** Governa: `docs/plano-fusao/ESPECIFICACAO-FUSAO.md` e `docs/plano-fusao/00-SEQUENCIA.md`. Itens abertos foram migrados para `docs/plano-fusao/PENDENCIAS.md`.
+
 Cada marco só começa quando o anterior cumpriu o aceite. Todo recurso nasce com critério de aceite e teste.
 
 ## M0 — Inventário e decisões humanas (o advogado preenche)

@@ -9,3 +9,5 @@
 
 **Exceções:** nenhuma para código de produção. Arquivos gerados (`sqlc`) ficam em diretório marcado e
 fora da checagem, sem edição manual.
+
+**Nota de 04/11/2026 (Plano 0):** `referencia/painel-b/` é cópia verificada (SHA-256 contra `docs/plano-fusao/HASHES-B.txt`) do painel B, usada só como referência visual. Não é código de produção, não é embutida no binário e fica fora da checagem de linhas (`scripts/check-lines.sh`).

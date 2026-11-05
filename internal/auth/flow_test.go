@@ -115,7 +115,7 @@ func (b *browser) do(method, path string, form url.Values) (*http.Response, stri
 	if err != nil {
 		b.e.t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, _ := io.ReadAll(resp.Body)
 	for _, ck := range resp.Cookies() {
 		if ck.MaxAge < 0 {

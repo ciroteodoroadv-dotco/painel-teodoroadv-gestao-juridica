@@ -156,4 +156,4 @@ Todas as integrações vêm **desligadas**. As chaves ficam no arquivo de ambien
 - **Faixa de índices e "Estado das coletas"** no pé da tela se renovam sozinhos (30 s e 60 s) e só leem o que já está gravado.
 - **Buscar CEP**: no cadastro de pessoa; só o advogado.
 - **Análise estática de segurança**: `scripts/analise-estatica.sh` (precisa do Docker); relatório em `docs/plano-fusao/ANALISE-ESTATICA.md`.
-- **Teste de backup com o esquema final**: `deploy/teste-backup-local.sh` (use uma pilha de teste com outro nome de projeto; veja `docs/plano-fusao/RELATORIO-8.md`).
+- **Teste de backup com o esquema final**: `deploy/teste-backup-local.sh` (use uma pilha de teste com outro nome de projeto; veja `docs/arquivo/plano-fusao/RELATORIO-8.md`).

@@ -1,6 +1,6 @@
 # Fusão — sequência dos planos (revisada em 03/11/2026)
 
-**Determinação do advogado (03/11/2026):** o frontend do painel B prevalece, sem exceção. Cada tela é escrita **depois de ler por inteiro** o módulo correspondente do B (`web/index.html`, `web/css/painel.css`, `web/js/*.js`). Onde o B conflita com a segurança do v2: **o B vale na forma, o v2 vale na regra** (ex.: o selo "A CONFERIR" aparece no mesmo campo onde o B mostra o prazo fatal).
+**Determinação do advogado (03/11/2026):** o frontend do painel B prevalece, sem exceção. Cada tela é escrita **depois de ler por inteiro** o módulo correspondente do B (`referencia/painel-b/index.html`, `referencia/painel-b/css/painel.css`, `referencia/painel-b/js/*.js`). Onde o B conflita com a segurança do v2: **o B vale na forma, o v2 vale na regra** (ex.: o selo "A CONFERIR" aparece no mesmo campo onde o B mostra o prazo fatal).
 
 ## O que a leitura do B mudou
 
@@ -9,6 +9,11 @@
 3. Tarefa no B: 7 estados (A confirmar, Pendente, Em execução, Revisão, Concluída com sucesso, Concluída sem sucesso, Cancelada), prioridade **Urgente/Alta/Normal/Baixa**, subtítulo com sugestões, Partes e Responsáveis como listas dinâmicas, Criado por, Data base, Prazo de entrega, **Prazo fatal**, Observações, Documentos (PDF), "Tarefa vinculada" (filha) e exclusão com senha.
 4. Códigos de ficha (`PES.`, `ATE.`, `PRO.`, `TAR.`) aparecem em listas e selects.
 5. O acordeão de Tarefas deixa **vários painéis abertos ao mesmo tempo**; o da Agenda abre **um por vez**. Alternância é no navegador (sem recarregar), como no B.
+
+## Etapas anteriores ao 1B (fundação)
+
+- **Etapa 0 — saneamento documental.** README e regras corrigidos; histórico do M-system marcado; referência do painel B em `referencia/painel-b/` (22 arquivos verificados por SHA-256); resíduos arquivados em `docs/arquivo/`. Critério: links relativos resolvem, `check-lines` ok, prova real com saída literal.
+- **Etapa M1-CI — fechamento do M1 no CI.** Job `migracoes` com ciclo up→down→up (`internal/platform/migrate/ciclo_test.go`) e lint com golangci-lint v2.5.0 no job `go`. Pendentes: SBOM e trivy (exigem ações fixadas por SHA, não verificadas nesta etapa). Critério: CI verde com os jobs novos.
 
 ## Ordem (cada plano é executado e verificado antes do seguinte)
 

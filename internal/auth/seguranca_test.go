@@ -67,7 +67,7 @@ func TestMultipartComSessaoContinuaFuncionando(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != 200 {
 		t.Fatalf("multipart com sessão e CSRF no corpo = %d, esperado 200", resp.StatusCode)
 	}

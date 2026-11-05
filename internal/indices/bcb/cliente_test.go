@@ -28,7 +28,7 @@ func TestUltimoLeAsSeisSeriesNoFormatoDoSGS(t *testing.T) {
 		if r.Header.Get("User-Agent") == "" || r.Header.Get("Authorization") != "" || r.Header.Get("Cookie") != "" {
 			t.Errorf("cabeçalhos inesperados: %v", r.Header)
 		}
-		io.WriteString(w, `[{"data":"01/09/2026","valor":"0.52"}]`)
+		_, _ = io.WriteString(w, `[{"data":"01/09/2026","valor":"0.52"}]`)
 	})
 	if len(Series) != 6 {
 		t.Fatalf("séries = %d", len(Series))
@@ -56,7 +56,7 @@ func TestUltimoLeAsSeisSeriesNoFormatoDoSGS(t *testing.T) {
 func TestVirgulaEPontoDecimal(t *testing.T) {
 	for entrada, esperado := range map[string]string{"0.52": "0.52", "5,4321": "5.4321", "1.518,00": "1518.00", "1518.00": "1518.00", "-0.10": "-0.10"} {
 		c := novoTeste(t, func(w http.ResponseWriter, r *http.Request) {
-			io.WriteString(w, `[{"data":"02/11/2026","valor":"`+entrada+`"}]`)
+			_, _ = io.WriteString(w, `[{"data":"02/11/2026","valor":"`+entrada+`"}]`)
 		})
 		p, err := c.Ultimo(context.Background(), 1)
 		if err != nil || p.Valor != esperado {
@@ -70,16 +70,16 @@ func TestRespostasRuinsDaoErro(t *testing.T) {
 		"404":       func(w http.ResponseWriter, r *http.Request) { http.NotFound(w, r) },
 		"429":       func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(429) },
 		"500":       func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) },
-		"json ruim": func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, `{nao`) },
-		"vazia":     func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, `[]`) },
+		"json ruim": func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, `{nao`) },
+		"vazia":     func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, `[]`) },
 		"valor ruim": func(w http.ResponseWriter, r *http.Request) {
-			io.WriteString(w, `[{"data":"01/09/2026","valor":"abc"}]`)
+			_, _ = io.WriteString(w, `[{"data":"01/09/2026","valor":"abc"}]`)
 		},
 		"data ruim": func(w http.ResponseWriter, r *http.Request) {
-			io.WriteString(w, `[{"data":"2026-09-01","valor":"1.0"}]`)
+			_, _ = io.WriteString(w, `[{"data":"2026-09-01","valor":"1.0"}]`)
 		},
 		"gigante": func(w http.ResponseWriter, r *http.Request) {
-			io.WriteString(w, `[{"data":"01/09/2026","valor":"1.0","x":"`+strings.Repeat("a", 200000)+`"}]`)
+			_, _ = io.WriteString(w, `[{"data":"01/09/2026","valor":"1.0","x":"`+strings.Repeat("a", 200000)+`"}]`)
 		},
 		"redireciona a outro host": func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "http://outro-host.invalid/x", http.StatusFound)

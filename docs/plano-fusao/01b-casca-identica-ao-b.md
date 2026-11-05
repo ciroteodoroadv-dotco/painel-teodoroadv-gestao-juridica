@@ -1,6 +1,6 @@
 # Fusão — Plano 1B: casca idêntica ao painel B
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`). **Antes de escrever qualquer template ou script, leia por inteiro, no B (somente leitura):** `web/index.html`, `web/css/painel.css`, `web/js/02-util.js`, `05-dominio.js`, `07-app-core.js`, `13-indices.js`, `15-drawers.js`, `16-sync-status.js`, `99-init.js`. Onde este plano e o B divergirem, **vale o B na forma**.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`). **Antes de escrever qualquer template ou script, leia por inteiro, no B (somente leitura):** `referencia/painel-b/index.html`, `referencia/painel-b/css/painel.css`, `referencia/painel-b/js/02-util.js`, `05-dominio.js`, `07-app-core.js`, `13-indices.js`, `15-drawers.js`, `16-sync-status.js`, `99-init.js`. Onde este plano e o B divergirem, **vale o B na forma**.
 
 **Goal:** Toda tela logada do v2 tem a estrutura, os ids, as classes e os comportamentos do `index.html`/`painel.css`/`07-app-core.js`/`15-drawers.js` do B. Prova: paridade de estilo computado contra o próprio B rodando com dados fictícios.
 
@@ -26,7 +26,7 @@
 
 **Files:** Create `tools/refb/servidor.py`, `tools/refb/fixtures.py`, `tools/refb/LEIAME.md`; Create `docs/plano-fusao/paridade/` (saídas).
 
-**Interfaces — Produces:** `python3 tools/refb/servidor.py --porta 18787` serve `GET /` e estáticos de `REFB_WEB` (padrão `/mnt/d/OneDrive/Desktop/painel-teodoro-entrega-1-1-2026-10-30/painel-teodoro/web`, **leitura**), e responde `/api/*` com fixtures fictícias nos formatos que `web/js/03-api-mapa.js` e `04-api-carga.js` esperam (ler esses dois arquivos inteiros para derivar os formatos): `/api/{pessoas,processos,tarefas,atendimentos,agenda,audiencias,diligencias}` (listas), `/api/indices`, `/api/intimacoes`, `/api/sincronizacao/status`, `/api/events` (SSE vazio mantido aberto), `/api/auth/login`. Qualquer POST/PUT/PATCH/DELETE → 200 `{}` (não persiste nada).
+**Interfaces — Produces:** `python3 tools/refb/servidor.py --porta 18787` serve `GET /` e estáticos de `REFB_WEB` (padrão `/mnt/d/OneDrive/Desktop/painel-teodoro-entrega-1-1-2026-10-30/painel-teodoro/web`, **leitura**), e responde `/api/*` com fixtures fictícias nos formatos que `referencia/painel-b/js/03-api-mapa.js` e `04-api-carga.js` esperam (ler esses dois arquivos inteiros para derivar os formatos): `/api/{pessoas,processos,tarefas,atendimentos,agenda,audiencias,diligencias}` (listas), `/api/indices`, `/api/intimacoes`, `/api/sincronizacao/status`, `/api/events` (SSE vazio mantido aberto), `/api/auth/login`. Qualquer POST/PUT/PATCH/DELETE → 200 `{}` (não persiste nada).
 
 - [ ] **Step 1:** Ler `03-api-mapa.js` e `04-api-carga.js` por inteiro; listar os campos usados por cada `mapear*API`.
 - [ ] **Step 2:** `fixtures.py` com **nomes e números inventados** (ex.: "Maria Exemplo", CNJ de teste `0000000-00.2026.8.26.0000`): ≥ 4 pessoas (física e jurídica), 3 processos, 3 atendimentos, 6 tarefas (uma por estado relevante, com prazo fatal e subtítulo Ligação/Aula), 5 compromissos (Reunião, Ligação, Aula, Prazo Fatal), 2 audiências, 2 diligências, 6 índices, 2 intimações.
@@ -95,7 +95,7 @@ func (a *Auth) AddNavCount(label, href string, perm Perm, count func(context.Con
 
 ## Task 5: Paridade de estilo computado (B × v2)
 
-**Files:** Create `tools/refb/paridade.js` (executado via `javascript_tool` no Chrome, só leitura), `docs/plano-fusao/paridade/RELATORIO-1B.md`; Create `internal/app/instantaneos_test.go` (gera HTML do v2 com seed fictício em `$PARIDADE_OUT`, ignorado se a variável não existir).
+**Files:** Create `tools/refb/paridade.js` (executado via `javascript_tool` no Chrome, só leitura), `docs/arquivo/plano-fusao/paridade/RELATORIO-1B.md`; Create `internal/app/instantaneos_test.go` (gera HTML do v2 com seed fictício em `$PARIDADE_OUT`, ignorado se a variável não existir).
 
 - [ ] **Step 1:** o teste de instantâneos grava `agenda.html`, `tarefas.html`, `processos.html`, `pessoas.html` (páginas logadas do harness com **dados do seed fictício**) e copia `web/static/*`; um `python3 -m http.server` em `$PARIDADE_OUT` serve para o Chrome (sem credenciais, sem dados reais).
 - [ ] **Step 2:** `paridade.js` percorre os seletores `.sidebar, .brand .seal-logo, nav.tabs a (ou button), nav.tabs .count, .topbar, .topbar h1, .topbar .sub, .btn-primary, .stats, .acc-head, .acc-head.open, .acc-head .count, table, th, td, .badge, .empty, .search, .sync-status, .idx-ticker, #drawer, .toast` e devolve JSON de `getComputedStyle` para: `font-family, font-size, font-weight, line-height, color, background-color, border-top-color, border-radius, padding-top/right/bottom/left, margin-top/bottom, width, height, letter-spacing, box-shadow, display, text-transform`.
