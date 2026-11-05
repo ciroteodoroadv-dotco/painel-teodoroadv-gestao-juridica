@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 
@@ -18,8 +19,8 @@ const cols = `id, codigo, tipo_pessoa, nome_exibicao, nome_completo, documento_e
 	representante_cargo, logradouro, numero, complemento, bairro, cep, cidade, coalesce(uf,''), email, telefone,
 	observacoes, version, created_at, updated_at`
 
-// limiteLista protege a tela: o acordeão do B mostra tudo, sem paginação.
-const limiteLista = 2000
+// LimiteLista protege a tela: o acordeão do B mostra tudo, sem paginação. Acima disso a tela avisa e a busca vai ao banco.
+const LimiteLista = 2000
 
 func scan(row pgx.Row) (*Pessoa, error) {
 	var p Pessoa
@@ -70,11 +71,37 @@ func (s *Service) GetCompleto(ctx context.Context, ac webx.Actor, id string) (*P
 	return p, err
 }
 
-// Listar devolve todas as pessoas não excluídas, por nome. Com completo=true os documentos saem inteiros
-// (quem pode ver documento) e o acesso é auditado uma vez; senão, mascarados.
-func (s *Service) Listar(ctx context.Context, ac webx.Actor, completo bool) ([]Pessoa, error) {
+// Listar devolve as pessoas da TELA, por nome (até LimiteLista). Com completo=true os documentos saem inteiros
+// (quem pode ver documento) e o acesso é auditado uma vez; senão, mascarados. busca (opcional) filtra no banco por
+// nome ou CPF/CNPJ completo, para achar quem ficou fora do limite (auditoria 05/11, item 1.4).
+func (s *Service) Listar(ctx context.Context, ac webx.Actor, completo bool, busca ...string) ([]Pessoa, error) {
+	q := ""
+	if len(busca) > 0 {
+		q = strings.TrimSpace(busca[0])
+	}
+	return s.listar(ctx, ac, completo, q, LimiteLista)
+}
+
+// ListarTodas é Listar sem o corte da tela (seletores de pessoa).
+func (s *Service) ListarTodas(ctx context.Context, ac webx.Actor, completo bool) ([]Pessoa, error) {
+	return s.listar(ctx, ac, completo, "", 0)
+}
+
+// ContarAtivas devolve quantas pessoas não excluídas existem (para avisar quando a tela está cortada).
+func (s *Service) ContarAtivas(ctx context.Context) (int, error) {
+	var n int
+	err := s.Pool.QueryRow(ctx, `SELECT count(*) FROM pessoas WHERE excluido_em IS NULL`).Scan(&n)
+	return n, err
+}
+
+func (s *Service) listar(ctx context.Context, ac webx.Actor, completo bool, q string, limite int) ([]Pessoa, error) {
+	var idx []byte
+	if d := br.Digits(q); len(d) == 11 || len(d) == 14 {
+		idx = crypt.BlindIndex(s.FieldKey, purposeDoc, d)
+	}
 	rows, err := s.Pool.Query(ctx, `SELECT `+cols+` FROM pessoas WHERE excluido_em IS NULL
-		ORDER BY lower(nome_exibicao), id LIMIT $1`, limiteLista)
+		AND ($1 = '' OR nome_exibicao ILIKE $2 OR ($3::bytea IS NOT NULL AND documento_idx = $3))
+		ORDER BY lower(nome_exibicao), id LIMIT CASE WHEN $4 > 0 THEN $4 END`, q, webx.Like(q), idx, limite)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +129,7 @@ func (s *Service) Listar(ctx context.Context, ac webx.Actor, completo bool) ([]P
 // Opcoes monta as opções de um <select> de pessoa, com o rótulo do B: "NOME — Física (123.456.789-09)".
 // O documento só entra no rótulo se comDocumento (permissão de ver documento).
 func (s *Service) Opcoes(ctx context.Context, ac webx.Actor, comDocumento bool) ([]Opcao, error) {
-	ps, err := s.Listar(ctx, ac, comDocumento)
+	ps, err := s.ListarTodas(ctx, ac, comDocumento) // todas: o seletor não pode herdar o corte da tela (item 1.4)
 	if err != nil {
 		return nil, err
 	}

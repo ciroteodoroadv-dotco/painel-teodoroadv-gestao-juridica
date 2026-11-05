@@ -92,3 +92,30 @@ func (s *Store) PromoteSession(ctx context.Context, tx pgx.Tx, oldToken, userID 
 	}
 	return s.CreateSession(ctx, tx, userID, true, now)
 }
+
+// ExpurgarSessoes apaga as sessões vencidas (prazo absoluto ou ociosidade). Antes elas só sumiam no logout ou quando o
+// mesmo cookie voltava, e a tabela crescia sem fim (auditoria 05/11, item 4.4). Devolve quantas apagou.
+func (s *Store) ExpurgarSessoes(ctx context.Context, now time.Time) (int64, error) {
+	tag, err := s.Pool.Exec(ctx, `DELETE FROM sessions WHERE expires_at <= $1 OR last_seen_at < $2`, now, now.Add(-IdleTimeout))
+	return tag.RowsAffected(), err
+}
+
+// IniciarExpurgoDeSessoes roda ExpurgarSessoes a cada hora até ctx terminar.
+func (a *Auth) IniciarExpurgoDeSessoes(ctx context.Context) {
+	go func() {
+		t := time.NewTicker(time.Hour)
+		defer t.Stop()
+		for {
+			if n, err := a.Store.ExpurgarSessoes(ctx, a.now()); err != nil && ctx.Err() == nil {
+				a.Log.Error("expurgo de sessões falhou")
+			} else if n > 0 {
+				a.Log.Info("sessões vencidas apagadas", "quantidade", n)
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+			}
+		}
+	}()
+}

@@ -32,3 +32,14 @@ func UUID(s string) bool {
 	}
 	return true
 }
+
+// SoUUIDs filtra a lista, deixando só identificadores no formato UUID (evita erro de conversão no banco).
+func SoUUIDs(ids []string) []string {
+	out := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if UUID(id) {
+			out = append(out, id)
+		}
+	}
+	return out
+}

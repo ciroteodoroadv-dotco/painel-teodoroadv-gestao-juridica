@@ -72,6 +72,9 @@ type listData struct {
 	Grupos   []Grupo
 	Total    int
 	CanWrite bool
+	Busca    string // busca feita no banco (?busca=), para achar o que ficou fora do limite da tela
+	Ativos   int    // total de processos cadastrados (para avisar quando a tela não mostra todos)
+	Cortado  bool
 }
 
 // Busca é o texto que o campo de busca da lista consulta: número, classe, matéria, cliente e partes.
@@ -80,12 +83,20 @@ func (p *Processo) Busca() string {
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	ps, err := h.S.Listar(r.Context())
+	busca := strings.TrimSpace(r.URL.Query().Get("busca"))
+	ps, err := h.S.Listar(r.Context(), busca)
 	if err != nil {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return
 	}
-	d := listData{Total: len(ps), CanWrite: auth.Can(s.Role, auth.PermProcWrite)}
+	d := listData{Total: len(ps), CanWrite: auth.Can(s.Role, auth.PermProcWrite), Busca: busca}
+	if len(ps) >= LimiteLista { // a tela é cortada: avisa e oferece a busca no banco (auditoria 05/11, item 1.4)
+		if d.Ativos, err = h.S.ContarAtivos(r.Context()); err != nil {
+			http.Error(w, "Erro interno.", http.StatusInternalServerError)
+			return
+		}
+		d.Cortado = busca != "" || d.Ativos > len(ps)
+	}
 	for _, e := range Estados {
 		g := Grupo{Estado: e}
 		for _, p := range ps {

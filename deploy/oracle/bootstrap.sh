@@ -22,7 +22,7 @@ nft -f /etc/nftables.painel.nft
 echo "regras ativas:"; nft list table inet painel_fw | sed 's/^/  /'
 
 echo "== Timers de backup e de teste de restauração"
-install -m 0644 painel-backup.service painel-backup.timer painel-restore-test.service painel-restore-test.timer /etc/systemd/system/
+install -m 0644 painel-backup.service painel-backup.timer painel-restore-test.service painel-restore-test.timer painel-alerta@.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable --now painel-backup.timer painel-restore-test.timer
 systemctl list-timers 'painel-*' --no-pager

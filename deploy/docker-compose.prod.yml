@@ -13,6 +13,14 @@ services:
     logging: *logging
     pids_limit: 200
 
+  migrate:
+    build: !reset null
+    image: ${PAINEL_IMAGE:?defina PAINEL_IMAGE com a imagem por digest}
+    pull_policy: never
+    logging: *logging
+    environment:
+      PAINEL_ENV: prod
+
   app:
     build: !reset null
     image: ${PAINEL_IMAGE:?defina PAINEL_IMAGE com a imagem por digest}

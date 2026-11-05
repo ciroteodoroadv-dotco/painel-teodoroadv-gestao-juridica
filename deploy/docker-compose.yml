@@ -1,6 +1,22 @@
 # Base de produção: NENHUMA porta publicada. O acesso externo virá só pelo túnel (marco M5).
 name: painel
 
+# Ambiente comum ao app e à migração (a senha do dono NÃO está aqui: só o serviço migrate a recebe).
+x-painel-env: &painel-env
+  PAINEL_ADDR: ":8080"
+  PAINEL_LOG_LEVEL: info
+  # Produção exige o Cloudflare Access (preenchidos no M5). Vazio = o app recusa iniciar.
+  PAINEL_ACCESS_TEAM_DOMAIN: ${PAINEL_ACCESS_TEAM_DOMAIN:-}
+  PAINEL_ACCESS_AUD: ${PAINEL_ACCESS_AUD:-}
+  PAINEL_PUBLIC_URL: ${PAINEL_PUBLIC_URL:-} # ex.: https://painel.seudominio.com.br
+  PAINEL_DB_HOST: db
+  PAINEL_DOCS_DIR: /data/documentos
+  PAINEL_DB_NAME: painel
+  PAINEL_DB_USER: painel
+  PAINEL_DB_APP_PASSWORD_FILE: /run/secrets/db_app_password
+  PAINEL_SESSION_KEY_FILE: /run/secrets/session_key
+  PAINEL_FIELD_KEY_FILE: /run/secrets/field_key
+
 services:
   db:
     image: postgres:17-alpine@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
@@ -19,6 +35,27 @@ services:
       timeout: 5s
       retries: 5
 
+  # Migração do banco: roda UMA vez antes do app e termina. É o ÚNICO serviço com a senha do DONO do banco
+  # (auditoria 05/11, item 2.1): comprometer o app não dá poder de dono (gatilhos da auditoria, esquema).
+  # Comandos de administração também passam por aqui, ex.: docker compose run --rm migrate user unlock EMAIL
+  migrate:
+    image: ${PAINEL_IMAGE:-painel-app:latest}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: ["migrate", "up"]
+    restart: "no"
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      <<: *painel-env
+      PAINEL_DB_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password, db_app_password, session_key, field_key]
+    networks: [banco]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
   app:
     image: ${PAINEL_IMAGE:-painel-app:latest} # em produção vem do registro, por digest
     build:
@@ -27,22 +64,9 @@ services:
     restart: unless-stopped
     depends_on:
       db: { condition: service_healthy }
-    environment:
-      PAINEL_ADDR: ":8080"
-      PAINEL_LOG_LEVEL: info
-      # Produção exige o Cloudflare Access (preenchidos no M5). Vazio = o app recusa iniciar.
-      PAINEL_ACCESS_TEAM_DOMAIN: ${PAINEL_ACCESS_TEAM_DOMAIN:-}
-      PAINEL_ACCESS_AUD: ${PAINEL_ACCESS_AUD:-}
-      PAINEL_PUBLIC_URL: ${PAINEL_PUBLIC_URL:-} # ex.: https://painel.seudominio.com.br
-      PAINEL_DB_HOST: db
-      PAINEL_DOCS_DIR: /data/documentos
-      PAINEL_DB_NAME: painel
-      PAINEL_DB_USER: painel
-      PAINEL_DB_PASSWORD_FILE: /run/secrets/db_password
-      PAINEL_DB_APP_PASSWORD_FILE: /run/secrets/db_app_password
-      PAINEL_SESSION_KEY_FILE: /run/secrets/session_key
-      PAINEL_FIELD_KEY_FILE: /run/secrets/field_key
-    secrets: [db_password, db_app_password, session_key, field_key]
+      migrate: { condition: service_completed_successfully }
+    environment: *painel-env # SEM a senha do dono: só o papel restrito painel_app
+    secrets: [db_app_password, session_key, field_key]
     networks: [banco, borda]
     read_only: true
     volumes: [docs:/data/documentos] # documentos cifrados; o resto do sistema de arquivos é somente leitura

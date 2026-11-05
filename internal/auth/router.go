@@ -24,22 +24,47 @@ type Router struct {
 	a      *Auth
 	mux    *http.ServeMux
 	routes []Route
+	envios chan struct{} // semáforo: no máximo EnviosSimultaneos arquivos sendo lidos ao mesmo tempo (auditoria 4.3)
 }
 
+// EnviosSimultaneos limita quantos arquivos grandes ficam em memória ao mesmo tempo (o contêiner tem 768 MiB).
+const EnviosSimultaneos = 3
+
 // NewRouter cria o roteador sobre o mux.
-func NewRouter(a *Auth, mux *http.ServeMux) *Router { return &Router{a: a, mux: mux} }
+func NewRouter(a *Auth, mux *http.ServeMux) *Router {
+	return &Router{a: a, mux: mux, envios: make(chan struct{}, EnviosSimultaneos)}
+}
 
 // Routes lista tudo o que foi registrado (usado por testes e auditoria de configuração).
 func (rt *Router) Routes() []Route { return append([]Route(nil), rt.routes...) }
 
+// Limites de corpo por rota (auditoria 05/11, item 1.1): a regra mora SÓ aqui. O httpx aplica apenas o teto geral.
+const (
+	LimiteCorpoPadrao = 1 << 20  // 1 MiB: formulários comuns (inclusive os do drawer, enviados como multipart)
+	LimiteCorpoEnvio  = 26 << 20 // 25 MiB de arquivo + folga do multipart: rotas registradas com HandleUpload
+)
+
 // Handle registra a rota. perm vazia derruba o programa na inicialização (negar por padrão).
 func (rt *Router) Handle(pattern string, perm Perm, h HandlerFunc) {
+	rt.handle(pattern, perm, LimiteCorpoPadrao, h)
+}
+
+// HandleUpload registra uma rota que recebe ARQUIVO (até 25 MiB). Só rotas declaradas assim aceitam corpo grande.
+func (rt *Router) HandleUpload(pattern string, perm Perm, h HandlerFunc) {
+	if perm == Public {
+		panic("rota pública não recebe arquivo: " + pattern)
+	}
+	rt.handle(pattern, perm, LimiteCorpoEnvio, h)
+}
+
+func (rt *Router) handle(pattern string, perm Perm, limite int64, h HandlerFunc) {
 	if perm == "" {
 		panic("rota sem permissão declarada: " + pattern)
 	}
 	rt.routes = append(rt.routes, Route{pattern, perm})
 	rt.mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
 		r = rt.a.ensureAnon(w, r)
+		r.Body = http.MaxBytesReader(w, r.Body, limite)
 		multipart := strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data")
 		var s *Session
 		if perm == Public {
@@ -66,7 +91,16 @@ func (rt *Router) Handle(pattern string, perm Perm, h HandlerFunc) {
 				return
 			}
 		}
-		if multipart && !rt.a.parseMultipart(w, r) {
+		if multipart && limite >= LimiteCorpoEnvio {
+			select {
+			case rt.envios <- struct{}{}:
+				defer func() { <-rt.envios }()
+			default:
+				http.Error(w, "Muitos envios de arquivo ao mesmo tempo. Tente de novo em instantes.", http.StatusServiceUnavailable)
+				return
+			}
+		}
+		if multipart && !rt.a.parseMultipart(w, r, limite) {
 			return
 		}
 		if !rt.a.csrfOK(r) {
@@ -86,17 +120,21 @@ func (rt *Router) Handle(pattern string, perm Perm, h HandlerFunc) {
 }
 
 // parseMultipart lê o corpo multipart (já depois de sessão e permissão). Devolve false se respondeu erro.
-func (a *Auth) parseMultipart(w http.ResponseWriter, r *http.Request) bool {
-	r.Body = http.MaxBytesReader(w, r.Body, 26<<20) // o httpx já limita; o limite explícito aqui deixa a regra visível (gosec G120)
-	// #nosec G120 -- o corpo já está limitado a 26 MiB pelo MaxBytesReader da linha anterior (e pelo httpx); a análise do gosec não reconhece essa atribuição.
-	err := r.ParseMultipartForm(26 << 20)
+func (a *Auth) parseMultipart(w http.ResponseWriter, r *http.Request, limite int64) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, limite) // já aplicado no início da rota; repetido para a regra ficar visível (gosec G120)
+	// #nosec G120 -- o corpo já está limitado pelo MaxBytesReader da linha anterior (limite da rota); a análise do gosec não reconhece essa atribuição.
+	// Tudo em memória (a imagem é somente leitura e o /tmp de produção tem 16 MiB); o semáforo de envios limita o total.
+	err := r.ParseMultipartForm(limite)
 	if err == nil {
 		return true
 	}
 	var mbe *http.MaxBytesError
-	if errors.As(err, &mbe) {
+	switch {
+	case errors.As(err, &mbe) && limite >= LimiteCorpoEnvio:
 		http.Error(w, "Arquivo grande demais (o limite é 25 MiB).", http.StatusRequestEntityTooLarge)
-	} else {
+	case errors.As(err, &mbe):
+		http.Error(w, "Envio grande demais para este formulário.", http.StatusRequestEntityTooLarge)
+	default:
 		http.Error(w, "Envio inválido.", http.StatusBadRequest)
 	}
 	return false

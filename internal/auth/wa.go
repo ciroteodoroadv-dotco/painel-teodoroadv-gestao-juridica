@@ -61,6 +61,23 @@ func (a *Auth) waRegisterBegin(w http.ResponseWriter, r *http.Request, s *Sessio
 		a.deny(w, r, s, "cadastro_de_fator_sem_2fa", http.StatusForbidden)
 		return
 	}
+	// Chave ADICIONAL (sessão completa): exige a senha atual, senão uma sessão aberta basta para instalar uma chave do
+	// invasor (auditoria 05/11, item 2.2). O primeiro fator, logo após a senha, não pede de novo.
+	if s.MFAVerified {
+		var corpo struct {
+			Senha string `json:"senha"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&corpo)
+		msg, err := a.confirmaSenha(r.Context(), s, corpo.Senha)
+		if err != nil {
+			jsonErr(w, http.StatusInternalServerError, "Erro interno.")
+			return
+		}
+		if msg != "" {
+			jsonErr(w, http.StatusUnauthorized, msg)
+			return
+		}
+	}
 	ropts := []webauthn.RegistrationOption{webauthn.WithExclusions(webauthn.Credentials(wu.creds).CredentialDescriptors())}
 	if wu.u.Role == Administrador { // PIN/biometria obrigatórios para quem administra (auditoria F10)
 		ropts = append(ropts, webauthn.WithAuthenticatorSelection(protocol.AuthenticatorSelection{

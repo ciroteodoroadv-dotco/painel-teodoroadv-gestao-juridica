@@ -125,3 +125,46 @@ func TestMiddleware(t *testing.T) {
 		t.Error("modo dev (verificador nulo) deve devolver o próximo handler intacto")
 	}
 }
+
+// Auditoria 05/11, item 3.1: falha ao renovar o JWKS depois de 1 h NÃO derruba o acesso (usa a chave conhecida até
+// 24 h); só uma tentativa por minuto; depois de 24 h sem renovar, recusa.
+func TestRenovacaoDoJWKSFalhandoUsaChaveConhecida(t *testing.T) {
+	f := newFixture(t)
+	jwks, _ := f.v.fetch(context.Background())
+	agora := time.Now()
+	falhar, buscas := false, 0
+	f.v.now = func() time.Time { return agora }
+	f.v.fetch = func(context.Context) ([]byte, error) {
+		buscas++
+		if falhar {
+			return nil, io.ErrUnexpectedEOF
+		}
+		return jwks, nil
+	}
+	tok := f.token(t, nil)
+	if _, err := f.v.Verify(context.Background(), tok); err != nil || buscas != 1 {
+		t.Fatalf("primeira verificação: %v (buscas=%d)", err, buscas)
+	}
+	falhar = true
+	agora = agora.Add(2 * time.Hour)
+	tok = f.token(t, func(c map[string]any) { c["exp"] = agora.Add(time.Hour).Unix() })
+	for i := 0; i < 5; i++ {
+		if _, err := f.v.Verify(context.Background(), tok); err != nil {
+			t.Fatalf("com o JWKS fora do ar, a chave conhecida deveria valer: %v", err)
+		}
+	}
+	if buscas != 2 {
+		t.Fatalf("buscas = %d, esperado 2 (no máximo uma tentativa por minuto)", buscas)
+	}
+	agora = agora.Add(25 * time.Hour)
+	tok = f.token(t, func(c map[string]any) { c["exp"] = agora.Add(time.Hour).Unix() })
+	if _, err := f.v.Verify(context.Background(), tok); err == nil {
+		t.Fatal("depois de 24 h sem renovar, a chave antiga não pode valer")
+	}
+	falhar = false
+	agora = agora.Add(2 * time.Minute)
+	tok = f.token(t, func(c map[string]any) { c["exp"] = agora.Add(time.Hour).Unix() })
+	if _, err := f.v.Verify(context.Background(), tok); err != nil {
+		t.Fatalf("com o JWKS de volta: %v", err)
+	}
+}

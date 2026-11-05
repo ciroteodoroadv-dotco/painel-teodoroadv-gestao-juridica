@@ -62,16 +62,9 @@ type chamada struct {
 type falsoPrazos struct {
 	calls []chamada
 	sit   map[string]string
+	falha error // quando definido, SincronizarTx falha (prova de atomicidade)
 }
 
-func (f *falsoPrazos) Sincronizar(_ context.Context, _ webx.Actor, tarefaID, _, _ string, data *time.Time, confirmar bool) (string, error) {
-	f.calls = append(f.calls, chamada{"sincronizar", tarefaID, "", data, confirmar})
-	if f.sit == nil {
-		f.sit = map[string]string{}
-	}
-	f.sit[tarefaID] = map[bool]string{true: "confirmado", false: "a_conferir"}[confirmar]
-	return f.sit[tarefaID], nil
-}
 func (f *falsoPrazos) Situacoes(_ context.Context, ids []string) (map[string]string, error) {
 	out := map[string]string{}
 	for _, id := range ids {
@@ -81,7 +74,7 @@ func (f *falsoPrazos) Situacoes(_ context.Context, ids []string) (map[string]str
 	}
 	return out, nil
 }
-func (f *falsoPrazos) Encerrar(_ context.Context, _ webx.Actor, tarefaID, motivo string) error {
+func (f *falsoPrazos) EncerrarTx(_ context.Context, _ pgx.Tx, _ webx.Actor, tarefaID, motivo string) error {
 	f.calls = append(f.calls, chamada{"encerrar", tarefaID, motivo, nil, false})
 	return nil
 }
@@ -172,7 +165,7 @@ func (a *amb) in(titulo string) Input {
 
 func (a *amb) criar(t *testing.T, in Input, adv bool) string {
 	t.Helper()
-	id, _, err := a.s.Create(context.Background(), a.ac, in, adv)
+	id, _, err := a.s.Create(context.Background(), a.ac, in)
 	if err != nil {
 		t.Fatalf("criar %q: %v", in.Titulo, err)
 	}
@@ -207,7 +200,7 @@ func TestCriarVinculadaAtendimentoEProcesso(t *testing.T) {
 	in.CriadoPorID = a.p["joao"]
 	in.Partes = []ParteIn{{PessoaID: a.p["maria"], Papel: "Autor"}, {PessoaID: a.p["joao"], Papel: "Réu"}}
 	in.Responsaveis = []string{a.p["joao"], a.p["maria"]}
-	id, cod, err := a.s.Create(ctx, a.ac, in, true)
+	id, cod, err := a.s.Create(ctx, a.ac, in)
 	if err != nil || cod != "TAR. 0000001" {
 		t.Fatalf("criar = %q %v", cod, err)
 	}
@@ -218,7 +211,7 @@ func TestCriarVinculadaAtendimentoEProcesso(t *testing.T) {
 		t.Fatalf("leitura = %+v %v", t1, err)
 	}
 	in2 := Input{OrigemTipo: "processo", OrigemID: a.pro, Titulo: "Juntar procuração", Estado: "em-execucao", Prioridade: "Baixa"}
-	id2, cod2, err := a.s.Create(ctx, a.ac, in2, false)
+	id2, cod2, err := a.s.Create(ctx, a.ac, in2)
 	if err != nil || cod2 != "TAR. 0000002" {
 		t.Fatalf("criar vinculada a processo = %q %v", cod2, err)
 	}
@@ -250,7 +243,7 @@ func TestValidacoesDaTarefa(t *testing.T) {
 		{"pai inexistente", mut(func(i *Input) { i.TarefaPai = "00000000-0000-0000-0000-000000000000" }), "Tarefa de origem não encontrada."},
 	}
 	for _, c := range casos {
-		_, _, err := a.s.Create(ctx, a.ac, c.in, true)
+		_, _, err := a.s.Create(ctx, a.ac, c.in)
 		invalido(t, err, c.msg)
 	}
 	var n int
@@ -260,18 +253,35 @@ func TestValidacoesDaTarefa(t *testing.T) {
 	}
 }
 
+// Auditoria 05/11, item 1.3: se o domínio Prazos falhar, a tarefa NÃO fica gravada (mesma transação).
+func TestFalhaNoPrazoNaoDeixaTarefaGravada(t *testing.T) {
+	a := novoAmb(t)
+	ctx := context.Background()
+	a.prazos.falha = errors.New("prazos indisponível")
+	in := a.in("Com prazo que falha")
+	in.PrazoFatal = "2026-12-01"
+	if _, _, err := a.s.Create(ctx, a.ac, in); err == nil {
+		t.Fatal("criar deveria falhar quando o prazo falha")
+	}
+	var n int
+	_ = a.pool.QueryRow(ctx, `SELECT count(*) FROM tarefas WHERE titulo=$1`, in.Titulo).Scan(&n)
+	if n != 0 {
+		t.Fatalf("tarefa gravada sem o prazo: %d", n)
+	}
+}
+
 func TestPrazoFatalSincronizaComODominioPrazos(t *testing.T) {
 	a := novoAmb(t)
 	ctx := context.Background()
 	in := a.in("Com prazo fatal")
 	in.PrazoFatal = "2026-12-01"
 	id := a.criar(t, in, true) // advogado
-	if c := a.prazos.ultima(); c.op != "sincronizar" || !c.confirmar || c.data.Format("2006-01-02") != "2026-12-01" || c.tarefa != id {
-		t.Fatalf("advogado deveria sincronizar confirmando: %+v", c)
+	if c := a.prazos.ultima(); c.op != "sincronizar" || c.confirmar || c.data.Format("2006-01-02") != "2026-12-01" || c.tarefa != id {
+		t.Fatalf("advogado deveria sincronizar SEM confirmar (ADR 0012): %+v", c)
 	}
 	t1, _ := a.s.Get(ctx, id)
-	if t1.PrazoFatalSituacao != "confirmado" {
-		t.Errorf("situação = %q", t1.PrazoFatalSituacao)
+	if t1.PrazoFatalSituacao != "a_conferir" {
+		t.Errorf("situação = %q, esperado a_conferir", t1.PrazoFatalSituacao)
 	}
 	in2 := a.in("Do assistente")
 	in2.PrazoFatal = "2026-12-02"
@@ -496,11 +506,14 @@ func TestAbertosDoProcessoEDocumentos(t *testing.T) {
 	}
 }
 
-func (f *falsoPrazos) SincronizarTx(_ context.Context, _ pgx.Tx, _ webx.Actor, tarefaID, _, _ string, data *time.Time, confirmar bool) (string, error) {
-	f.calls = append(f.calls, chamada{"sincronizar-tx", tarefaID, "", data, confirmar})
+func (f *falsoPrazos) SincronizarTx(_ context.Context, _ pgx.Tx, _ webx.Actor, tarefaID, _, _ string, data *time.Time) (string, error) {
+	f.calls = append(f.calls, chamada{"sincronizar", tarefaID, "", data, false})
 	if f.sit == nil {
 		f.sit = map[string]string{}
 	}
-	f.sit[tarefaID] = map[bool]string{true: "confirmado", false: "a_conferir"}[confirmar]
+	if f.falha != nil {
+		return "", f.falha
+	}
+	f.sit[tarefaID] = "a_conferir"
 	return f.sit[tarefaID], nil
 }

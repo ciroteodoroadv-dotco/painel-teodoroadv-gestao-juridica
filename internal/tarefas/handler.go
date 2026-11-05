@@ -41,7 +41,7 @@ func (h *Handler) Register(rt *auth.Router) {
 	rt.Handle("GET /tarefas/{id}/filha", w, h.filhaForm)
 	rt.Handle("POST /tarefas/{id}", w, h.update)
 	rt.Handle("POST /tarefas/{id}/mover", w, h.mover)
-	rt.Handle("POST /tarefas/{id}/documentos", w, h.documento)
+	rt.HandleUpload("POST /tarefas/{id}/documentos", w, h.documento)
 	rt.Handle("POST /tarefas/{id}/confirmar-prazo", auth.PermPrazoConfirm, h.confirmarPrazo)
 }
 

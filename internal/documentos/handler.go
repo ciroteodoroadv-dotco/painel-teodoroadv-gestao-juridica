@@ -42,7 +42,7 @@ func (h *Handler) Register(rt *auth.Router) {
 	h.A.AddNavSistema("Documentos", "/documentos", auth.PermDocRead)
 	rt.Handle("GET /documentos", auth.PermDocRead, h.list)
 	rt.Handle("GET /documentos/novo", auth.PermDocWrite, h.newForm)
-	rt.Handle("POST /documentos", auth.PermDocWrite, h.upload)
+	rt.HandleUpload("POST /documentos", auth.PermDocWrite, h.upload)
 	rt.Handle("GET /documentos/processos", auth.PermDocWrite, h.processoOptions)
 	rt.Handle("GET /documentos/pessoas", auth.PermDocWrite, h.pessoaOptions)
 	rt.Handle("GET /documentos/{id}/baixar", auth.PermDocRead, h.download)

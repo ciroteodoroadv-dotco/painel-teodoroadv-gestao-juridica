@@ -162,7 +162,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request, s *auth.Session
 		http.Error(w, "Formulário inválido.", http.StatusBadRequest)
 		return
 	}
-	id, _, err := h.S.Create(r.Context(), webx.ActorOf(w, s.UserID), in, auth.Can(s.Role, auth.PermPrazoConfirm))
+	id, _, err := h.S.Create(r.Context(), webx.ActorOf(w, s.UserID), in)
 	if webx.Falha(w, err, "Tarefa não encontrada.", "Falha ao criar a tarefa.") {
 		return
 	}

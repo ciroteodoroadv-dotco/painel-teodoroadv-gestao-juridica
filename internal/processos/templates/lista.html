@@ -1,10 +1,11 @@
 {{define "stats"}}{{with .Data}}{{if .Total}}<div class="acc-heads">{{range .Grupos}}
     <button class="acc-head" data-acc="processos:{{.Estado.Chave}}"><span>{{.Estado.Rotulo}}</span><span class="count">{{.Quantidade}}</span></button>{{end}}</div>{{end}}{{end}}{{end}}
 
-{{define "content"}}{{with .Data}}<div class="toolbar">
+{{define "content"}}{{with .Data}}<form class="toolbar" method="get" action="/processos" role="search">
     <label class="sr-only" for="buscaProcessos">Buscar processos</label>
-    <input id="buscaProcessos" class="search" autocomplete="off" placeholder="Buscar por número, classe, matéria ou parte…" data-filtro=".acc table">
-  </div>
+    <input id="buscaProcessos" name="busca" value="{{.Busca}}" class="search" autocomplete="off" placeholder="Buscar por número, classe, matéria ou parte…" title="Digitar filtra a lista; Enter busca em todo o cadastro" data-filtro=".acc table">
+  </form>
+{{if .Cortado}}<div class="notice" role="status"><strong>Lista limitada:</strong> {{if .Busca}}a busca "{{.Busca}}" trouxe mais de {{.Total}} processos; refine o termo.{{else}}mostrando os {{.Total}} processos mais recentes de {{.Ativos}} cadastrados. Para achar um que não aparece, digite o número, o código ou o título e tecle Enter.{{end}}</div>{{end}}
 {{if not .Total}}<div class="empty"><h3>Nenhum processo cadastrado</h3><p>Nenhum processo foi encontrado na carteira processual do servidor.</p></div>
 {{else}}{{$w := .CanWrite}}<div class="acc">{{range .Grupos}}
     <div class="acc-item" data-acc="processos:{{.Estado.Chave}}">

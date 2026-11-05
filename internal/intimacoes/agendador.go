@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"time"
+
+	"painelteodoro/internal/platform/coletas"
 )
 
 // Iniciar liga o agendador em segundo plano. Só existe com a coleta ATIVA: desligada, não nasce goroutine nenhuma e não
@@ -27,7 +29,7 @@ func (s *Service) Iniciar(ctx context.Context, log *slog.Logger, primeira time.D
 				return
 			case <-t.C:
 			}
-			if r, err := s.Rodada(ctx); err != nil {
+			if r, err := coletas.Protegida(func() (Resumo, error) { return s.Rodada(ctx) }); err != nil {
 				if log != nil && ctx.Err() == nil {
 					log.Error("coleta de intimações não executada", "motivo", err.Error())
 				}

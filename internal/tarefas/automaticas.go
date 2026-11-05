@@ -40,7 +40,7 @@ func (s *Service) prazoInterno(ctx context.Context, tx pgx.Tx, id, processoID, t
 	if utf8.RuneCountInString(desc) > 480 {
 		desc = string([]rune(desc)[:480])
 	}
-	_, err := s.Prazos.SincronizarTx(ctx, tx, webx.Actor{UserID: criadoPor, RequestID: reqID}, id, processoID, "Prazo interno de confirmação — "+desc, prazo, false)
+	_, err := s.Prazos.SincronizarTx(ctx, tx, webx.Actor{UserID: criadoPor, RequestID: reqID}, id, processoID, "Prazo interno de confirmação — "+desc, prazo)
 	return err
 }
 
@@ -94,10 +94,18 @@ func left(s string, n int) string {
 
 // encerrarInterno tira o prazo fatal interno da tarefa e o encerra no domínio Prazos (a conferir nunca valeu: vira cancelado).
 func (s *Service) encerrarInterno(ctx context.Context, ac webx.Actor, id string) error {
-	if _, err := s.Pool.Exec(ctx, `UPDATE tarefas SET prazo_fatal=NULL, prazo_interno=false WHERE id=$1::uuid AND prazo_interno`, id); err != nil {
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
 		return err
 	}
-	return s.encerraPrazoInterno(ctx, ac, id)
+	defer func() { _ = tx.Rollback(ctx) }()
+	if _, err := tx.Exec(ctx, `UPDATE tarefas SET prazo_fatal=NULL, prazo_interno=false WHERE id=$1::uuid AND prazo_interno`, id); err != nil {
+		return err
+	}
+	if err := s.Prazos.EncerrarTx(ctx, tx, ac, id, "cancelada"); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 // EncerrarPrazoInternoDaIntimacao encerra o prazo interno da tarefa de análise quando a intimação é decidida (Confirmar/Cancelar).
@@ -117,13 +125,6 @@ func (s *Service) EncerrarPrazoInternoDaIntimacao(ctx context.Context, ac webx.A
 // saiDoPrazoInterno: a tarefa tinha prazo interno e está saindo de "A confirmar" (só o advogado move).
 func saiDoPrazoInterno(atual *Tarefa, novoEstado string) bool {
 	return atual.PrazoInterno && atual.Estado == "a-confirmar" && novoEstado != "a-confirmar"
-}
-
-func (s *Service) encerraPrazoInterno(ctx context.Context, ac webx.Actor, id string) error {
-	if err := s.Prazos.Encerrar(ctx, ac, id, "cancelada"); err != nil {
-		return webx.Invalidf("A tarefa foi salva, mas o prazo interno não foi encerrado no domínio Prazos. Abra a tarefa e salve de novo.")
-	}
-	return nil
 }
 
 // fonteOu devolve a fonte da tarefa de análise; vazia (registro anterior à 0013) é DJEN.

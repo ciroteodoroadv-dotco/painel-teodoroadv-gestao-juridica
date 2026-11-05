@@ -331,6 +331,10 @@ func TestTarefaPrazoFatalNoMesmoCampoComSeloAConferir(t *testing.T) {
 	fv := tarefaForm("atendimento", c.ate, "Do advogado")
 	fv.Set("prazo_fatal", "2026-12-03")
 	idv := c.adv.criarTarefa(t, fv)
+	// Nasce a conferir mesmo digitado pelo advogado (ADR 0012); ele confirma pelo ato explícito.
+	if r, _ := c.adv.post("/tarefas/"+idv+"/confirmar-prazo", nil); r.StatusCode != 200 {
+		t.Fatalf("advogado confirmando o próprio prazo = %d", r.StatusCode)
+	}
 
 	sit := func(id string) string {
 		var s string

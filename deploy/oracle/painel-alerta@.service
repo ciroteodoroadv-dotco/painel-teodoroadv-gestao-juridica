@@ -1,0 +1,7 @@
+[Unit]
+Description=Alerta de falha da rotina %i do Painel Teodoro
+
+[Service]
+Type=oneshot
+User=painel-admin
+ExecStart=/opt/painel/deploy/oracle/alerta.sh %i

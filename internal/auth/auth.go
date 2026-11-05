@@ -53,6 +53,7 @@ type Auth struct {
 	sync    func(context.Context) ([]coletas.Estado, error)
 	ticker  func(context.Context) (template.HTML, error)
 	gate    denyGate
+	cadeia  pontoDaCadeia
 }
 
 func (a *Auth) now() time.Time {

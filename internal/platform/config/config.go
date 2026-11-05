@@ -28,7 +28,7 @@ type Config struct {
 	PublicURL string
 	// DocsDir é a pasta privada (cifrada) dos documentos enviados.
 	DocsDir     string
-	DatabaseURL string // conexão do DONO do banco (migrações); contém a senha
+	DatabaseURL string // conexão do DONO do banco (migrações); contém a senha. Vazia quando o dono não foi configurado.
 	// AppDatabaseURL é a conexão do papel restrito usado em tempo de execução; contém a senha.
 	AppDatabaseURL string
 	AppDBPassword  string
@@ -75,7 +75,9 @@ func Load(e Env) (Config, error) {
 		return v
 	}
 
-	dbPass := get("PAINEL_DB_PASSWORD")
+	// Senha do DONO do banco: OPCIONAL. Só o serviço de migração (painel migrate up) e os comandos de administração a
+	// recebem; o servidor web roda sem ela (auditoria 05/11, item 2.1). Ausente = DatabaseURL vazia.
+	dbPass := optionalSecret(e, "PAINEL_DB_PASSWORD", &errs)
 	appPass := get("PAINEL_DB_APP_PASSWORD")
 	sessionKey := decodeKey(get("PAINEL_SESSION_KEY"), "PAINEL_SESSION_KEY", &errs)
 	fieldKey := decodeKey(get("PAINEL_FIELD_KEY"), "PAINEL_FIELD_KEY", &errs)
@@ -135,7 +137,7 @@ func Load(e Env) (Config, error) {
 		AccessAUD:        aud,
 		PublicURL:        strings.TrimRight(public, "/"),
 		DocsDir:          orDefault(e.Getenv("PAINEL_DOCS_DIR"), "/data/documentos"),
-		DatabaseURL:      dbURL(e, dbHost, dbName, dbUser, dbPass, ssl),
+		DatabaseURL:      ownerURL(e, dbHost, dbName, dbUser, dbPass, ssl),
 		AppDBPassword:    appPass,
 		AppDatabaseURL:   dbURL(e, dbHost, dbName, "painel_app", appPass, ssl),
 		SessionKey:       sessionKey,
@@ -144,6 +146,17 @@ func Load(e Env) (Config, error) {
 		DataJud: datajud, Indices: indices, CEP: cep, CalculadoraRegrasValidadas: regrasValidadas,
 	}, nil
 }
+
+// ownerURL só existe quando a senha do dono foi dada.
+func ownerURL(e Env, host, name, user, pass, ssl string) string {
+	if pass == "" {
+		return ""
+	}
+	return dbURL(e, host, name, user, pass, ssl)
+}
+
+// TemDono diz se a configuração traz a conexão do DONO do banco (migração e comandos de administração).
+func (c Config) TemDono() bool { return c.DatabaseURL != "" }
 
 func dbURL(e Env, host, name, user, pass, ssl string) string {
 	u := url.URL{
@@ -199,6 +212,18 @@ func secret(e Env, name string) (string, error) {
 		return v, nil
 	}
 	return "", fmt.Errorf("segredo ausente: defina %s ou %s_FILE", name, name)
+}
+
+// optionalSecret é como secret, mas ausência não é erro. Arquivo indicado e ilegível continua sendo erro.
+func optionalSecret(e Env, name string, errs *[]error) string {
+	if e.Getenv(name+"_FILE") == "" && strings.TrimSpace(e.Getenv(name)) == "" {
+		return ""
+	}
+	v, err := secret(e, name)
+	if err != nil {
+		*errs = append(*errs, err)
+	}
+	return v
 }
 
 func required(e Env, name string, errs *[]error) string {

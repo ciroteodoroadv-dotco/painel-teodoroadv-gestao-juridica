@@ -1,12 +1,15 @@
 package intimacoes
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"html/template"
 	"net/http"
+	"time"
 
 	"painelteodoro/internal/auth"
+	"painelteodoro/internal/platform/coletas"
 	"painelteodoro/internal/platform/webx"
 )
 
@@ -87,8 +90,17 @@ func (h *Handler) cancelar(w http.ResponseWriter, r *http.Request, s *auth.Sessi
 }
 
 // executar roda a coleta a pedido do administrador. O resultado nunca é apresentado como garantia de "nada novo".
+// EsperaNaTela é quanto o pedido "executar agora" espera pela rodada antes de responder "em andamento".
+// Fica abaixo do WriteTimeout do servidor (60 s) e do limite do Cloudflare (~100 s).
+var EsperaNaTela = 20 * time.Second
+
 func (h *Handler) executar(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	res, err := h.S.ColetarAgora(r.Context(), webx.ActorOf(w, s.UserID))
+	ac := webx.ActorOf(w, s.UserID)
+	res, pronto, err := coletas.EmSegundoPlano(r.Context(), EsperaNaTela, func(ctx context.Context) (Resumo, error) { return h.S.ColetarAgora(ctx, ac) })
+	if err == nil && !pronto {
+		webx.Ok(w, "Coleta iniciada e ainda em andamento: o resultado aparece no estado das coletas. Recarregue a página em alguns minutos.")
+		return
+	}
 	if webx.Falha(w, err, "Coleta não encontrada.", "Falha ao executar a coleta.") {
 		return
 	}

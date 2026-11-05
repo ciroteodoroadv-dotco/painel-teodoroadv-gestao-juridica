@@ -50,12 +50,20 @@ func CheckTOTP(secret, code string, lastStep int64, now time.Time) (int64, bool)
 	return 0, false
 }
 
+// Formato do segredo TOTP cifrado (auditoria 05/11, item 2.7). Versão 1: byte 0x01 || AES-GCM com a SUBCHAVE
+// "auth.totp" (não a chave mestra) e o id do usuário como dado associado. Sem versão (legado): AES-GCM com a chave
+// mestra, sem dado associado — continua sendo lido; é regravado no formato novo quando o 2º fator é redefinido.
+const versaoTOTP byte = 1
+
+func chaveTOTP(master []byte) []byte { return crypt.Derive(master, "auth.totp") }
+
 // SaveTOTPSecret grava o segredo cifrado (ainda não confirmado).
 func (s *Store) SaveTOTPSecret(ctx context.Context, fieldKey []byte, userID, secret string) error {
-	enc, err := crypt.Seal(fieldKey, []byte(secret))
+	sealed, err := crypt.SealAD(chaveTOTP(fieldKey), []byte(secret), []byte(userID))
 	if err != nil {
 		return err
 	}
+	enc := append([]byte{versaoTOTP}, sealed...)
 	_, err = s.Pool.Exec(ctx, `UPDATE users SET totp_secret_enc=$2, totp_confirmed_at=NULL, totp_last_step=0 WHERE id=$1`, userID, enc)
 	return err
 }
@@ -65,7 +73,13 @@ func TOTPSecret(fieldKey []byte, u *User) (string, error) {
 	if len(u.TOTPSecretEnc) == 0 {
 		return "", ErrNotFound
 	}
-	b, err := crypt.Open(fieldKey, u.TOTPSecretEnc)
+	enc := u.TOTPSecretEnc
+	if enc[0] == versaoTOTP {
+		if b, err := crypt.OpenAD(chaveTOTP(fieldKey), enc[1:], []byte(u.ID)); err == nil {
+			return string(b), nil
+		}
+	}
+	b, err := crypt.Open(fieldKey, enc) // legado (o 1º byte do nonce aleatório pode valer 0x01: por isso a segunda tentativa)
 	return string(b), err
 }
 

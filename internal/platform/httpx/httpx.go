@@ -6,12 +6,13 @@ import (
 	"encoding/hex"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 )
 
 const (
-	maxBody   = 1 << 20  // 1 MiB para todas as rotas
-	maxUpload = 26 << 20 // POST /documentos: 25 MiB de arquivo + folga do multipart
+	maxBody   = 1 << 20  // 1 MiB: teto de todo corpo que não é multipart
+	maxUpload = 26 << 20 // teto de corpo multipart; o limite de CADA rota (1 MiB ou 25 MiB de arquivo) é do auth.Router
 )
 
 // NewServer devolve um servidor com timeouts. Slowloris e corpos gigantes não passam.
@@ -56,7 +57,9 @@ func securityHeaders(next http.Handler) http.Handler {
 func bodyLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		limit := int64(maxBody)
-		if r.Method == http.MethodPost && r.URL.Path == "/documentos" {
+		// Teto geral apenas. Rotas de envio de arquivo são declaradas no roteador (auth.Router.HandleUpload),
+		// que aplica o limite da rota; antes a lista fixa "/documentos" aqui barrava o envio pela tarefa (auditoria 1.1).
+		if r.Method == http.MethodPost && strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
 			limit = maxUpload
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, limit)

@@ -2,6 +2,8 @@ package tarefas
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -52,9 +54,9 @@ func gravarListas(ctx context.Context, tx pgx.Tx, id string, n normalized) error
 	return nil
 }
 
-// Create cadastra a tarefa vinculada e devolve o id e o código (TAR. 0000001). podeConfirmar diz se o ator é advogado
-// (PermPrazoConfirm): só ele grava o prazo fatal como confirmado.
-func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input, podeConfirmar bool) (id, codigo string, err error) {
+// Create cadastra a tarefa vinculada e devolve o id e o código (TAR. 0000001). O prazo fatal, se houver, nasce
+// "a conferir" na mesma transação (ADR 0012): confirmar é o ato explícito ConfirmarPrazo.
+func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input) (id, codigo string, err error) {
 	n, err := s.normalize(ctx, in, false)
 	if err != nil {
 		return "", "", err
@@ -85,13 +87,16 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input, podeConfi
 		err = s.record(ctx, tx, ac, "tarefa.criada", id)
 	}
 	if err == nil {
+		novo := &Tarefa{ID: id, Codigo: codigo, Titulo: n.titulo, Estado: n.estado, OrigemTipo: n.origemTipo, OrigemID: n.origemID}
+		err = s.efeitoNoPrazo(ctx, tx, ac, novo, nil, n.prazoFatal)
+	}
+	if err == nil {
 		err = tx.Commit(ctx)
 	}
 	if err != nil {
 		return "", "", err
 	}
-	novo := &Tarefa{ID: id, Codigo: codigo, Titulo: n.titulo, Estado: n.estado, OrigemTipo: n.origemTipo, OrigemID: n.origemID}
-	return id, codigo, s.efeitoNoPrazo(ctx, ac, novo, nil, n.prazoFatal, podeConfirmar)
+	return id, codigo, nil
 }
 
 // Update altera com concorrência otimista. O vínculo (atendimento ou processo) não muda depois de criada a tarefa.
@@ -112,6 +117,9 @@ func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version 
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+	if err = travarEstado(ctx, tx, atual); err != nil {
+		return err
+	}
 	tag, err := tx.Exec(ctx, `UPDATE tarefas SET titulo=$3, subtitulo=$4, estado=$5, criado_por_pessoa_id=$6, descricao=$7, observacoes=$8,
 		data_base=$9, prazo=$10, prazo_fatal=$11, prioridade=$12, updated_at=now(), updated_by=$13, version=version+1
 		WHERE id=$1 AND version=$2 AND excluido_em IS NULL`,
@@ -133,17 +141,22 @@ func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version 
 		err = s.record(ctx, tx, ac, "tarefa.alterada", id)
 	}
 	if err == nil {
+		err = s.efeitoDaMudanca(ctx, tx, ac, atual, n.titulo, n.estado, n.prazoFatal, sai)
+	}
+	if err == nil {
 		err = tx.Commit(ctx)
 	}
-	if err != nil {
-		return err
-	}
+	return err
+}
+
+// efeitoDaMudanca aplica no domínio Prazos, na mesma transação, o efeito de uma edição ou troca de estado.
+func (s *Service) efeitoDaMudanca(ctx context.Context, tx pgx.Tx, ac webx.Actor, atual *Tarefa, titulo, estado string, fatal *time.Time, sai bool) error {
 	if sai {
-		return s.encerraPrazoInterno(ctx, ac, id)
+		return s.Prazos.EncerrarTx(ctx, tx, ac, atual.ID, "cancelada")
 	}
 	novo := *atual
-	novo.Titulo, novo.Estado = n.titulo, n.estado
-	return s.efeitoNoPrazo(ctx, ac, &novo, atual, n.prazoFatal, podeConfirmar)
+	novo.Titulo, novo.Estado = titulo, estado
+	return s.efeitoNoPrazo(ctx, tx, ac, &novo, atual, fatal)
 }
 
 // Mover troca só o estado ("Mover para..."). A regra de "A confirmar" vale aqui também.
@@ -166,6 +179,9 @@ func (s *Service) Mover(ctx context.Context, ac webx.Actor, id string, version i
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+	if err = travarEstado(ctx, tx, atual); err != nil {
+		return err
+	}
 	tag, err := tx.Exec(ctx, `UPDATE tarefas SET estado=$3, updated_at=now(), updated_by=$4, version=version+1
 		WHERE id=$1 AND version=$2 AND excluido_em IS NULL`, id, version, novoEstado, ac.UserID)
 	if err != nil {
@@ -181,17 +197,28 @@ func (s *Service) Mover(ctx context.Context, ac webx.Actor, id string, version i
 		}
 	}
 	if err = s.recordDePara(ctx, tx, ac, "tarefa.estado_alterado", id, atual.Estado, novoEstado); err == nil {
+		err = s.efeitoDaMudanca(ctx, tx, ac, atual, atual.Titulo, novoEstado, atual.PrazoFatal, sai)
+	}
+	if err == nil {
 		err = tx.Commit(ctx)
 	}
-	if err != nil {
+	return err
+}
+
+// travarEstado trava a linha da tarefa na transação e confere que o estado ainda é o lido antes: a regra "só advogado
+// tira de A confirmar" foi decidida sobre esse estado (auditoria 05/11, item 1.6). Mudou no meio = conflito.
+func travarEstado(ctx context.Context, tx pgx.Tx, atual *Tarefa) error {
+	var estado string
+	err := tx.QueryRow(ctx, `SELECT estado FROM tarefas WHERE id=$1 AND excluido_em IS NULL FOR UPDATE`, atual.ID).Scan(&estado)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return webx.ErrNotFound
+	case err != nil:
 		return err
+	case estado != atual.Estado:
+		return webx.ErrConflict
 	}
-	if sai {
-		return s.encerraPrazoInterno(ctx, ac, id)
-	}
-	novo := *atual
-	novo.Estado = novoEstado
-	return s.efeitoNoPrazo(ctx, ac, &novo, atual, atual.PrazoFatal, podeConfirmar)
+	return nil
 }
 
 // whyNoRows distingue tarefa inexistente de versão velha.

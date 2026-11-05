@@ -1,10 +1,12 @@
 package auth
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
 	"painelteodoro/internal/audit"
+	"painelteodoro/internal/platform/webx"
 )
 
 var avisosAdmin = map[string]string{
@@ -21,6 +23,7 @@ func (a *Auth) RegisterAdmin(rt *Router) {
 	rt.Handle("POST /admin/usuarios/{id}/desbloquear", PermUsersManage, a.usuarioDesbloquear)
 	rt.Handle("POST /admin/usuarios/{id}/senha", PermUsersManage, a.usuarioSenha)
 	rt.Handle("POST /admin/usuarios/{id}/mfa/redefinir", PermUsersManage, a.usuarioMFA)
+	a.AddFaixa(a.faixaMudancasDeUsuarios) // advogados veem na Agenda as alterações recentes de usuários (item 2.3)
 }
 
 func (a *Auth) usuariosPage(w http.ResponseWriter, r *http.Request, s *Session, status int, notice, errMsg string) {
@@ -35,6 +38,20 @@ func (a *Auth) usuariosPage(w http.ResponseWriter, r *http.Request, s *Session, 
 
 func (a *Auth) usuariosGet(w http.ResponseWriter, r *http.Request, s *Session) {
 	a.usuariosPage(w, r, s, http.StatusOK, avisosAdmin[r.URL.Query().Get("aviso")], "")
+}
+
+// senhaDoAdmin confere a senha atual do administrador; false = já respondeu (erro na tela ou 500).
+func (a *Auth) senhaDoAdmin(w http.ResponseWriter, r *http.Request, s *Session) bool {
+	msg, err := a.confirmaSenha(r.Context(), s, r.PostFormValue("senha_atual"))
+	switch {
+	case err != nil:
+		http.Error(w, "Erro interno.", http.StatusInternalServerError)
+		return false
+	case msg != "":
+		a.usuariosPage(w, r, s, http.StatusUnauthorized, "", msg)
+		return false
+	}
+	return true
 }
 
 // provisoria valida e gera o hash de uma senha provisória.
@@ -60,6 +77,9 @@ func (a *Auth) usuarioCriar(w http.ResponseWriter, r *http.Request, s *Session) 
 	hash, msg := provisoria(r.PostFormValue("senha"), email)
 	if msg != "" {
 		a.usuariosPage(w, r, s, http.StatusBadRequest, "", msg)
+		return
+	}
+	if !a.senhaDoAdmin(w, r, s) {
 		return
 	}
 	tx, err := a.Pool.Begin(ctx)
@@ -93,6 +113,19 @@ func (a *Auth) mexer(w http.ResponseWriter, r *http.Request, s *Session, action 
 		a.usuariosPage(w, r, s, http.StatusConflict, "", "Por segurança, você não altera a si mesmo por aqui (use Minha conta).")
 		return
 	}
+	// 404 só quando o usuário de fato não existe; falha de banco ou de auditoria é 500 (auditoria 05/11, item 3.5).
+	if !webx.UUID(id) {
+		http.Error(w, "Usuário não encontrado.", http.StatusNotFound)
+		return
+	}
+	if _, err := a.Store.UserByID(ctx, id); errors.Is(err, ErrNotFound) {
+		http.Error(w, "Usuário não encontrado.", http.StatusNotFound)
+		return
+	} else if err != nil {
+		a.Log.Error("gestão de usuários: falha ao ler o usuário", "acao", action)
+		http.Error(w, "Erro interno.", http.StatusInternalServerError)
+		return
+	}
 	tx, err := a.Pool.Begin(ctx)
 	if err != nil {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
@@ -106,8 +139,13 @@ func (a *Auth) mexer(w http.ResponseWriter, r *http.Request, s *Session, action 
 	if err == nil {
 		err = tx.Commit(ctx)
 	}
-	if err != nil {
+	switch {
+	case errors.Is(err, ErrNotFound):
 		http.Error(w, "Usuário não encontrado.", http.StatusNotFound)
+		return
+	case err != nil:
+		a.Log.Error("gestão de usuários: falha ao gravar", "acao", action)
+		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, "/admin/usuarios?aviso=alterado", http.StatusSeeOther)
@@ -117,6 +155,9 @@ func (a *Auth) usuarioPapel(w http.ResponseWriter, r *http.Request, s *Session) 
 	role := Role(r.PostFormValue("papel"))
 	if !ValidRole(role) {
 		a.usuariosPage(w, r, s, http.StatusBadRequest, "", "Papel inválido.")
+		return
+	}
+	if !a.senhaDoAdmin(w, r, s) {
 		return
 	}
 	a.mexer(w, r, s, "usuario.papel_alterado", map[string]string{"papel": string(role)},
@@ -147,11 +188,17 @@ func (a *Auth) usuarioSenha(w http.ResponseWriter, r *http.Request, s *Session) 
 		a.usuariosPage(w, r, s, http.StatusBadRequest, "", msg)
 		return
 	}
+	if !a.senhaDoAdmin(w, r, s) {
+		return
+	}
 	a.mexer(w, r, s, "usuario.senha_redefinida", nil,
 		func(tx txLike, id string) error { return a.Store.SetPassword(r.Context(), tx, id, hash, true) })
 }
 
 func (a *Auth) usuarioMFA(w http.ResponseWriter, r *http.Request, s *Session) {
+	if !a.senhaDoAdmin(w, r, s) {
+		return
+	}
 	a.mexer(w, r, s, "usuario.mfa_redefinido", nil,
 		func(tx txLike, id string) error { return a.Store.ResetMFA(r.Context(), tx, id) })
 }

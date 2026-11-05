@@ -2,6 +2,8 @@
 Description=Teste mensal de restauração do Painel Teodoro (banco e pasta temporários, sem internet)
 Wants=docker.service
 After=docker.service
+# Falhou = alerta ativo (diário crítico e, se configurado, webhook): auditoria 05/11, item 3.3.
+OnFailure=painel-alerta@%n.service
 
 [Service]
 Type=oneshot

@@ -21,8 +21,10 @@ const cols = `id, codigo, titulo, numero_cnj, situacao, polo, sistema, instancia
 	coalesce(to_char(prox_ate_quando,'YYYY-MM-DD'),''), prox_quem, version, created_at, updated_at,
 	duplicado, duplicado_justificativa, coalesce(duplicado_de::text,'')`
 
-// limiteLista protege a tela: o acordeão do B mostra tudo, sem paginação.
-const limiteLista = 2000
+// LimiteLista protege a tela: o acordeão do B mostra tudo, sem paginação. Acima disso a tela avisa e a busca vai ao banco.
+const LimiteLista = 2000
+
+const limiteLista = LimiteLista
 
 func scan(row pgx.Row) (*Processo, error) {
 	var p Processo
@@ -48,10 +50,41 @@ func (s *Service) Get(ctx context.Context, id string) (*Processo, error) {
 	return p, nil
 }
 
-// Listar devolve todos os processos não excluídos (mais novos primeiro), com as partes.
-func (s *Service) Listar(ctx context.Context) ([]*Processo, error) {
-	rows, err := s.Pool.Query(ctx, `SELECT `+cols+` FROM processos WHERE excluido_em IS NULL
-		ORDER BY created_at DESC, id LIMIT $1`, limiteLista)
+// Listar devolve os processos da TELA (mais novos primeiro, até limiteLista), com as partes. busca (opcional) filtra no
+// banco por título, código ou dígitos do número, para achar o que ficou fora do limite (auditoria 05/11, item 1.4).
+// Para resolver ids ou montar seletores use PorIDs/ListarTodos: a lista da tela é cortada.
+func (s *Service) Listar(ctx context.Context, busca ...string) ([]*Processo, error) {
+	q := ""
+	if len(busca) > 0 {
+		q = strings.TrimSpace(busca[0])
+	}
+	return s.listar(ctx, `excluido_em IS NULL AND ($1 = '' OR titulo ILIKE $2 OR codigo ILIKE $2
+		  OR ($3 <> '' AND regexp_replace(numero_cnj,'\D','','g') LIKE '%'||$3||'%'))
+		ORDER BY created_at DESC, id LIMIT $4`, q, webx.Like(q), br.Digits(q), limiteLista)
+}
+
+// ListarTodos devolve TODOS os processos não excluídos (seletores de vínculo): sem o corte da tela.
+func (s *Service) ListarTodos(ctx context.Context) ([]*Processo, error) {
+	return s.listar(ctx, `excluido_em IS NULL ORDER BY created_at DESC, id`)
+}
+
+// PorIDs devolve os processos pedidos (mesmo excluídos não: só os vivos), sem depender da lista da tela.
+func (s *Service) PorIDs(ctx context.Context, ids []string) ([]*Processo, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	return s.listar(ctx, `excluido_em IS NULL AND id = ANY($1::uuid[])`, webx.SoUUIDs(ids))
+}
+
+// ContarAtivos devolve quantos processos não excluídos existem (para avisar quando a tela está cortada).
+func (s *Service) ContarAtivos(ctx context.Context) (int, error) {
+	var n int
+	err := s.Pool.QueryRow(ctx, `SELECT count(*) FROM processos WHERE excluido_em IS NULL`).Scan(&n)
+	return n, err
+}
+
+func (s *Service) listar(ctx context.Context, where string, args ...any) ([]*Processo, error) {
+	rows, err := s.Pool.Query(ctx, `SELECT `+cols+` FROM processos WHERE `+where, args...) // #nosec G202 -- where é constante deste arquivo
 	if err != nil {
 		return nil, err
 	}
@@ -213,9 +246,9 @@ func (s *Service) Buscar(ctx context.Context, q string, limit int) ([]Opcao, err
 	return out, rows.Err()
 }
 
-// Opcoes monta o seletor de processo do Plano 3 (Tarefas): "PRO. 0000012 · NOME DO CLIENTE".
+// Opcoes monta o seletor de processo do Plano 3 (Tarefas): "PRO. 0000012 · NOME DO CLIENTE". Todos os processos.
 func (s *Service) Opcoes(ctx context.Context) ([]Opcao, error) {
-	ps, err := s.Listar(ctx)
+	ps, err := s.ListarTodos(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +269,7 @@ func (s *Service) ResumosVinculo(ctx context.Context, ids []string) (map[string]
 	if len(ids) == 0 {
 		return out, nil
 	}
-	ps, err := s.Listar(ctx)
+	ps, err := s.PorIDs(ctx, ids)
 	if err != nil {
 		return nil, err
 	}

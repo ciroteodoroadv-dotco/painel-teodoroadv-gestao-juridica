@@ -99,10 +99,14 @@ Depois:
 
 ```bash
 sudo ./oracle/bootstrap.sh 10.0.1.0/24       # use a sub-rede do seu Bastion: instala firewall e timers
-docker build -q -t painel-backup:latest backup   # imagem de backup (só ferramentas; não compila o painel)
 set -a; source oracle/ambiente; set +a
-./oracle/deploy.sh ghcr.io/ORG/painel@sha256:DIGEST   # digest vem do resumo da release (GitHub Actions)
+# os dois digests vêm do resumo da release (GitHub Actions); o deploy grava o do backup em .estado-deploy.backup
+PAINEL_BACKUP_IMAGE=ghcr.io/ORG/painel-backup@sha256:DIGEST_BACKUP ./oracle/deploy.sh ghcr.io/ORG/painel@sha256:DIGEST
 ```
+
+Alerta de falha (backup e teste de restauração): sempre vai ao diário do sistema (`journalctl -t painel-alerta`) e a
+`status.sh`. Para receber no celular, grave uma URL de webhook **https** (Slack, Mattermost, Google Chat…) em
+`deploy/secrets/alerta_webhook` (`chmod 600`); ela é tratada como segredo.
 
 *Primeira subida sem CI (exceção, só até o repositório remoto existir):* num computador seu,
 `docker build -f deploy/Dockerfile -t painel-app:AAAAMMDD .`, depois
@@ -112,7 +116,7 @@ set -a; source oracle/ambiente; set +a
 Crie o primeiro administrador (senha lida da entrada; ele troca no primeiro acesso):
 
 ```bash
-read -rs S; echo "$S" | PAINEL_IMAGE=$(cat .estado-deploy.atual) docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm -T app user create seu@email.com administrador; unset S
+read -rs S; echo "$S" | PAINEL_IMAGE=$(cat .estado-deploy.atual) docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm -T migrate user create seu@email.com administrador; unset S
 ```
 
 ## 5. Aceite — confira tudo antes de usar dado real
@@ -139,7 +143,7 @@ read -rs S; echo "$S" | PAINEL_IMAGE=$(cat .estado-deploy.atual) docker compose 
   versão, espera ficar saudável e **volta sozinho para a anterior se falhar**. Atenção: o retorno troca só o programa;
   se uma migração do banco já rodou e foi destrutiva, é preciso restaurar o backup feito pelo próprio deploy.
 - **Aparelho do 2º fator perdido (usuário):** administrador → Usuários → "Redefinir 2º fator" (ou
-  `painel user reset-2fa EMAIL`); a pessoa cadastra de novo.
+  `docker compose ... run --rm migrate user reset-2fa EMAIL`); a pessoa cadastra de novo.
 
 ## 7. Desastre: restaurar de um backup
 

@@ -3,6 +3,7 @@ package prazos
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -45,9 +46,9 @@ func (s *Service) checkRefs(ctx context.Context, n normalized) error {
 	return nil
 }
 
-// Create cadastra o prazo. confirmar=true (ator com permissão de advogado) já grava como CONFIRMADO, com quem e
-// quando; caso contrário nasce "a conferir pelo advogado" e não vale até ser confirmado.
-func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input, confirmar bool) (string, error) {
+// Create cadastra o prazo. Todo prazo nasce "a conferir", seja quem for que o digite (ADR 0012, item 3): só o ato
+// explícito de confirmar (Confirmar, exclusivo do advogado) o torna válido e deixa "prazo.confirmado" na auditoria.
+func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input) (string, error) {
 	n, err := in.normalize()
 	if err != nil {
 		return "", err
@@ -55,13 +56,7 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input, confirmar
 	if err := s.checkRefs(ctx, n); err != nil {
 		return "", err
 	}
-	if n.fonte == "calculadora" {
-		confirmar = false // cálculo de apoio: só vale depois do clique em Confirmar (regra de ouro)
-	}
 	situacao := AConferir
-	if confirmar {
-		situacao = Confirmado
-	}
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return "", err
@@ -69,10 +64,10 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input, confirmar
 	defer func() { _ = tx.Rollback(ctx) }()
 	var id string
 	err = tx.QueryRow(ctx, `INSERT INTO prazos (descricao, processo_id, data_fatal, fundamento, fonte, situacao, responsavel_id,
-		confirmado_por, confirmado_em, created_by, updated_by)
-		VALUES ($1,$2,$3,$4,$5,$6,$7, CASE WHEN $8 THEN $9::uuid END, CASE WHEN $8 THEN now() END, $9, $9) RETURNING id`,
+		created_by, updated_by)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8) RETURNING id`,
 		n.descricao, webx.Nullable(n.processo), n.dataFatal, n.fundamento, n.fonte, situacao,
-		webx.Nullable(n.responsavel), confirmar, ac.UserID).Scan(&id)
+		webx.Nullable(n.responsavel), ac.UserID).Scan(&id)
 	if err == nil {
 		err = s.record(ctx, tx, ac, "prazo.criado", id, map[string]string{"etapa": situacao})
 	}
@@ -82,11 +77,12 @@ func (s *Service) Create(ctx context.Context, ac webx.Actor, in Input, confirmar
 	return id, err
 }
 
-// Update altera um prazo ABERTO. Quem não pode confirmar derruba a confirmação (volta a "a conferir"): uma data
-// confirmada nunca muda sem que um advogado volte a confirmá-la.
-func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version int, in Input, confirmar bool) error {
+// Update altera um prazo ABERTO. Ninguém confirma por efeito colateral: mudar a data derruba a confirmação (volta a
+// "a conferir", sem quem/quando); manter a data mantém a situação. Confirmar é só pelo ato explícito.
+func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version int, in Input) error {
 	var daTarefa bool
-	if err := s.Pool.QueryRow(ctx, `SELECT tarefa_id IS NOT NULL FROM prazos WHERE id=$1`, id).Scan(&daTarefa); err == nil && daTarefa {
+	var antes time.Time
+	if err := s.Pool.QueryRow(ctx, `SELECT tarefa_id IS NOT NULL, data_fatal FROM prazos WHERE id=$1`, id).Scan(&daTarefa, &antes); err == nil && daTarefa {
 		return webx.Invalidf("Este prazo pertence a uma tarefa: altere o Prazo fatal na própria tarefa.")
 	}
 	n, err := in.normalize()
@@ -96,17 +92,19 @@ func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version 
 	if err := s.checkRefs(ctx, n); err != nil {
 		return err
 	}
-	if n.fonte == "calculadora" {
-		confirmar = false
+	etapa := "mesma_data"
+	if !antes.Equal(n.dataFatal) {
+		etapa = AConferir
 	}
-	return s.write(ctx, ac, id, "prazo.alterado", map[string]string{"etapa": map[bool]string{true: Confirmado, false: AConferir}[confirmar]},
-		`UPDATE prazos SET descricao=$3, processo_id=$4, data_fatal=$5, fundamento=$6, fonte=$7, responsavel_id=$8,
-		   situacao = CASE WHEN $9 THEN situacao ELSE 'a_conferir' END,
-		   confirmado_por = CASE WHEN $9 THEN confirmado_por END, confirmado_em = CASE WHEN $9 THEN confirmado_em END,
-		   updated_at=now(), updated_by=$10, version=version+1
+	return s.write(ctx, ac, id, "prazo.alterado", map[string]string{"etapa": etapa},
+		`UPDATE prazos SET descricao=$3, processo_id=$4, fundamento=$6, fonte=$7, responsavel_id=$8,
+		   situacao = CASE WHEN data_fatal = $5::date THEN situacao ELSE 'a_conferir' END,
+		   confirmado_por = CASE WHEN data_fatal = $5::date THEN confirmado_por END,
+		   confirmado_em = CASE WHEN data_fatal = $5::date THEN confirmado_em END,
+		   data_fatal=$5, updated_at=now(), updated_by=$9, version=version+1
 		 WHERE id=$1 AND version=$2 AND excluido_em IS NULL AND situacao IN ('a_conferir','confirmado')`,
 		id, version, n.descricao, webx.Nullable(n.processo), n.dataFatal, n.fundamento, n.fonte, webx.Nullable(n.responsavel),
-		confirmar, ac.UserID)
+		ac.UserID)
 }
 
 // Confirmar: o advogado atesta o prazo (a conferir → confirmado).

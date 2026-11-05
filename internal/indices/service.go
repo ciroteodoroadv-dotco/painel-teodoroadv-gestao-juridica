@@ -139,7 +139,7 @@ func (s *Service) Iniciar(ctx context.Context, log *slog.Logger, primeira time.D
 				return
 			case <-t.C:
 			}
-			if r, err := s.Coletar(ctx); err != nil {
+			if r, err := coletas.Protegida(func() (Resultado, error) { return s.Coletar(ctx) }); err != nil {
 				if log != nil && ctx.Err() == nil {
 					log.Error("índices do BCB não coletados")
 				}

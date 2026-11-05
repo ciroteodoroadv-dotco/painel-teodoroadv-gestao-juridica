@@ -92,3 +92,52 @@ func TestRecordExigeCampos(t *testing.T) {
 		t.Fatal("evento sem ator deveria ser recusado")
 	}
 }
+
+// Auditoria 05/11, item 4.2: a conferência incremental parte de um ponto, confere só o que veio depois e acusa
+// quebra quando o primeiro evento novo não encadeia no ponto.
+func TestVerifyFromIncremental(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	for i := 0; i < 3; i++ {
+		if err := RecordPool(ctx, pool, Event{Actor: "sistema", Action: "teste.incremental", Result: OK}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	n, ponto, err := VerifyFrom(ctx, pool, Ponto{})
+	if err != nil || n < 3 || ponto.Seq == 0 {
+		t.Fatalf("completa: n=%d ponto=%+v err=%v", n, ponto, err)
+	}
+	if err := RecordPool(ctx, pool, Event{Actor: "sistema", Action: "teste.incremental", Result: OK}); err != nil {
+		t.Fatal(err)
+	}
+	n2, ponto2, err := VerifyFrom(ctx, pool, ponto)
+	if err != nil || n2 != 1 || ponto2.Seq <= ponto.Seq {
+		t.Fatalf("incremental: n=%d ponto=%+v err=%v", n2, ponto2, err)
+	}
+	if _, _, err := VerifyFrom(ctx, pool, Ponto{Seq: ponto.Seq, Hash: make([]byte, 32)}); err == nil {
+		t.Fatal("ponto com hash errado deveria acusar encadeamento quebrado")
+	}
+}
+
+// Auditoria 05/11, item 2.6: a âncora do backup confere com a cadeia intacta e acusa história reescrita.
+func TestAncoraDoBackup(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	if err := RecordPool(ctx, pool, Event{Actor: "sistema", Action: "teste.ancora", Result: OK}); err != nil {
+		t.Fatal(err)
+	}
+	ancora, err := Ancora(ctx, pool)
+	if err != nil || ancora == "" {
+		t.Fatalf("âncora = %q %v", ancora, err)
+	}
+	if err := ConfereAncora(ctx, pool, ancora); err != nil {
+		t.Fatalf("cadeia intacta deveria conferir: %v", err)
+	}
+	seq, _, _ := strings.Cut(ancora, ":")
+	if err := ConfereAncora(ctx, pool, seq+":"+strings.Repeat("ab", 32)); err == nil {
+		t.Fatal("hash diferente do backup deveria acusar reescrita")
+	}
+	if err := ConfereAncora(ctx, pool, "lixo"); err == nil {
+		t.Fatal("âncora malformada deveria ser recusada")
+	}
+}

@@ -67,10 +67,27 @@ func TestLoadFalhaSemSegredos(t *testing.T) {
 	if err == nil {
 		t.Fatal("deveria falhar sem segredos")
 	}
-	for _, n := range []string{"PAINEL_DB_PASSWORD", "PAINEL_DB_APP_PASSWORD", "PAINEL_SESSION_KEY", "PAINEL_FIELD_KEY"} {
+	for _, n := range []string{"PAINEL_DB_APP_PASSWORD", "PAINEL_SESSION_KEY", "PAINEL_FIELD_KEY"} {
 		if !strings.Contains(err.Error(), n) {
 			t.Errorf("erro deveria citar %s: %v", n, err)
 		}
+	}
+}
+
+// Auditoria 05/11, item 2.1: o servidor web sobe SEM a senha do dono do banco; só a migração a recebe.
+func TestSenhaDoDonoEhOpcional(t *testing.T) {
+	v := baseVars()
+	delete(v, "PAINEL_DB_PASSWORD")
+	c, err := Load(envOf(v, nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.TemDono() || c.DatabaseURL != "" || c.AppDatabaseURL == "" {
+		t.Fatalf("sem a senha do dono: TemDono=%v DatabaseURL=%q AppDatabaseURL vazia=%v", c.TemDono(), c.DatabaseURL, c.AppDatabaseURL == "")
+	}
+	v["PAINEL_DB_PASSWORD_FILE"] = "/nao/existe"
+	if _, err := Load(envOf(v, nil)); err == nil {
+		t.Fatal("arquivo de senha indicado e ilegível deveria ser erro")
 	}
 }
 

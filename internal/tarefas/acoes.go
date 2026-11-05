@@ -26,9 +26,9 @@ func (h *Handler) confirmarPrazo(w http.ResponseWriter, r *http.Request, s *auth
 	webx.Ok(w, "Prazo confirmado.")
 }
 
-// documento recebe o PDF do campo "Documentos do caso" (envio imediato ao escolher o arquivo).
+// documento recebe o PDF do campo "Documentos do caso" (envio imediato ao escolher o arquivo). O limite de 25 MiB
+// vem da rota (auth.Router.HandleUpload).
 func (h *Handler) documento(w http.ResponseWriter, r *http.Request, s *auth.Session) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxUpload)
 	f, hdr, err := r.FormFile("documento")
 	if err != nil {
 		http.Error(w, "Escolha um arquivo.", http.StatusBadRequest)
@@ -41,6 +41,3 @@ func (h *Handler) documento(w http.ResponseWriter, r *http.Request, s *auth.Sess
 	}
 	webx.Ok(w, "Documento guardado.")
 }
-
-// maxUpload é o limite do corpo de um envio de PDF (25 MiB do domínio Documentos, mais o cabeçalho do multipart).
-const maxUpload = 26 << 20
