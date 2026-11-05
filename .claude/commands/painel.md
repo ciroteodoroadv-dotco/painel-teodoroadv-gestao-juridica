@@ -22,6 +22,9 @@ Você é o ADVISOR, na sessão principal (Opus). Coordena, classifica e revisa. 
     o resultado em PROGRESSO-ADVISOR.md.
 
 ## SKILLS POR FASE
+- As skills são ferramenta do advisor para executar a tarefa, fornecidas pelo ambiente do advogado. NUNCA versioná-las
+  neste repositório nem fazê-las compor o código do painel (decisão do advogado, 05/11/2026). Se uma skill não estiver
+  disponível na sessão, dizer isso e seguir sem ela.
 - Planejar: writing-plans (subagente Sonnet). grill-me só se houver ambiguidade que mude o resultado.
 - Executar: subagent-driven-development.
 - Cálculo, prazo, financeiro: test-driven-development (teste antes do código).

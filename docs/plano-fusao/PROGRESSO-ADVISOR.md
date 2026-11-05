@@ -53,6 +53,11 @@ Atualizado em 05/11/2026. Branch: `feat/fase-1-saneamento` (base: `origin/feat/a
   - gosec v2.30.0 e staticcheck v0.8.2 rodados no host, nas versões fixadas do script: staticcheck sem achados;
     gosec 12 achados, todos suprimidos com justificativa, 0 abertos.
 
+- PR #13 (05/11/2026): a pasta de skills em .claude (115 arquivos de skills de terceiros) removida do repositório — as skills são
+  ferramenta do advisor, não código do painel (decisão do advogado). Nunca entraram no binário/imagem (Dockerfile copia só
+  cmd, internal, migrations, web). Regra gravada no `/painel`. A exceção do `.gitleaks.toml` fica: o arquivo com a chave de
+  exemplo da AWS continua no histórico do PR. gitleaks local nos 24 commits: "no leaks found".
+
 ## Não verificado
 - `scripts/analise-estatica.sh`: status 2. O contêiner `golang:1.26.10-bookworm` não confia no certificado do proxy
   de rede deste ambiente (x509 ao baixar o gosec); o relatório `ANALISE-ESTATICA.md` não foi regravado.
