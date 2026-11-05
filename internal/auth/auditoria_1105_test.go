@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"painelteodoro/internal/platform/crypt"
 	"painelteodoro/internal/platform/ratelimit"
 )
 
@@ -115,5 +116,33 @@ func TestExpurgoDeSessoesVencidas(t *testing.T) {
 	_ = e.pool.QueryRow(t.Context(), `SELECT count(*) FROM sessions`).Scan(&vivas)
 	if vivas != 1 {
 		t.Fatalf("sessões vivas = %d, esperado 1", vivas)
+	}
+}
+
+// Auditoria 05/11, item 2.7: o segredo TOTP novo usa subchave e o id do usuário como dado associado; o legado
+// (chave mestra) continua abrindo; copiar o segredo cifrado para outro usuário não abre.
+func TestSegredoTOTPComSubchaveEDadoAssociado(t *testing.T) {
+	e := newEnv(t)
+	id := e.user("adv@exemplo.test", Advogado, senhaBoa)
+	outro := e.user("outro@exemplo.test", Advogado, senhaBoa)
+	if err := e.a.Store.SaveTOTPSecret(t.Context(), e.a.FieldKey, id, "JBSWY3DPEHPK3PXP"); err != nil {
+		t.Fatal(err)
+	}
+	u, _ := e.a.Store.UserByID(t.Context(), id)
+	if u.TOTPSecretEnc[0] != versaoTOTP {
+		t.Fatal("o segredo novo deveria estar no formato versão 1")
+	}
+	if s, err := TOTPSecret(e.a.FieldKey, u); err != nil || s != "JBSWY3DPEHPK3PXP" {
+		t.Fatalf("abrir o segredo novo = %q %v", s, err)
+	}
+	copia := *u
+	copia.ID = outro
+	if _, err := TOTPSecret(e.a.FieldKey, &copia); err == nil {
+		t.Fatal("segredo copiado para outro usuário não pode abrir")
+	}
+	legado, _ := crypt.Seal(e.a.FieldKey, []byte("LEGADOLEGADO2345"))
+	u.TOTPSecretEnc = legado
+	if s, err := TOTPSecret(e.a.FieldKey, u); err != nil || s != "LEGADOLEGADO2345" {
+		t.Fatalf("segredo legado = %q %v", s, err)
 	}
 }

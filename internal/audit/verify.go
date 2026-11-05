@@ -3,10 +3,15 @@ package audit
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -70,4 +75,46 @@ func VerifyFrom(ctx context.Context, pool *pgxpool.Pool, desde Ponto) (int, Pont
 		n++
 	}
 	return n, ultimo, rows.Err()
+}
+
+// Ancora devolve o último elo da cadeia no formato "SEQ:HASH_HEX" (vazio se a cadeia está vazia). O backup grava
+// esse elo no MANIFEST: como o backup fica fora do servidor, ele é uma âncora externa da cadeia (auditoria 05/11,
+// item 2.6). Sem âncora, quem tem poder de dono do banco reescreve a cadeia inteira e recalcula os hashes.
+func Ancora(ctx context.Context, pool *pgxpool.Pool) (string, error) {
+	var seq int64
+	var hash []byte
+	err := pool.QueryRow(ctx, `SELECT seq, hash FROM audit_events ORDER BY seq DESC LIMIT 1`).Scan(&seq, &hash)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%d:%s", seq, hex.EncodeToString(hash)), nil
+}
+
+// ConfereAncora confere que o evento da âncora "SEQ:HASH_HEX" (tirada de um backup antigo) ainda existe com o MESMO
+// hash e que a cadeia inteira está íntegra. Se alguém reescreveu a história depois do backup, o hash não confere.
+func ConfereAncora(ctx context.Context, pool *pgxpool.Pool, ancora string) error {
+	seqTxt, hashTxt, ok := strings.Cut(strings.TrimSpace(ancora), ":")
+	seq, err := strconv.ParseInt(seqTxt, 10, 64)
+	want, err2 := hex.DecodeString(hashTxt)
+	if !ok || err != nil || err2 != nil || seq <= 0 || len(want) != 32 {
+		return errors.New("âncora inválida: use SEQ:HASH (como no MANIFEST do backup)")
+	}
+	var got []byte
+	err = pool.QueryRow(ctx, `SELECT hash FROM audit_events WHERE seq=$1`, seq).Scan(&got)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("o evento %d da âncora NÃO existe mais: a cadeia foi alterada depois do backup", seq)
+	}
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(got, want) {
+		return fmt.Errorf("o evento %d tem hash diferente do backup: a cadeia foi reescrita depois do backup", seq)
+	}
+	if _, err := Verify(ctx, pool); err != nil {
+		return err
+	}
+	return nil
 }

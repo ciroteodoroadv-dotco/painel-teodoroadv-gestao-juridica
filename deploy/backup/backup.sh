@@ -38,9 +38,13 @@ fi
 
 log "3/5 manifesto"
 migr="$(psql -Atqc 'SELECT coalesce(max(version_id),0) FROM goose_db_version WHERE is_applied' 2>/dev/null || echo ?)"
+# Âncora externa da cadeia de auditoria (auditoria 05/11, item 2.6): o último elo vai no MANIFEST do backup, que fica fora
+# do servidor. Conferir depois: docker compose run --rm migrate audit ancora SEQ:HASH
+elo="$(psql -Atqc "SELECT seq || ':' || encode(hash, 'hex') FROM audit_events ORDER BY seq DESC LIMIT 1" 2>/dev/null || echo ?)"
 {
   echo "criado_em=$(date -u +%FT%TZ)"
   echo "esquema_versao=$migr"
+  echo "auditoria_ultimo_elo=${elo:-vazia}"
   echo "arquivos_documentos=$(tar -tf "$disco/docs.tar" | grep -vc '/$' || true)"
   echo "sha256_db=$(sha256sum "$work/db.dump" | cut -d' ' -f1)"
   echo "sha256_docs=$(sha256sum "$disco/docs.tar" | cut -d' ' -f1)"

@@ -118,3 +118,26 @@ func TestVerifyFromIncremental(t *testing.T) {
 		t.Fatal("ponto com hash errado deveria acusar encadeamento quebrado")
 	}
 }
+
+// Auditoria 05/11, item 2.6: a âncora do backup confere com a cadeia intacta e acusa história reescrita.
+func TestAncoraDoBackup(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	if err := RecordPool(ctx, pool, Event{Actor: "sistema", Action: "teste.ancora", Result: OK}); err != nil {
+		t.Fatal(err)
+	}
+	ancora, err := Ancora(ctx, pool)
+	if err != nil || ancora == "" {
+		t.Fatalf("âncora = %q %v", ancora, err)
+	}
+	if err := ConfereAncora(ctx, pool, ancora); err != nil {
+		t.Fatalf("cadeia intacta deveria conferir: %v", err)
+	}
+	seq, _, _ := strings.Cut(ancora, ":")
+	if err := ConfereAncora(ctx, pool, seq+":"+strings.Repeat("ab", 32)); err == nil {
+		t.Fatal("hash diferente do backup deveria acusar reescrita")
+	}
+	if err := ConfereAncora(ctx, pool, "lixo"); err == nil {
+		t.Fatal("âncora malformada deveria ser recusada")
+	}
+}

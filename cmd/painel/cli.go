@@ -21,6 +21,7 @@ import (
 const uso = `Uso:
   painel migrate up|down          aplica ou reverte a última migração
   painel audit verify             confere a cadeia de auditoria
+  painel audit ancora SEQ:HASH    confere a cadeia contra a âncora gravada no MANIFEST de um backup (auditoria_ultimo_elo)
   painel restore-check            confere uma cópia restaurada (auditoria + todos os documentos decifrados)
   painel user create EMAIL PAPEL  cria usuário (administrador|advogado|assistente); senha lida da entrada padrão
   painel user reset-password EMAIL  nova senha lida da entrada padrão; revoga as sessões
@@ -56,6 +57,12 @@ func runCLI(args []string) error {
 			return fmt.Errorf("CADEIA COMPROMETIDA após %d eventos: %w", n, err)
 		}
 		fmt.Printf("Cadeia íntegra: %d eventos conferidos.\n", n)
+		return nil
+	case len(args) == 3 && args[0] == "audit" && args[1] == "ancora":
+		if err := audit.ConfereAncora(ctx, pool, args[2]); err != nil {
+			return fmt.Errorf("ÂNCORA NÃO CONFERE: %w", err)
+		}
+		fmt.Println("Âncora confere: a cadeia contém o elo do backup e está íntegra.")
 		return nil
 	case len(args) == 4 && args[0] == "user" && args[1] == "create":
 		return userCreate(ctx, st, args[2], auth.Role(args[3]))

@@ -37,8 +37,8 @@ leitura inequívoca), **FI** fortemente indicado, **H** hipótese.
 | 4.3 | Envio ocupa ~3× o tamanho em memória, sem limite de simultâneos | P3 | H | **Fase 1** (semáforo de 3 envios) |
 | 6.2 | README desatualizado | P3 | C | **Fase 6** (feito) |
 | 2.4 | Leitura sem escopo por equipe (F13) | P2 | C | marco próprio (decisão do escritório) |
-| 2.6 | Hash da auditoria sem chave nem âncora externa | P4 | C | marco próprio |
-| 2.7 | Segredo TOTP com a chave mestra, sem versão de chave | P4 | C | marco próprio |
+| 2.6 | Hash da auditoria sem chave nem âncora externa | P4 | C | **Fase 7** (âncora no backup) |
+| 2.7 | Segredo TOTP com a chave mestra, sem versão de chave | P4 | C | **Fase 7** (feito) |
 | 7.2 | `auth.Auth`/`PageData` acumulam responsabilidades | P4 | C | marco próprio |
 | 5.2 | Bloqueios de uso real já listados em `PENDENCIAS.md` | P1 | C (doc) | decisão do advogado/administrador |
 
@@ -115,3 +115,17 @@ mantém a situação; mudar a data volta a "A CONFERIR" e apaga quem/quando. Iss
 - **6.2**: README com o estado real.
 - **4.5 — não alterado, de propósito**: pôr limite nessas listas sem paginação repetiria o defeito 1.4 (dado
   escondido). A agenda já filtra por data; as demais crescem com o uso. Paginação real fica para quando houver volume.
+
+## Fase 7 (parcial, de propósito)
+
+- **2.7**: segredo TOTP novo em formato versionado (0x01), com subchave `auth.totp` e o id do usuário como dado
+  associado (`crypt.SealAD/OpenAD`); o formato antigo continua sendo lido e é substituído quando o 2º fator é
+  redefinido. Teste: abre o novo, abre o legado, recusa a cópia para outro usuário.
+- **2.6**: o MANIFEST de todo backup grava `auditoria_ultimo_elo=SEQ:HASH` (âncora fora do servidor);
+  `painel audit ancora SEQ:HASH` confere que a cadeia ainda contém aquele elo e está íntegra; `restore.sh` mostra a
+  âncora. Prova local: backup → restauração com a âncora impressa. HMAC com chave fora do banco NÃO foi feito
+  (exigiria um segredo novo e convivência de dois formatos de cadeia; a âncora cobre o risco principal).
+- **Não feito — precisa de decisão do escritório**: 2.4 (escopo de leitura por equipe/carteira: quem forma cada
+  equipe, quem vê o quê), aprovação prévia de alterações de usuário por advogado (2.3) e 5.2 (pendências do
+  `PENDENCIAS.md`).
+- **Não feito — sem benefício hoje**: 7.2 (dividir `auth.Auth`/`PageData`): refatoração sem defeito associado.

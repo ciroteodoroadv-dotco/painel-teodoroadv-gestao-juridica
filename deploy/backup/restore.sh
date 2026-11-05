@@ -23,10 +23,11 @@ log "decifrando"
 age -d -i "$AGE_IDENTITY_FILE" "$arq" | tar -C "$work" -xf - || die "não consegui decifrar (chave privada errada ou arquivo adulterado)"
 [[ -s "$work/db.dump" && -s "$work/MANIFEST" ]] || die "backup incompleto"
 # shellcheck disable=SC1091
-source <(grep -E '^(sha256_db|sha256_docs|esquema_versao|criado_em)=' "$work/MANIFEST")
+source <(grep -E '^(sha256_db|sha256_docs|esquema_versao|criado_em|auditoria_ultimo_elo)=' "$work/MANIFEST")
 [[ "$(sha256sum "$work/db.dump" | cut -d' ' -f1)" == "$sha256_db" ]] || die "db.dump não confere com o manifesto"
 [[ "$(sha256sum "$work/docs.tar" | cut -d' ' -f1)" == "$sha256_docs" ]] || die "docs.tar não confere com o manifesto"
 log "backup de $criado_em (esquema v$esquema_versao) íntegro"
+[[ -n "${auditoria_ultimo_elo:-}" ]] && log "âncora da auditoria neste backup: $auditoria_ultimo_elo (confira em produção: painel audit ancora $auditoria_ultimo_elo)"
 
 log "restaurando o banco em $PGHOST/$PGDATABASE"
 pg_restore --exit-on-error --no-owner -d "$PGDATABASE" "$work/db.dump" || die "falha ao restaurar o banco"
