@@ -57,3 +57,29 @@ jobs:
           echo "### Imagem publicada" >> "$GITHUB_STEP_SUMMARY"
           echo '`ghcr.io/${{ github.repository }}/painel@${{ steps.push.outputs.digest }}`' >> "$GITHUB_STEP_SUMMARY"
           echo "Deploy: \`./oracle/deploy.sh ghcr.io/${{ github.repository }}/painel@${{ steps.push.outputs.digest }}\`" >> "$GITHUB_STEP_SUMMARY"
+      # Imagem de backup/restauração (auditoria 05/11, item 5.1): mesma esteira do app — varredura, publicação por digest.
+      - name: Construir a imagem de backup (sem publicar) para varrer
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: deploy/backup
+          load: true
+          tags: painel-backup:varredura
+      - name: Varredura da imagem de backup (falha em CRÍTICA/ALTA com correção disponível)
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: painel-backup:varredura
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Publicar a imagem de backup
+        id: pushbackup
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: deploy/backup
+          push: true
+          tags: ghcr.io/${{ github.repository }}/painel-backup:${{ github.ref_name }}
+          provenance: true
+      - name: Resumo da imagem de backup
+        run: |
+          echo '`ghcr.io/${{ github.repository }}/painel-backup@${{ steps.pushbackup.outputs.digest }}`' >> "$GITHUB_STEP_SUMMARY"
+          echo "Deploy: \`PAINEL_BACKUP_IMAGE=ghcr.io/${{ github.repository }}/painel-backup@${{ steps.pushbackup.outputs.digest }} ./oracle/deploy.sh ...\`" >> "$GITHUB_STEP_SUMMARY"

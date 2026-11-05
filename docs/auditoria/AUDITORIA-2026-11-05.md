@@ -23,9 +23,9 @@ leitura inequívoca), **FI** fortemente indicado, **H** hipótese.
 | 3.1 | JWKS do Access: falha na renovação horária derruba tudo; busca com mutex travado | P2 | C | **Fase 3** (feito) |
 | 3.2 | Coletas em segundo plano sem `recover` | P2 | H | **Fase 3** (feito) |
 | 1.5 | "Executar coleta agora" síncrono na requisição | P2 | FI | **Fase 3** (feito) |
-| 4.1 | Backup monta tudo num tmpfs de 2 GiB | P2 | FI | Fase 4 |
-| 3.3 | Falha de backup sem alerta | P2 | C | Fase 4 |
-| 5.1 | Imagem de backup por tag mutável, fora do release | P3 | C | Fase 4 |
+| 4.1 | Backup monta tudo num tmpfs de 2 GiB | P2 | FI | **Fase 4** (feito) |
+| 3.3 | Falha de backup sem alerta | P2 | C | **Fase 4** (feito) |
+| 5.1 | Imagem de backup por tag mutável, fora do release | P3 | C | **Fase 4** (feito) |
 | 2.2 | Ações de tomada de conta sem reautenticação | P2 | C | Fase 5 |
 | 2.3 | Separação de funções do administrador é nominal | P3 | FI | Fase 5 |
 | 2.8 | Limitador por IP único para login e 2FA | P3 | H | Fase 5 |
@@ -72,3 +72,17 @@ mantém a situação; mudar a data volta a "A CONFERIR" e apaga quem/quando. Iss
   para o log, só o tipo de erro de execução).
 - **1.5**: "Executar coleta agora" (DJEN e DataJud) roda desacoplado da requisição (`coletas.EmSegundoPlano`): se
   terminar em 20 s responde como antes; senão responde "em andamento" e a rodada segue até o fim.
+
+## Fase 4 (feita)
+
+- **4.1**: o dump continua no tmpfs (texto do banco nunca em disco em claro); o `docs.tar` (documentos já cifrados
+  pelo app) vai para `BACKUP_DIR/.trabalho.*` em disco, apagado ao fim; sobras com mais de 12 h são limpas. Formato
+  do arquivo (`db.dump`, `docs.tar`, `MANIFEST`) igual: `restore.sh` não mudou. **Prova local** com `pg_dump`/`age`
+  reais: backup → restauração em banco novo → 32 tabelas e documentos com SHA-256 idênticos.
+- **3.3**: `OnFailure=painel-alerta@%n.service` no backup e no teste de restauração; `oracle/alerta.sh` grava no diário
+  com prioridade crítica, em `/var/lib/painel/alerta.ultimo` (mostrado por `status.sh`) e, se houver
+  `secrets/alerta_webhook` (https), envia por webhook.
+- **5.1**: `release.yml` varre e publica `painel-backup` por digest; `deploy.sh` aceita `PAINEL_BACKUP_IMAGE` (digest
+  obrigatório), grava em `.estado-deploy.backup`, e o timer de backup e o teste de restauração usam esse digest; o
+  PostgreSQL do teste de restauração usa o mesmo digest do Compose.
+  **Não executado aqui:** systemd, GitHub Actions e Docker (sem daemon nesta sessão).

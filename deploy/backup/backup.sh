@@ -13,8 +13,14 @@ BACKUP_DIR="${BACKUP_DIR:-/backups}"
 grep -q '^age1' "$AGE_RECIPIENTS_FILE" || die "AGE_RECIPIENTS_FILE não contém chave pública age (age1...)"
 PGPASSWORD="$(secret PGPASSWORD)"; export PGPASSWORD
 
+# O dump (texto do banco) fica no tmpfs /work (memória, nunca em disco em claro). O tar dos documentos — que já estão
+# cifrados pelo app, com nome aleatório — vai para uma pasta de trabalho em DISCO, ao lado dos backups: assim o backup
+# não falha quando os documentos passarem do tamanho do tmpfs (auditoria 05/11, item 4.1).
+# Sobras de uma execução interrompida (ex.: falta de energia) há mais de 12 h.
+find "$BACKUP_DIR" -maxdepth 1 -type d -name '.trabalho.*' -mmin +720 -exec rm -rf {} + 2>/dev/null || true
 work="$(mktemp -d /work/bk.XXXXXX)"
-trap 'rm -rf "$work"' EXIT
+disco="$(mktemp -d "$BACKUP_DIR/.trabalho.XXXXXX")"
+trap 'rm -rf "$work" "$disco"' EXIT
 umask 077
 
 log "1/5 despejando o banco"
@@ -25,9 +31,9 @@ pg_dump -Fc -Z 6 -f "$work/db.dump"
 log "2/5 empacotando os documentos"
 if [[ -d "$DOCS_DIR" ]]; then
   # só arquivos (sem a entrada "."): a restauração não mexe nas permissões da pasta de destino
-  find "$DOCS_DIR" -mindepth 1 -type f ! -name '*.tmp' -printf '%P\n' | tar -C "$DOCS_DIR" -cf "$work/docs.tar" -T -
+  find "$DOCS_DIR" -mindepth 1 -type f ! -name '*.tmp' -printf '%P\n' | tar -C "$DOCS_DIR" -cf "$disco/docs.tar" -T -
 else
-  tar -cf "$work/docs.tar" -T /dev/null
+  tar -cf "$disco/docs.tar" -T /dev/null
 fi
 
 log "3/5 manifesto"
@@ -35,15 +41,16 @@ migr="$(psql -Atqc 'SELECT coalesce(max(version_id),0) FROM goose_db_version WHE
 {
   echo "criado_em=$(date -u +%FT%TZ)"
   echo "esquema_versao=$migr"
-  echo "arquivos_documentos=$(tar -tf "$work/docs.tar" | grep -vc '/$' || true)"
+  echo "arquivos_documentos=$(tar -tf "$disco/docs.tar" | grep -vc '/$' || true)"
   echo "sha256_db=$(sha256sum "$work/db.dump" | cut -d' ' -f1)"
-  echo "sha256_docs=$(sha256sum "$work/docs.tar" | cut -d' ' -f1)"
+  echo "sha256_docs=$(sha256sum "$disco/docs.tar" | cut -d' ' -f1)"
 } > "$work/MANIFEST"
 
 log "4/5 cifrando com age"
 name="$(backup_name)"
 out="$BACKUP_DIR/$name"
-tar -C "$work" -cf - db.dump docs.tar MANIFEST | age -R "$AGE_RECIPIENTS_FILE" -o "$out.partial"
+# Mesmos nomes e mesma ordem de antes (db.dump, docs.tar, MANIFEST): restore.sh não muda.
+tar -cf - -C "$work" db.dump -C "$disco" docs.tar -C "$work" MANIFEST | age -R "$AGE_RECIPIENTS_FILE" -o "$out.partial"
 mv "$out.partial" "$out"
 chmod 0600 "$out" 2>/dev/null || log "AVISO: o sistema de arquivos de destino não aceita chmod (ex.: pasta do Windows); a proteção é a cifra"
 ( cd "$BACKUP_DIR" && sha256sum "$name" > "$name.sha256" )

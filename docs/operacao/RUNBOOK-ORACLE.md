@@ -99,10 +99,14 @@ Depois:
 
 ```bash
 sudo ./oracle/bootstrap.sh 10.0.1.0/24       # use a sub-rede do seu Bastion: instala firewall e timers
-docker build -q -t painel-backup:latest backup   # imagem de backup (só ferramentas; não compila o painel)
 set -a; source oracle/ambiente; set +a
-./oracle/deploy.sh ghcr.io/ORG/painel@sha256:DIGEST   # digest vem do resumo da release (GitHub Actions)
+# os dois digests vêm do resumo da release (GitHub Actions); o deploy grava o do backup em .estado-deploy.backup
+PAINEL_BACKUP_IMAGE=ghcr.io/ORG/painel-backup@sha256:DIGEST_BACKUP ./oracle/deploy.sh ghcr.io/ORG/painel@sha256:DIGEST
 ```
+
+Alerta de falha (backup e teste de restauração): sempre vai ao diário do sistema (`journalctl -t painel-alerta`) e a
+`status.sh`. Para receber no celular, grave uma URL de webhook **https** (Slack, Mattermost, Google Chat…) em
+`deploy/secrets/alerta_webhook` (`chmod 600`); ela é tratada como segredo.
 
 *Primeira subida sem CI (exceção, só até o repositório remoto existir):* num computador seu,
 `docker build -f deploy/Dockerfile -t painel-app:AAAAMMDD .`, depois

@@ -12,7 +12,10 @@ cd "$(dirname "$0")"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/painel}"
 FIELD_KEY_FILE="${FIELD_KEY_FILE:-./secrets/field_key}"
 IMAGE_APP="${IMAGE_APP:-$(cat .estado-deploy.atual 2>/dev/null || echo painel-app:latest)}" # em produção: a versão em uso
-IMAGE_BACKUP="${IMAGE_BACKUP:-painel-backup:latest}"
+# Mesmo PostgreSQL da produção, por digest (lido do Compose): o teste não depende de tag móvel.
+IMAGE_DB="${IMAGE_DB:-$(grep -oE 'postgres:17-alpine@sha256:[0-9a-f]{64}' docker-compose.yml | head -1 || true)}"
+IMAGE_DB="${IMAGE_DB:-postgres:17-alpine}"
+IMAGE_BACKUP="${IMAGE_BACKUP:-$(cat .estado-deploy.backup 2>/dev/null || echo painel-backup:latest)}" # em produção: o digest do deploy
 : "${AGE_IDENTITY:?defina AGE_IDENTITY com o caminho da chave PRIVADA (ela não fica no servidor)}"
 [[ -r "$AGE_IDENTITY" ]] || { echo "chave privada não encontrada: $AGE_IDENTITY"; exit 2; }
 [[ -r "$FIELD_KEY_FILE" ]] || { echo "field_key não encontrada: $FIELD_KEY_FILE"; exit 2; }
@@ -36,7 +39,7 @@ trap cleanup EXIT
 
 docker network create --internal "$net" >/dev/null   # sem saída para a internet: nada vaza
 docker run -d --name "$dbc" --network "$net" -e POSTGRES_USER=painel -e POSTGRES_DB=painel \
-  -e POSTGRES_PASSWORD="$dbpass" postgres:17-alpine >/dev/null
+  -e POSTGRES_PASSWORD="$dbpass" "$IMAGE_DB" >/dev/null
 for _ in $(seq 1 60); do docker exec "$dbc" pg_isready -U painel -d painel -h 127.0.0.1 >/dev/null 2>&1 && break; sleep 1; done
 sleep 2
 docker exec "$dbc" psql -U painel -d painel -qc "CREATE ROLE painel_app LOGIN" >/dev/null  # papel do cluster, fora do dump

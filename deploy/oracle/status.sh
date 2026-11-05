@@ -17,4 +17,5 @@ echo "arquivos: $(ls /var/backups/painel/painel-*.tar.age 2>/dev/null | wc -l)  
 echo; echo "== Teste de restauração"
 echo "último com sucesso: $(idade /var/lib/painel/restore-test.ok)"
 [[ -s /var/lib/painel/restore-test.falha ]] && echo "ATENÇÃO: última falha em $(cat /var/lib/painel/restore-test.falha)"
+[[ -s /var/lib/painel/alerta.ultimo ]] && echo "Último alerta enviado: $(cat /var/lib/painel/alerta.ultimo) (configure deploy/secrets/alerta_webhook para receber no celular)"
 echo; echo "== Disco"; df -h / /var/lib/docker /var/backups/painel 2>/dev/null | sort -u

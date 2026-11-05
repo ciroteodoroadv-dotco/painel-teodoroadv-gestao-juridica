@@ -22,6 +22,19 @@ if [[ "${LOCAL:-0}" != 1 ]]; then
   docker pull -q "$NOVA" >/dev/null
 fi
 
+# Imagem de backup por digest (auditoria 05/11, item 5.1). Opcional: PAINEL_BACKUP_IMAGE=registro/painel-backup@sha256:...
+# Gravada em $STATE.backup e usada pelo timer de backup e pelo teste de restauração. Sem ela, vale a última gravada.
+if [[ -n "${PAINEL_BACKUP_IMAGE:-}" ]]; then
+  if [[ "${LOCAL:-0}" != 1 ]]; then
+    [[ "$PAINEL_BACKUP_IMAGE" == *@sha256:* ]] || { log "ERRO: PAINEL_BACKUP_IMAGE precisa ser por digest (…@sha256:…)"; exit 2; }
+    log "baixando $PAINEL_BACKUP_IMAGE"
+    docker pull -q "$PAINEL_BACKUP_IMAGE" >/dev/null
+  fi
+  echo "$PAINEL_BACKUP_IMAGE" > "$STATE.backup"
+fi
+PAINEL_BACKUP_IMAGE="$(cat "$STATE.backup" 2>/dev/null || echo painel-backup:latest)"
+export PAINEL_BACKUP_IMAGE
+
 if [[ "${SKIP_BACKUP:-0}" != 1 ]]; then
   log "backup antes do deploy"
   PAINEL_IMAGE="${ATUAL:-$NOVA}" $COMPOSE --profile backup run --rm backup || { log "ERRO: o backup falhou; deploy cancelado"; exit 1; }

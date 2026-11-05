@@ -2,6 +2,8 @@
 Description=Backup cifrado do Painel Teodoro (banco + documentos)
 Wants=docker.service
 After=docker.service
+# Falhou = alerta ativo (diário crítico e, se configurado, webhook): auditoria 05/11, item 3.3.
+OnFailure=painel-alerta@%n.service
 
 [Service]
 Type=oneshot
@@ -9,7 +11,8 @@ User=painel-admin
 WorkingDirectory=/opt/painel/deploy
 EnvironmentFile=-/opt/painel/deploy/oracle/ambiente
 # PAINEL_IMAGE é exigida pelo arquivo do Compose; usa a versão em produção.
-ExecStart=/bin/sh -c 'PAINEL_IMAGE=$(cat .estado-deploy.atual) exec /usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile backup run --rm backup'
+# PAINEL_BACKUP_IMAGE: a imagem de backup por digest gravada pelo deploy.sh (.estado-deploy.backup).
+ExecStart=/bin/sh -c 'PAINEL_IMAGE=$(cat .estado-deploy.atual) PAINEL_BACKUP_IMAGE=$(cat .estado-deploy.backup 2>/dev/null || echo painel-backup:latest) exec /usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile backup run --rm backup'
 # Registra o resultado para o painel de saúde (status.sh) e para o runbook.
 ExecStartPost=/bin/sh -c 'date -u +%%FT%%TZ > /var/lib/painel/backup.ok'
 ExecStopPost=/bin/sh -c '[ "$$SERVICE_RESULT" = success ] || date -u +%%FT%%TZ > /var/lib/painel/backup.falha'
