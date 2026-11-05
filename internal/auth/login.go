@@ -39,7 +39,7 @@ func (a *Auth) loginPost(w http.ResponseWriter, r *http.Request, _ *Session) {
 			Meta: map[string]string{"motivo": motivo, "email_hash": emailHash(email)}})
 		a.render(w, r, status, "login.html", PageData{Title: "Entrar", Error: msgLoginFalhou, Email: email})
 	}
-	if !a.Limiter.Allow("login|" + clientIP(r)) {
+	if !a.limiteDeTentativas("login", clientIP(r), strings.ToLower(email)) {
 		fail("anonimo", "limite_ip", http.StatusTooManyRequests)
 		return
 	}

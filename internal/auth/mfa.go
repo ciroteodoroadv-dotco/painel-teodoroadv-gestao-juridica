@@ -40,7 +40,7 @@ func (a *Auth) mfaPost(w http.ResponseWriter, r *http.Request, s *Session) {
 		a.render(w, r, status, "mfa.html", PageData{Title: "Segundo fator", Email: s.Email, Error: msgCodigoInvalido,
 			HasTOTP: hasTOTP, HasKey: hasKey})
 	}
-	if !a.Limiter.Allow("mfa|" + clientIP(r)) {
+	if !a.limiteDeTentativas("mfa", clientIP(r), s.UserID) {
 		bad("limite_ip", http.StatusTooManyRequests)
 		return
 	}

@@ -26,9 +26,9 @@ leitura inequívoca), **FI** fortemente indicado, **H** hipótese.
 | 4.1 | Backup monta tudo num tmpfs de 2 GiB | P2 | FI | **Fase 4** (feito) |
 | 3.3 | Falha de backup sem alerta | P2 | C | **Fase 4** (feito) |
 | 5.1 | Imagem de backup por tag mutável, fora do release | P3 | C | **Fase 4** (feito) |
-| 2.2 | Ações de tomada de conta sem reautenticação | P2 | C | Fase 5 |
-| 2.3 | Separação de funções do administrador é nominal | P3 | FI | Fase 5 |
-| 2.8 | Limitador por IP único para login e 2FA | P3 | H | Fase 5 |
+| 2.2 | Ações de tomada de conta sem reautenticação | P2 | C | **Fase 5** (feito) |
+| 2.3 | Separação de funções do administrador é nominal | P3 | FI | **Fase 5** (feito) |
+| 2.8 | Limitador por IP único para login e 2FA | P3 | H | **Fase 5** (feito) |
 | 1.4 | Listas de pessoas/processos cortadas em 2.000 sem aviso; seletor de vínculo herda o corte | P2 | FI | Fase 6 |
 | 4.2 | Tela de auditoria recalcula a cadeia inteira a cada acesso | P3 | C | Fase 6 |
 | 4.4 | Sessões expiradas nunca apagadas | P3 | C | Fase 6 |
@@ -86,3 +86,15 @@ mantém a situação; mudar a data volta a "A CONFERIR" e apaga quem/quando. Iss
   obrigatório), grava em `.estado-deploy.backup`, e o timer de backup e o teste de restauração usam esse digest; o
   PostgreSQL do teste de restauração usa o mesmo digest do Compose.
   **Não executado aqui:** systemd, GitHub Actions e Docker (sem daemon nesta sessão).
+
+## Fase 5 (feita)
+
+- **2.2**: exigem a SUA senha atual (`senha_atual`; conta tentativa e trava como o login): criar usuário, mudar papel,
+  redefinir senha ou 2º fator de outra pessoa, regerar códigos de recuperação, remover chave e cadastrar chave
+  ADICIONAL (o primeiro fator, logo após a senha, não pede de novo). Formulários e `webauthn.js` atualizados.
+  Desativar/reativar e desbloquear não pedem (não dão acesso a ninguém). Testes de recusa (sem senha e senha errada).
+  Decisão: só a senha, não o 2º fator — o administrador pode ter apenas chave física, e exigir TOTP o travaria.
+- **2.3**: faixa na Agenda dos ADVOGADOS com as alterações de usuário (criação, papel, senha, 2º fator) das últimas
+  72 h. Aprovação por um advogado antes da alteração NÃO foi implementada (é decisão do escritório).
+- **2.8**: limite de login e 2FA por IP+conta (10/min) somado a um teto por IP (60/min); teste: uma conta no limite não
+  trava a colega no mesmo IP.

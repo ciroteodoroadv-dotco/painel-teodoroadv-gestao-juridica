@@ -56,7 +56,8 @@ func TestMultipartComSessaoContinuaFuncionando(t *testing.T) {
 	e.user("adv@exemplo.test", Advogado, senhaBoa)
 	b := e.fullLogin("adv@exemplo.test", senhaBoa)
 	tok := b.csrfFrom("/conta")
-	corpo := "--xyz\r\nContent-Disposition: form-data; name=\"csrf_token\"\r\n\r\n" + tok + "\r\n--xyz--\r\n"
+	corpo := "--xyz\r\nContent-Disposition: form-data; name=\"csrf_token\"\r\n\r\n" + tok +
+		"\r\n--xyz\r\nContent-Disposition: form-data; name=\"senha_atual\"\r\n\r\n" + senhaBoa + "\r\n--xyz--\r\n"
 	req, _ := http.NewRequest("POST", e.srv.URL+"/conta/recuperacao", strings.NewReader(corpo))
 	req.Header.Set("Content-Type", "multipart/form-data; boundary=xyz")
 	for k, v := range b.cookies {

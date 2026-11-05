@@ -26,7 +26,11 @@ func New(max int, window time.Duration) *Limiter {
 }
 
 // Allow registra uma tentativa e informa se ainda está dentro do limite.
-func (l *Limiter) Allow(key string) bool {
+func (l *Limiter) Allow(key string) bool { return l.AllowMax(key, l.max) }
+
+// AllowMax é Allow com um teto próprio para a chave (mesma janela). Usado para um limite mais largo por origem
+// somado a um limite estreito por origem+conta (auditoria 05/11, item 2.8).
+func (l *Limiter) AllowMax(key string, max int) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	now := l.now()
@@ -43,5 +47,5 @@ func (l *Limiter) Allow(key string) bool {
 		l.hits[key] = b
 	}
 	b.n++
-	return b.n <= l.max
+	return b.n <= max
 }

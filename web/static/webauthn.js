@@ -32,7 +32,9 @@
 
   async function registrar() {
     var nome = (document.getElementById("wa-nome") || {}).value || "";
-    var opts = await post("/2fa/webauthn/register/begin");
+    var campoSenha = document.getElementById("wa-senha"); // só em "Minha conta": chave adicional pede a senha atual
+    var opts = await post("/2fa/webauthn/register/begin", campoSenha ? { senha: campoSenha.value } : undefined);
+    if (campoSenha) campoSenha.value = "";
     var pk = opts.publicKey;
     pk.challenge = dec(pk.challenge);
     pk.user.id = dec(pk.user.id);

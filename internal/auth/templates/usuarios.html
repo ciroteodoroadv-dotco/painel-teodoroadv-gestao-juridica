@@ -4,7 +4,8 @@
 
 <section aria-labelledby="u-novo">
   <h2 id="u-novo">Novo usuário</h2>
-  <p class="apoio">A senha é provisória: a pessoa será obrigada a trocá-la no primeiro acesso. Entregue-a por canal seguro.</p>
+  <p class="apoio">Criar usuário, mudar papel e redefinir senha ou 2º fator pedem a SUA senha atual (proteção contra uso
+  indevido de uma sessão aberta). A senha é provisória: a pessoa será obrigada a trocá-la no primeiro acesso. Entregue-a por canal seguro.</p>
   <form method="post" action="/admin/usuarios" class="linha">
     <input type="hidden" name="csrf_token" value="{{.CSRF}}">
     <div><label for="n-email">E-mail</label><input id="n-email" name="email" type="email" required></div>
@@ -13,6 +14,7 @@
         <option value="assistente">Assistente</option><option value="advogado">Advogado</option><option value="administrador">Administrador</option>
       </select></div>
     <div><label for="n-senha">Senha provisória</label><input id="n-senha" name="senha" type="password" required minlength="12" autocomplete="new-password"></div>
+    <div><label for="n-atual">Sua senha (confirmação)</label><input id="n-atual" name="senha_atual" type="password" required autocomplete="current-password"></div>
     <button type="submit">Criar</button>
   </form>
 </section>
@@ -36,6 +38,7 @@
             <option value="advogado" {{if eq (printf "%s" .Role) "advogado"}}selected{{end}}>advogado</option>
             <option value="administrador" {{if eq (printf "%s" .Role) "administrador"}}selected{{end}}>administrador</option>
           </select>
+          <input name="senha_atual" type="password" placeholder="sua senha" aria-label="Sua senha atual (confirmação)" required autocomplete="current-password">
           <button type="submit" class="secundario">Mudar papel</button>
         </form>
         <form method="post" action="/admin/usuarios/{{.ID}}/ativo">
@@ -51,11 +54,13 @@
         {{end}}
         <form method="post" action="/admin/usuarios/{{.ID}}/mfa/redefinir">
           <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+          <input name="senha_atual" type="password" placeholder="sua senha" aria-label="Sua senha atual (confirmação)" required autocomplete="current-password">
           <button type="submit" class="secundario" data-confirmar="Clique de novo: apaga o 2º fator desta pessoa">Redefinir 2º fator</button>
         </form>
         <form method="post" action="/admin/usuarios/{{.ID}}/senha">
           <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
           <input name="senha" type="password" minlength="12" placeholder="nova senha provisória" aria-label="Nova senha provisória de {{.Email}}" required autocomplete="new-password">
+          <input name="senha_atual" type="password" placeholder="sua senha" aria-label="Sua senha atual (confirmação)" required autocomplete="current-password">
           <button type="submit" class="secundario">Redefinir senha</button>
         </form>
       </td>

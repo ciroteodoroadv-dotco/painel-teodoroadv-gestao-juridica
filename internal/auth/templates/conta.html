@@ -1,5 +1,6 @@
 {{define "content"}}
 {{if .Notice}}<p class="ok" role="status">{{.Notice}}</p>{{end}}
+{{if .Error}}<p class="erro" role="alert">{{.Error}}</p>{{end}}
 <p id="wa-msg" class="erro" role="status" aria-live="polite"></p>
 
 <section aria-labelledby="c-senha">
@@ -19,6 +20,7 @@
       <form method="post" action="/conta/chave/remover">
         <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
         <input type="hidden" name="id" value="{{.IDHex}}">
+        <input name="senha_atual" type="password" placeholder="sua senha atual" aria-label="Sua senha atual" required autocomplete="current-password">
         <button type="submit" class="secundario">Remover</button>
       </form>
     </li>
@@ -28,6 +30,8 @@
   {{if .HasKey}}
   <label for="wa-nome">Nome da nova chave</label>
   <input id="wa-nome" maxlength="60" placeholder="Ex.: Chave azul do escritório">
+  <label for="wa-senha">Sua senha atual</label>
+  <input id="wa-senha" type="password" required autocomplete="current-password">
   <button type="button" data-wa="registrar">Cadastrar nova chave</button>
   {{end}}
 </section>
@@ -37,6 +41,7 @@
   <p class="apoio">Gerar novos códigos invalida os anteriores.</p>
   <form method="post" action="/conta/recuperacao">
     <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+    <input name="senha_atual" type="password" placeholder="sua senha atual" aria-label="Sua senha atual" required autocomplete="current-password">
     <button type="submit" class="secundario">Gerar novos códigos</button>
   </form>
 </section>

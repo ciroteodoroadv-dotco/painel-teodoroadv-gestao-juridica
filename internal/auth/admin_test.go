@@ -27,8 +27,15 @@ func TestGestaoDeUsuariosESenhaProvisoria(t *testing.T) {
 		"papel": {"assistente"}, "senha": {"curta"}}); r.StatusCode != 400 {
 		t.Fatalf("senha curta = %d, esperado 400", r.StatusCode)
 	}
+	// Sem a senha do administrador (ou com a errada), não cria (auditoria 05/11, item 2.2).
+	for _, atual := range []string{"", "senha-errada-do-admin"} {
+		if r, _ := adm.do("POST", "/admin/usuarios", url.Values{"csrf_token": {tok}, "email": {"novo@exemplo.test"},
+			"papel": {"assistente"}, "senha": {"provisoria-do-escritorio-1"}, "senha_atual": {atual}}); r.StatusCode != 401 {
+			t.Fatalf("criar usuário sem confirmar a senha (%q) = %d, esperado 401", atual, r.StatusCode)
+		}
+	}
 	if r, _ := adm.do("POST", "/admin/usuarios", url.Values{"csrf_token": {tok}, "email": {"novo@exemplo.test"},
-		"papel": {"assistente"}, "senha": {"provisoria-do-escritorio-1"}}); r.StatusCode != 303 {
+		"papel": {"assistente"}, "senha": {"provisoria-do-escritorio-1"}, "senha_atual": {senhaBoa}}); r.StatusCode != 303 {
 		t.Fatalf("criar usuário = %d", r.StatusCode)
 	}
 
@@ -59,7 +66,7 @@ func TestGestaoDeUsuariosESenhaProvisoria(t *testing.T) {
 	ctx := context.Background()
 	_ = e.pool.QueryRow(ctx, "SELECT id FROM users WHERE email='novo@exemplo.test'").Scan(&novoID)
 	_ = e.pool.QueryRow(ctx, "SELECT id FROM users WHERE email='adm@exemplo.test'").Scan(&admID)
-	if r, _ := adm.do("POST", "/admin/usuarios/"+novoID+"/papel", url.Values{"csrf_token": {tok}, "papel": {"advogado"}}); r.StatusCode != 303 {
+	if r, _ := adm.do("POST", "/admin/usuarios/"+novoID+"/papel", url.Values{"csrf_token": {tok}, "papel": {"advogado"}, "senha_atual": {senhaBoa}}); r.StatusCode != 303 {
 		t.Fatalf("mudar papel = %d", r.StatusCode)
 	}
 	if r, _ := novo.do("GET", "/", nil); r.StatusCode != 303 {
@@ -89,7 +96,10 @@ func TestCodigosDeRecuperacaoNovos(t *testing.T) {
 	e := newEnv(t)
 	e.user("rec@exemplo.test", Advogado, senhaBoa)
 	b := e.fullLogin("rec@exemplo.test", senhaBoa)
-	_, body := b.do("POST", "/conta/recuperacao", url.Values{"csrf_token": {b.csrfFrom("/conta")}})
+	if r, _ := b.do("POST", "/conta/recuperacao", url.Values{"csrf_token": {b.csrfFrom("/conta")}}); r.StatusCode != 401 {
+		t.Fatalf("regerar códigos sem a senha atual = %d, esperado 401", r.StatusCode)
+	}
+	_, body := b.do("POST", "/conta/recuperacao", url.Values{"csrf_token": {b.csrfFrom("/conta")}, "senha_atual": {senhaBoa}})
 	if n := len(reCodes.FindAllString(body, -1)); n != 8 {
 		t.Fatalf("novos códigos = %d, esperado 8", n)
 	}
@@ -104,7 +114,10 @@ func TestAdminRedefineSegundoFator(t *testing.T) {
 	var id string
 	_ = e.pool.QueryRow(context.Background(), "SELECT id FROM users WHERE email='perdeu@exemplo.test'").Scan(&id)
 
-	if r, _ := adm.do("POST", "/admin/usuarios/"+id+"/mfa/redefinir", url.Values{"csrf_token": {adm.csrfFrom("/admin/usuarios")}}); r.StatusCode != 303 {
+	if r, _ := adm.do("POST", "/admin/usuarios/"+id+"/mfa/redefinir", url.Values{"csrf_token": {adm.csrfFrom("/admin/usuarios")}}); r.StatusCode != 401 {
+		t.Fatalf("redefinir 2º fator sem a senha do administrador = %d, esperado 401", r.StatusCode)
+	}
+	if r, _ := adm.do("POST", "/admin/usuarios/"+id+"/mfa/redefinir", url.Values{"csrf_token": {adm.csrfFrom("/admin/usuarios")}, "senha_atual": {senhaBoa}}); r.StatusCode != 303 {
 		t.Fatalf("redefinir 2º fator = %d", r.StatusCode)
 	}
 	if r, _ := vitima.do("GET", "/", nil); r.StatusCode != 303 {

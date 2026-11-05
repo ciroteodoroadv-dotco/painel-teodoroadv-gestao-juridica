@@ -21,14 +21,32 @@ func (a *Auth) RegisterAccount(rt *Router) {
 }
 
 func (a *Auth) contaGet(w http.ResponseWriter, r *http.Request, s *Session) {
+	a.contaPage(w, r, s, http.StatusOK, avisos[r.URL.Query().Get("aviso")], "")
+}
+
+func (a *Auth) contaPage(w http.ResponseWriter, r *http.Request, s *Session, status int, notice, errMsg string) {
 	u, err := a.Store.UserByID(r.Context(), s.UserID)
 	keys, err2 := a.Store.Keys(r.Context(), s.UserID)
 	if err != nil || err2 != nil {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return
 	}
-	a.render(w, r, http.StatusOK, "conta.html", PageData{Title: "Minha conta", Email: s.Email, Role: string(s.Role),
-		HasTOTP: u.TOTPConfirmed, HasKey: a.WA != nil, Keys: keys, Notice: avisos[r.URL.Query().Get("aviso")]})
+	a.render(w, r, status, "conta.html", PageData{Title: "Minha conta", Email: s.Email, Role: string(s.Role),
+		HasTOTP: u.TOTPConfirmed, HasKey: a.WA != nil, Keys: keys, Notice: notice, Error: errMsg})
+}
+
+// senhaDaConta confere a senha atual antes de mexer nos fatores da própria conta (auditoria 05/11, item 2.2).
+func (a *Auth) senhaDaConta(w http.ResponseWriter, r *http.Request, s *Session) bool {
+	msg, err := a.confirmaSenha(r.Context(), s, r.PostFormValue("senha_atual"))
+	switch {
+	case err != nil:
+		http.Error(w, "Erro interno.", http.StatusInternalServerError)
+		return false
+	case msg != "":
+		a.contaPage(w, r, s, http.StatusUnauthorized, "", msg)
+		return false
+	}
+	return true
 }
 
 func (a *Auth) senhaGet(w http.ResponseWriter, r *http.Request, s *Session) {
@@ -114,6 +132,9 @@ func (a *Auth) chaveRemover(w http.ResponseWriter, r *http.Request, s *Session) 
 		http.Error(w, "Não é possível remover o único segundo fator.", http.StatusConflict)
 		return
 	}
+	if !a.senhaDaConta(w, r, s) {
+		return
+	}
 	tx, err := a.Pool.Begin(ctx)
 	if err != nil {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
@@ -137,6 +158,9 @@ func (a *Auth) chaveRemover(w http.ResponseWriter, r *http.Request, s *Session) 
 
 func (a *Auth) recuperacaoNova(w http.ResponseWriter, r *http.Request, s *Session) {
 	ctx := r.Context()
+	if !a.senhaDaConta(w, r, s) {
+		return
+	}
 	tx, err := a.Pool.Begin(ctx)
 	if err != nil {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
