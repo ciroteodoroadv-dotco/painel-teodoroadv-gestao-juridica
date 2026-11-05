@@ -109,17 +109,16 @@ type VinculoLookup interface {
 	Clientes(ctx context.Context, tipo string, ids []string) (map[string][]Ref, error)
 }
 
-// PrazoSync espelha o prazo fatal da tarefa no domínio Prazos (o adaptador mora em internal/app).
+// PrazoSync espelha o prazo fatal da tarefa no domínio Prazos (o adaptador mora em internal/app). As escritas acontecem
+// DENTRO da transação da tarefa: ou tarefa e prazo são gravados juntos, ou nenhum dos dois (auditoria 05/11, item 1.3).
+// Nenhuma escrita daqui confirma prazo: o prazo da tarefa nasce e permanece "a conferir" até o ato explícito Confirmar.
 type PrazoSync interface {
-	// Sincronizar cria ou atualiza o prazo da tarefa. confirmar=true (ator com permissão de advogado) grava como
-	// confirmado; senão fica "a conferir". Devolve a situação resultante.
-	Sincronizar(ctx context.Context, ac webx.Actor, tarefaID, processoID, descricao string, data *time.Time, confirmar bool) (situacao string, err error)
-	// SincronizarTx faz o mesmo dentro da transação do chamador (tarefas automáticas, ainda não commitadas).
-	SincronizarTx(ctx context.Context, tx pgx.Tx, ac webx.Actor, tarefaID, processoID, descricao string, data *time.Time, confirmar bool) (situacao string, err error)
+	// SincronizarTx cria ou atualiza o prazo da tarefa. Devolve a situação resultante.
+	SincronizarTx(ctx context.Context, tx pgx.Tx, ac webx.Actor, tarefaID, processoID, descricao string, data *time.Time) (situacao string, err error)
+	// EncerrarTx fecha o prazo da tarefa: motivo "cumprida", "cancelada" ou "excluida".
+	EncerrarTx(ctx context.Context, tx pgx.Tx, ac webx.Actor, tarefaID, motivo string) error
 	// Situacoes devolve tarefa → situação do prazo (só as que têm prazo).
 	Situacoes(ctx context.Context, tarefaIDs []string) (map[string]string, error)
-	// Encerrar fecha o prazo da tarefa: motivo "cumprida", "cancelada" ou "excluida".
-	Encerrar(ctx context.Context, ac webx.Actor, tarefaID, motivo string) error
 	// Confirmar usa o fluxo de confirmação do domínio Prazos (só advogado; a rota exige a permissão).
 	Confirmar(ctx context.Context, ac webx.Actor, tarefaID string) error
 }

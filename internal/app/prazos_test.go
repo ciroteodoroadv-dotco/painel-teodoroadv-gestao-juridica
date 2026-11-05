@@ -41,7 +41,8 @@ func TestPrazosRegraDeOuro(t *testing.T) {
 	ass, _ := e.user("ass@exemplo.test", auth.Assistente)
 	ctx := context.Background()
 
-	// Advogado registra: já nasce CONFIRMADO, com quem e quando. Assistente registra: nasce A CONFERIR.
+	// Todo prazo nasce A CONFERIR, inclusive o digitado pelo advogado (ADR 0012, item 3; auditoria 05/11, item 1.2).
+	// O advogado confirma pelo ato explícito, que grava quem e quando.
 	if r, _ := adv.post("/prazos", prazoForm("Contestação do advogado", 4)); r.StatusCode != 303 {
 		t.Fatalf("advogado criando prazo = %d", r.StatusCode)
 	}
@@ -50,10 +51,16 @@ func TestPrazosRegraDeOuro(t *testing.T) {
 	}
 	idAdv, _ := prazoID(t, e, "Contestação do advogado")
 	idAss, vAss := prazoID(t, e, "Recurso digitado pela assistente")
+	if situacao(t, e, idAdv) != "a_conferir" {
+		t.Fatalf("prazo do advogado deveria nascer a conferir: %s", situacao(t, e, idAdv))
+	}
+	if r, _ := adv.post("/prazos/"+idAdv+"/confirmar", url.Values{"version": {"1"}}); r.StatusCode != 303 {
+		t.Fatalf("advogado confirmando o próprio prazo = %d", r.StatusCode)
+	}
 	var por string
 	_ = e.pool.QueryRow(ctx, `SELECT coalesce(confirmado_por::text,'') FROM prazos WHERE id=$1`, idAdv).Scan(&por)
 	if situacao(t, e, idAdv) != "confirmado" || por != advID {
-		t.Fatalf("prazo do advogado deveria nascer confirmado por ele: %s / %s", situacao(t, e, idAdv), por)
+		t.Fatalf("depois do ato explícito, confirmado por ele: %s / %s", situacao(t, e, idAdv), por)
 	}
 	if situacao(t, e, idAss) != "a_conferir" {
 		t.Fatalf("prazo da assistente deveria nascer a conferir: %s", situacao(t, e, idAss))
@@ -99,9 +106,9 @@ func TestPrazosRegraDeOuro(t *testing.T) {
 		t.Error("prazo cumprido não pode ser editado")
 	}
 
-	// Edição por quem não confirma DERRUBA a confirmação; edição por advogado mantém.
+	// Mudar a data DERRUBA a confirmação, seja quem for que edite; nada confirma por efeito colateral.
 	f := prazoForm("Contestação do advogado", 7)
-	f.Set("version", "1")
+	f.Set("version", "2")
 	if r, _ := ass.post("/prazos/"+idAdv, f); r.StatusCode != 303 {
 		t.Fatalf("assistente editando = %d", r.StatusCode)
 	}
@@ -113,9 +120,12 @@ func TestPrazosRegraDeOuro(t *testing.T) {
 		t.Fatal("a confirmação anterior deveria ter sido apagada")
 	}
 	f2 := prazoForm("Contestação do advogado", 8)
-	f2.Set("version", "2")
+	f2.Set("version", "3")
 	adv.post("/prazos/"+idAdv, f2)
-	adv.post("/prazos/"+idAdv+"/confirmar", url.Values{"version": {"3"}})
+	if situacao(t, e, idAdv) != "a_conferir" {
+		t.Fatal("editar (mesmo como advogado) não pode confirmar")
+	}
+	adv.post("/prazos/"+idAdv+"/confirmar", url.Values{"version": {"4"}})
 	if situacao(t, e, idAdv) != "confirmado" {
 		t.Fatal("advogado deveria conseguir reconfirmar")
 	}

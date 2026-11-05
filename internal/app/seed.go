@@ -130,7 +130,10 @@ func SeedDemo(ctx context.Context, pool *pgxpool.Pool, fieldKey []byte, store *a
 	partes := []tarefas.ParteIn{{PessoaID: ids["maria"], Papel: "Autor"}, {PessoaID: ids["banco"], Papel: "Réu"}}
 	t1, _, err := tar.Create(ctx, ac, tarefas.Input{OrigemTipo: "processo", OrigemID: p1, Titulo: "Protocolar embargos à execução (exemplo)",
 		Estado: "pendente", Prioridade: "Urgente", CriadoPorID: ids["joao"], DataBase: "2026-11-03", Prazo: "2026-11-10", PrazoFatal: "2026-11-12",
-		Partes: partes, Responsaveis: []string{ids["joao"]}, Descricao: "Conferir os cálculos antes do protocolo."}, true)
+		Partes: partes, Responsaveis: []string{ids["joao"]}, Descricao: "Conferir os cálculos antes do protocolo."})
+	if err == nil { // demonstração: o advogado confirma o prazo pelo ato explícito (ADR 0012)
+		err = tar.ConfirmarPrazo(ctx, ac, t1)
+	}
 	if err != nil {
 		return err
 	}
@@ -149,7 +152,11 @@ func SeedDemo(ctx context.Context, pool *pgxpool.Pool, fieldKey []byte, store *a
 		{tarefas.Input{OrigemTipo: "processo", OrigemID: p1, TarefaPai: t1, Titulo: "Juntar procuração (exemplo)", Estado: "pendente",
 			Prioridade: "Normal", PrazoFatal: "2026-11-11", Partes: partes, Responsaveis: []string{ids["joao"]}}, true},
 	} {
-		if _, _, err := tar.Create(ctx, ac, t.in, t.confirmar); err != nil {
+		id, _, err := tar.Create(ctx, ac, t.in)
+		if err == nil && t.confirmar && t.in.PrazoFatal != "" && t.in.Estado != "concluidas-com-sucesso" {
+			err = tar.ConfirmarPrazo(ctx, ac, id) // demonstração: confirmação pelo ato explícito
+		}
+		if err != nil {
 			return err
 		}
 	}

@@ -150,7 +150,7 @@ func (h *Handler) newForm(w http.ResponseWriter, r *http.Request, s *auth.Sessio
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request, s *auth.Session) {
 	in := inputFrom(r)
-	_, err := h.S.Create(r.Context(), webx.ActorOf(w, s.UserID), in, auth.Can(s.Role, auth.PermPrazoConfirm))
+	_, err := h.S.Create(r.Context(), webx.ActorOf(w, s.UserID), in)
 	var inv webx.Invalid
 	switch {
 	case errors.As(err, &inv):
@@ -183,7 +183,7 @@ func errOr(err, def error) error {
 func (h *Handler) update(w http.ResponseWriter, r *http.Request, s *auth.Session) {
 	id, in := r.PathValue("id"), inputFrom(r)
 	v := webx.Int(r.PostFormValue("version"))
-	err := h.S.Update(r.Context(), webx.ActorOf(w, s.UserID), id, v, in, auth.Can(s.Role, auth.PermPrazoConfirm))
+	err := h.S.Update(r.Context(), webx.ActorOf(w, s.UserID), id, v, in)
 	var inv webx.Invalid
 	switch {
 	case errors.As(err, &inv):

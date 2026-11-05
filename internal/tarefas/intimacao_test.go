@@ -187,7 +187,7 @@ func TestAnaliseNasceComPrazoInternoAConferir(t *testing.T) {
 	if tt.PrazoFatal == nil || !tt.PrazoFatal.Equal(prazoInterno) || !tt.PrazoInterno || tt.Estado != "a-confirmar" {
 		t.Fatalf("prazo interno: %+v", tt)
 	}
-	if len(a.prazos.calls) != 1 || a.prazos.calls[0].op != "sincronizar-tx" || a.prazos.calls[0].confirmar {
+	if len(a.prazos.calls) != 1 || a.prazos.calls[0].op != "sincronizar" || a.prazos.calls[0].confirmar {
 		t.Errorf("deveria sincronizar pelo caminho do prazo fatal, como 'a conferir': %+v", a.prazos.calls)
 	}
 	// Sair de "A confirmar" (só advogado) encerra o prazo interno.

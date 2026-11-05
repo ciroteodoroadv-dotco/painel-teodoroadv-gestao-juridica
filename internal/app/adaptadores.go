@@ -21,17 +21,17 @@ import (
 
 type prazoSync struct{ p *prazos.Service }
 
-func (a prazoSync) Sincronizar(ctx context.Context, ac webx.Actor, tarefaID, processoID, descricao string, data *time.Time, confirmar bool) (string, error) {
-	return a.p.SincronizarDaTarefa(ctx, ac, tarefaID, processoID, descricao, data, confirmar)
-}
 func (a prazoSync) Situacoes(ctx context.Context, ids []string) (map[string]string, error) {
 	return a.p.SituacoesDeTarefas(ctx, ids)
 }
-func (a prazoSync) Encerrar(ctx context.Context, ac webx.Actor, tarefaID, motivo string) error {
-	return a.p.EncerrarDaTarefa(ctx, ac, tarefaID, motivo)
-}
 func (a prazoSync) Confirmar(ctx context.Context, ac webx.Actor, tarefaID string) error {
 	return a.p.ConfirmarDaTarefa(ctx, ac, tarefaID)
+}
+func (a prazoSync) SincronizarTx(ctx context.Context, tx pgx.Tx, ac webx.Actor, tarefaID, processoID, descricao string, data *time.Time) (string, error) {
+	return a.p.SincronizarNaTx(ctx, tx, ac, tarefaID, processoID, descricao, data)
+}
+func (a prazoSync) EncerrarTx(ctx context.Context, tx pgx.Tx, ac webx.Actor, tarefaID, motivo string) error {
+	return a.p.EncerrarNaTx(ctx, tx, ac, tarefaID, motivo)
 }
 
 type vinculos struct {
@@ -76,8 +76,4 @@ type reauth struct{ a *auth.Auth }
 
 func (r reauth) Confirmar(ctx context.Context, ac webx.Actor, senha string) error {
 	return r.a.Reautenticar(ctx, ac.UserID, senha)
-}
-
-func (a prazoSync) SincronizarTx(ctx context.Context, tx pgx.Tx, ac webx.Actor, tarefaID, processoID, descricao string, data *time.Time, confirmar bool) (string, error) {
-	return a.p.SincronizarNaTx(ctx, tx, ac, tarefaID, processoID, descricao, data, confirmar)
 }
