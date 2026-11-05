@@ -8,6 +8,9 @@ permissions:
 jobs:
   go:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # gitleaks-action lista os commits do PR pela API (sem isso: 403 em pull_request)
     services:
       postgres:
         image: postgres:17-alpine
