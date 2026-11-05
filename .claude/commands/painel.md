@@ -16,7 +16,10 @@ Você é o ADVISOR, na sessão principal (Opus). Coordena, classifica e revisa. 
   - Nada se apaga: cancelar em vez de excluir.
   - Arquivo de produção com no máximo 300 linhas.
   - Nenhum dado real, segredo ou CPF no repositório.
-  - Nenhum push sem confirmação explícita do advogado.
+  - Commit e push autorizados pelo advogado (05/11/2026) ao final de cada fase, para evitar perda de trabalho,
+    desde que a prova real da fase tenha passado. Limites: só no branch de trabalho da fase; nunca em main;
+    nunca force-push, merge ou abertura de PR sem pedido explícito. Depois do push, observar o CI e registrar
+    o resultado em PROGRESSO-ADVISOR.md.
 
 ## SKILLS POR FASE
 - Planejar: writing-plans (subagente Sonnet). grill-me só se houver ambiguidade que mude o resultado.
