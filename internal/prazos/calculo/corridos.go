@@ -105,7 +105,7 @@ func (c *contador) corridoDe(regra Regra, ancora time.Time, dias int, registra b
 		d := ancora.AddDate(0, 0, dias)
 		for {
 			x, f := c.feriado(d, true)
-			if !f && !(v.domingo && d.Weekday() == time.Sunday) && !(v.sabado && d.Weekday() == time.Saturday) {
+			if !f && (!v.domingo || d.Weekday() != time.Sunday) && (!v.sabado || d.Weekday() != time.Saturday) {
 				break
 			}
 			if f && registra && i == 0 {

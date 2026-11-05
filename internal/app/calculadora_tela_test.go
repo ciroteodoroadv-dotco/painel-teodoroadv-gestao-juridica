@@ -110,7 +110,7 @@ func TestCalculadoraResultado(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode == 200 {
 		t.Error("sem sessão não pode calcular")
 	}

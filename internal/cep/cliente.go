@@ -123,7 +123,7 @@ func (c *Cliente) Buscar(ctx context.Context, cep string) (Endereco, error) {
 	if err != nil {
 		return Endereco{}, ErrIndisponivel
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return Endereco{}, ErrIndisponivel
 	}

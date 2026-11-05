@@ -1,6 +1,6 @@
 # Progresso do advisor (/painel)
 
-Atualizado em 04/11/2026. Branch: `feat/fase-1-saneamento` (base: `origin/feat/advisor-command`).
+Atualizado em 05/11/2026. Branch: `feat/fase-1-saneamento` (base: `origin/feat/advisor-command`).
 
 ## Feito
 - Etapa 0 (saneamento):
@@ -14,14 +14,31 @@ Atualizado em 04/11/2026. Branch: `feat/fase-1-saneamento` (base: `origin/feat/a
   - Job `migracoes` com o ciclo up→down→up (`internal/platform/migrate/ciclo_test.go`).
   - Lint com golangci-lint v2.5.0 no job `go`.
 
+- Lint (05/11/2026): CI run 35 (`fe1e205`) falhou no job `go`, passo golangci-lint, com 6 ocorrências.
+  Causa de o lint falhar em lotes: o golangci-lint corta a saída por padrão (`max-same-issues`),
+  então o CI não mostrava todas. Rodando localmente com `--max-issues-per-linter=0 --max-same-issues=0`
+  apareceram mais 5. As 11 foram corrigidas sem mudar comportamento:
+  - `internal/app/calculadora_tela_test.go:113`: `_ = resp.Body.Close()`
+  - `internal/app/documentos_test.go:62`, `internal/app/harness_test.go:135`, `internal/app/helpers_test.go:60`,
+    `internal/app/tarefas_test.go:54`, `internal/cep/cliente.go:126`: `defer func() { _ = resp.Body.Close() }()`
+  - `internal/intimacoes/djen/cliente.go:61`, `internal/monitor/datajud/cliente.go:66`: `!(a && b)` → `(!a || !b)`
+  - `internal/platform/config/config.go:105`: `!(dev && http)` → `(!dev || u.Scheme != "http")`
+  - `internal/prazos/calculo/corridos.go:108`: dois `!(a && b)` → `(!a || !b)`
+  - `internal/processos/duplicado.go:60`: `!(a && b && c)` → `!a || !b || just != atualJust`
+- Prova local (go1.26.10, golangci-lint v2.5.0 compilado com go1.26.10, Postgres 16):
+  gofmt limpo; `go vet ./...` limpo; golangci-lint sem limite de saída: 0 issues;
+  `go test -count=1 -p 1 ./...` com `PAINEL_TEST_DB`: tudo ok (`internal/app`: 108 pass, 2 skip manuais, 0 fail).
+
 ## Não verificado
-- Testes Go e lint não rodaram neste ambiente: o toolchain pede go1.26.10 e os módulos não baixam (sem acesso ao proxy).
-  Evidência de testes = CI após push.
+- `go test -race` não rodou localmente; CI usa Postgres 17, local foi 16. Evidência final = CI após push.
+- Lint local exige `GOTOOLCHAIN=go1.26.10`: o Go do container é 1.24.7 e o binário pré-instalado
+  do golangci-lint foi compilado com go1.25, que recusa o módulo.
 - SBOM e trivy: pendentes. As actions precisam de SHA fixado, e não consegui consultar.
 - `scripts/analise-estatica.sh`: não executado (mesma causa dos testes Go).
 
 ## Ponto de parada
-Commits locais prontos. Nada foi enviado ao remoto. Próximo passo: autorização do advogado para push, depois observar o CI do branch.
+Correções de lint feitas localmente, sem commit e sem push. Próximo passo: autorização do advogado para commit e push,
+depois observar o CI do branch.
 
 ## Último commit verificado
-Nenhum commit verificado por CI ainda.
+`fe1e205` (CI run 35): falhou no lint do job `go` (1 de 4 jobs com falha).

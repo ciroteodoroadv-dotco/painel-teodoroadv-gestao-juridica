@@ -102,7 +102,7 @@ func Load(e Env) (Config, error) {
 	if public == "" && dev {
 		public = "http://localhost:8080"
 	}
-	if u, err := url.Parse(public); err != nil || u.Hostname() == "" || (u.Scheme != "https" && !(dev && u.Scheme == "http")) {
+	if u, err := url.Parse(public); err != nil || u.Hostname() == "" || (u.Scheme != "https" && (!dev || u.Scheme != "http")) {
 		errs = append(errs, errors.New("PAINEL_PUBLIC_URL inválida: use https://seu-dominio (http só em dev, com localhost)"))
 	}
 
