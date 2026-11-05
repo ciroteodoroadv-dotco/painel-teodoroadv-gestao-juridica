@@ -108,3 +108,33 @@ func TestMetaDoProcessoNaAuditoria(t *testing.T) {
 		t.Fatalf("meta partes = %q, esperado 1", meta)
 	}
 }
+
+// Item 1.4: com mais processos que o limite da tela, a lista avisa, a busca vai ao banco, o seletor de vínculo oferece
+// todos e o rótulo do vínculo de uma tarefa de processo antigo continua aparecendo.
+func TestListaDeProcessosCortadaAvisaEBusca(t *testing.T) {
+	c := novoCenario(t)
+	var codigo string
+	_ = c.e.pool.QueryRow(context.Background(), `SELECT codigo FROM processos WHERE id=$1`, c.pro).Scan(&codigo)
+	idTarefa := c.adv.criarTarefa(t, tarefaForm("processo", c.pro, "Tarefa do processo antigo"))
+	_, err := c.e.pool.Exec(context.Background(), `INSERT INTO processos
+		SELECT (jsonb_populate_record(NULL::processos, to_jsonb(p) || jsonb_build_object('id', gen_random_uuid(),
+			'codigo', 'PRO. T' || lpad(g::text, 6, '0'), 'numero_cnj', '', 'titulo', 'Cópia ' || g,
+			'created_at', p.created_at + make_interval(secs => g)))).*
+		FROM processos p, generate_series(1, 2001) g WHERE p.id = $1`, c.pro)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, lista := c.adv.get("/processos")
+	if !strings.Contains(lista, "Lista limitada") || strings.Contains(lista, ">"+codigo+"<") {
+		t.Fatalf("a lista deveria avisar o corte e não trazer o processo mais antigo (%s)", codigo)
+	}
+	if _, achado := c.adv.get("/processos?busca=" + url.QueryEscape(codigo)); !strings.Contains(achado, ">"+codigo+"<") {
+		t.Fatalf("a busca no banco deveria achar %s", codigo)
+	}
+	if novo := c.adv.frag("/tarefas/nova"); !strings.Contains(novo, `value="`+c.pro+`"`) {
+		t.Fatal("o seletor de vínculo deveria oferecer o processo antigo")
+	}
+	if _, tar := c.adv.get("/tarefas"); !strings.Contains(tar, codigo) {
+		t.Fatalf("a tarefa %s deveria mostrar o vínculo %s", idTarefa, codigo)
+	}
+}

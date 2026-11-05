@@ -1,10 +1,11 @@
 {{define "stats"}}{{with .Data}}{{if .Total}}<div class="acc-heads">{{range .Grupos}}
     <button class="acc-head" data-acc="pessoas:{{.Chave}}"><span>{{.Rotulo}}</span><span class="count">{{.Quantidade}}</span></button>{{end}}</div>{{end}}{{end}}{{end}}
 
-{{define "content"}}{{with .Data}}<div class="toolbar">
+{{define "content"}}{{with .Data}}<form class="toolbar" method="get" action="/pessoas" role="search">
     <label class="sr-only" for="buscaPessoas">Buscar pessoas</label>
-    <input id="buscaPessoas" class="search" autocomplete="off" placeholder="Buscar por nome…" data-filtro=".acc table">
-  </div>
+    <input id="buscaPessoas" name="busca" value="{{.Busca}}" class="search" autocomplete="off" placeholder="Buscar por nome…" title="Digitar filtra a lista; Enter busca em todo o cadastro (nome ou CPF/CNPJ)" data-filtro=".acc table">
+  </form>
+{{if .Cortado}}<div class="notice" role="status"><strong>Lista limitada:</strong> {{if .Busca}}a busca "{{.Busca}}" trouxe mais de {{.Total}} pessoas; refine o termo.{{else}}mostrando as {{.Total}} primeiras de {{.Ativos}} pessoas cadastradas (ordem alfabética). Para achar quem não aparece, digite o nome ou o CPF/CNPJ e tecle Enter.{{end}}</div>{{end}}
 {{if not .Total}}<div class="empty"><h3>Nenhuma pessoa cadastrada</h3><p>Crie a primeira pessoa pelo botão "Nova pessoa" acima.</p></div>
 {{else}}{{$w := .CanWrite}}<div class="acc">{{range .Grupos}}
     <div class="acc-item" data-acc="pessoas:{{.Chave}}">

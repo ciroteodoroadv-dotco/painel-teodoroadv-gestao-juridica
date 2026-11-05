@@ -34,7 +34,7 @@ func (s *Service) Rotulo(ctx context.Context, id string) (string, bool, error) {
 
 // OpcoesCompromisso monta o seletor "Processo vinculado" do Novo compromisso: "PRO. 0000001 · número · título" (B).
 func (s *Service) OpcoesCompromisso(ctx context.Context) ([]Opcao, error) {
-	ps, err := s.Listar(ctx)
+	ps, err := s.ListarTodos(ctx)
 	if err != nil {
 		return nil, err
 	}

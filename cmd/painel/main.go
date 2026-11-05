@@ -77,6 +77,7 @@ func serve() error {
 	if a.WA, err = newWebAuthn(cfg.PublicURL); err != nil {
 		return fmt.Errorf("chave de segurança (WebAuthn): %w", err)
 	}
+	a.IniciarExpurgoDeSessoes(ctx) // sessões vencidas não acumulam (auditoria 05/11, item 4.4)
 	a.Register(rt)
 	a.RegisterWebAuthn(rt)
 	a.RegisterAccount(rt)

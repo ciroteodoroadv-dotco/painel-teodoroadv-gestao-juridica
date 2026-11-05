@@ -2,6 +2,7 @@ package tarefas
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -116,6 +117,9 @@ func (s *Service) Update(ctx context.Context, ac webx.Actor, id string, version 
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+	if err = travarEstado(ctx, tx, atual); err != nil {
+		return err
+	}
 	tag, err := tx.Exec(ctx, `UPDATE tarefas SET titulo=$3, subtitulo=$4, estado=$5, criado_por_pessoa_id=$6, descricao=$7, observacoes=$8,
 		data_base=$9, prazo=$10, prazo_fatal=$11, prioridade=$12, updated_at=now(), updated_by=$13, version=version+1
 		WHERE id=$1 AND version=$2 AND excluido_em IS NULL`,
@@ -175,6 +179,9 @@ func (s *Service) Mover(ctx context.Context, ac webx.Actor, id string, version i
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+	if err = travarEstado(ctx, tx, atual); err != nil {
+		return err
+	}
 	tag, err := tx.Exec(ctx, `UPDATE tarefas SET estado=$3, updated_at=now(), updated_by=$4, version=version+1
 		WHERE id=$1 AND version=$2 AND excluido_em IS NULL`, id, version, novoEstado, ac.UserID)
 	if err != nil {
@@ -196,6 +203,22 @@ func (s *Service) Mover(ctx context.Context, ac webx.Actor, id string, version i
 		err = tx.Commit(ctx)
 	}
 	return err
+}
+
+// travarEstado trava a linha da tarefa na transação e confere que o estado ainda é o lido antes: a regra "só advogado
+// tira de A confirmar" foi decidida sobre esse estado (auditoria 05/11, item 1.6). Mudou no meio = conflito.
+func travarEstado(ctx context.Context, tx pgx.Tx, atual *Tarefa) error {
+	var estado string
+	err := tx.QueryRow(ctx, `SELECT estado FROM tarefas WHERE id=$1 AND excluido_em IS NULL FOR UPDATE`, atual.ID).Scan(&estado)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return webx.ErrNotFound
+	case err != nil:
+		return err
+	case estado != atual.Estado:
+		return webx.ErrConflict
+	}
+	return nil
 }
 
 // whyNoRows distingue tarefa inexistente de versão velha.

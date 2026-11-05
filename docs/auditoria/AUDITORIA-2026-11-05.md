@@ -29,13 +29,13 @@ leitura inequívoca), **FI** fortemente indicado, **H** hipótese.
 | 2.2 | Ações de tomada de conta sem reautenticação | P2 | C | **Fase 5** (feito) |
 | 2.3 | Separação de funções do administrador é nominal | P3 | FI | **Fase 5** (feito) |
 | 2.8 | Limitador por IP único para login e 2FA | P3 | H | **Fase 5** (feito) |
-| 1.4 | Listas de pessoas/processos cortadas em 2.000 sem aviso; seletor de vínculo herda o corte | P2 | FI | Fase 6 |
-| 4.2 | Tela de auditoria recalcula a cadeia inteira a cada acesso | P3 | C | Fase 6 |
-| 4.4 | Sessões expiradas nunca apagadas | P3 | C | Fase 6 |
-| 4.5 | Listas de tarefas/agenda/audiências/intimações sem limite | P3 | C | Fase 6 |
-| 1.6 | Regra "A confirmar" checada sobre leitura anterior à transação | P3 | H | Fase 6 |
-| 4.3 | Envio ocupa ~3× o tamanho em memória, sem limite de simultâneos | P3 | H | Fase 1 (semáforo) |
-| 6.2 | README desatualizado | P3 | C | Fase 6 |
+| 1.4 | Listas de pessoas/processos cortadas em 2.000 sem aviso; seletor de vínculo herda o corte | P2 | FI | **Fase 6** (feito) |
+| 4.2 | Tela de auditoria recalcula a cadeia inteira a cada acesso | P3 | C | **Fase 6** (feito) |
+| 4.4 | Sessões expiradas nunca apagadas | P3 | C | **Fase 6** (feito) |
+| 4.5 | Listas de tarefas/agenda/audiências/intimações sem limite | P3 | C | mantido de propósito (ver Fase 6) |
+| 1.6 | Regra "A confirmar" checada sobre leitura anterior à transação | P3 | H | **Fase 6** (feito) |
+| 4.3 | Envio ocupa ~3× o tamanho em memória, sem limite de simultâneos | P3 | H | **Fase 1** (semáforo de 3 envios) |
+| 6.2 | README desatualizado | P3 | C | **Fase 6** (feito) |
 | 2.4 | Leitura sem escopo por equipe (F13) | P2 | C | marco próprio (decisão do escritório) |
 | 2.6 | Hash da auditoria sem chave nem âncora externa | P4 | C | marco próprio |
 | 2.7 | Segredo TOTP com a chave mestra, sem versão de chave | P4 | C | marco próprio |
@@ -98,3 +98,20 @@ mantém a situação; mudar a data volta a "A CONFERIR" e apaga quem/quando. Iss
   72 h. Aprovação por um advogado antes da alteração NÃO foi implementada (é decisão do escritório).
 - **2.8**: limite de login e 2FA por IP+conta (10/min) somado a um teto por IP (60/min); teste: uma conta no limite não
   trava a colega no mesmo IP.
+
+## Fase 6 (feita)
+
+- **1.4 — agravado e corrigido**: além do corte silencioso da tela, `ResumosVinculo` (rótulo do vínculo das tarefas)
+  e o adaptador da agenda resolviam ids pela lista CORTADA: tarefa de processo fora dos 2.000 mais novos ficava sem
+  o rótulo e o seletor de vínculo não oferecia o processo (provado no código antigo). Agora: `PorIDs` e
+  `ListarTodos`/`ListarTodas` (sem corte) para resolver ids e montar seletores; a tela avisa "Lista limitada" com o
+  total real e o Enter no campo de busca consulta o banco inteiro (processos: número, código, título; pessoas: nome ou
+  CPF/CNPJ pelo índice cego). Teste com 2.002 processos.
+- **4.4**: `ExpurgarSessoes` a cada hora (absoluto e ociosidade); teste.
+- **4.2**: a tela de auditoria confere de forma incremental a partir do último elo conferido, e desde o começo a cada
+  reinício e a cada 24 h; defeito zera o ponto. A conferência completa continua em `painel audit verify` e no teste
+  mensal de restauração. Teste de `VerifyFrom`.
+- **1.6**: `travarEstado` (`SELECT … FOR UPDATE`) na transação de `Update` e `Mover`; estado mudado no meio = 409.
+- **6.2**: README com o estado real.
+- **4.5 — não alterado, de propósito**: pôr limite nessas listas sem paginação repetiria o defeito 1.4 (dado
+  escondido). A agenda já filtra por data; as demais crescem com o uso. Paginação real fica para quando houver volume.

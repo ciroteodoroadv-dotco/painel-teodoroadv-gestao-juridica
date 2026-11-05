@@ -2,8 +2,13 @@
 
 Reescrita do painel do escritório para Linux/Oracle Cloud, privado, com LGPD por desenho.
 
-**Estado:** Fase 1 (fundação) implementada. Ainda sem login, cadastros nem dados.
-Como ligar: `docs/operacao/RUNBOOK.md`.
+**Estado (05/11/2026):** Planos 1 a 8 implementados — login com 2º fator (aplicativo ou chave física), papéis
+(administrador, advogado, assistente), auditoria encadeada, pessoas, processos, atendimentos, tarefas, agenda,
+audiências, diligências, documentos cifrados, prazos com calculadora e calendário forense, intimações (DJEN),
+monitor (DataJud), índices (BCB) e CEP. Integrações externas vêm **desligadas**. Ainda **sem uso com dado real**:
+ver `docs/plano-fusao/PENDENCIAS.md` (Oracle/Cloudflare não testados em máquina real, regras da calculadora a
+validar, inventário LGPD) e a auditoria técnica `docs/auditoria/AUDITORIA-2026-11-05.md`.
+Como ligar: `docs/operacao/RUNBOOK.md` (local) e `docs/operacao/RUNBOOK-ORACLE.md` (servidor).
 
 ## Onde ler
 

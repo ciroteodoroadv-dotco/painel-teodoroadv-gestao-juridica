@@ -150,7 +150,7 @@ func (v vinculos) Clientes(ctx context.Context, tipo string, ids []string) (map[
 		}
 		return out, err
 	}
-	ps, err := v.proc.Listar(ctx)
+	ps, err := v.proc.PorIDs(ctx, ids) // não a lista da tela, que é cortada (auditoria 05/11, item 1.4)
 	if err != nil {
 		return nil, err
 	}

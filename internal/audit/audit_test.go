@@ -92,3 +92,29 @@ func TestRecordExigeCampos(t *testing.T) {
 		t.Fatal("evento sem ator deveria ser recusado")
 	}
 }
+
+// Auditoria 05/11, item 4.2: a conferência incremental parte de um ponto, confere só o que veio depois e acusa
+// quebra quando o primeiro evento novo não encadeia no ponto.
+func TestVerifyFromIncremental(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	for i := 0; i < 3; i++ {
+		if err := RecordPool(ctx, pool, Event{Actor: "sistema", Action: "teste.incremental", Result: OK}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	n, ponto, err := VerifyFrom(ctx, pool, Ponto{})
+	if err != nil || n < 3 || ponto.Seq == 0 {
+		t.Fatalf("completa: n=%d ponto=%+v err=%v", n, ponto, err)
+	}
+	if err := RecordPool(ctx, pool, Event{Actor: "sistema", Action: "teste.incremental", Result: OK}); err != nil {
+		t.Fatal(err)
+	}
+	n2, ponto2, err := VerifyFrom(ctx, pool, ponto)
+	if err != nil || n2 != 1 || ponto2.Seq <= ponto.Seq {
+		t.Fatalf("incremental: n=%d ponto=%+v err=%v", n2, ponto2, err)
+	}
+	if _, _, err := VerifyFrom(ctx, pool, Ponto{Seq: ponto.Seq, Hash: make([]byte, 32)}); err == nil {
+		t.Fatal("ponto com hash errado deveria acusar encadeamento quebrado")
+	}
+}

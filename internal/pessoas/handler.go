@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"painelteodoro/internal/auth"
 	"painelteodoro/internal/platform/webx"
@@ -58,14 +59,26 @@ type listData struct {
 	Grupos   []Grupo
 	Total    int
 	CanWrite bool
+	Busca    string // busca feita no banco (?busca=)
+	Ativos   int    // total de pessoas cadastradas (aviso de tela cortada)
+	Cortado  bool
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) {
 	canWrite := auth.Can(s.Role, auth.PermPessoasWrite)
-	rows, err := h.S.Listar(r.Context(), webx.ActorOf(w, s.UserID), canWrite) // documento inteiro só a quem escreve
+	busca := strings.TrimSpace(r.URL.Query().Get("busca"))
+	rows, err := h.S.Listar(r.Context(), webx.ActorOf(w, s.UserID), canWrite, busca) // documento inteiro só a quem escreve
 	if err != nil {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return
+	}
+	d := listData{Total: len(rows), CanWrite: canWrite, Busca: busca}
+	if len(rows) >= LimiteLista { // tela cortada: avisa e oferece a busca no banco (auditoria 05/11, item 1.4)
+		if d.Ativos, err = h.S.ContarAtivas(r.Context()); err != nil {
+			http.Error(w, "Erro interno.", http.StatusInternalServerError)
+			return
+		}
+		d.Cortado = busca != "" || d.Ativos > len(rows)
 	}
 	ids := make([]string, len(rows))
 	for i, p := range rows {
@@ -81,7 +94,8 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, s *auth.Session) 
 	if canWrite {
 		pd.Head.ActionLabel, pd.Head.ActionHref, pd.Head.ActionDrawer = "Nova pessoa", "/pessoas/nova", true
 	}
-	pd.Data = listData{Grupos: Agrupar(rows, pap), Total: len(rows), CanWrite: canWrite}
+	d.Grupos = Agrupar(rows, pap)
+	pd.Data = d
 	h.A.Render(w, r, http.StatusOK, page("lista.html"), pd)
 }
 

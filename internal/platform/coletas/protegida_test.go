@@ -9,9 +9,9 @@ import (
 
 func TestProtegidaConvertePanicoEmErro(t *testing.T) {
 	_, err := Protegida(func() (int, error) {
-		var m map[string]int
-		m["x"] = 1 // pânico de execução
-		return 0, nil
+		var v []int
+		i := len(v) + 1
+		return v[i], nil // pânico de execução (índice fora do limite)
 	})
 	if !errors.Is(err, ErrPanico) {
 		t.Fatalf("erro = %v, esperado ErrPanico", err)

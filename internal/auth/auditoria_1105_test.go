@@ -94,3 +94,26 @@ func TestAdvogadoVeAlteracoesDeUsuarios(t *testing.T) {
 		t.Fatalf("assistente não recebe a faixa: %+v", f)
 	}
 }
+
+// Auditoria 05/11, item 4.4: sessões vencidas (absoluto ou ociosidade) são apagadas; a viva fica.
+func TestExpurgoDeSessoesVencidas(t *testing.T) {
+	e := newEnv(t)
+	id := e.user("adv@exemplo.test", Advogado, senhaBoa)
+	agora := time.Now()
+	tx, _ := e.pool.Begin(t.Context())
+	for _, criada := range []time.Time{agora, agora.Add(-time.Hour), agora.Add(-11 * time.Hour)} {
+		if _, err := e.a.Store.CreateSession(t.Context(), tx, id, true, criada); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_ = tx.Commit(t.Context())
+	n, err := e.a.Store.ExpurgarSessoes(t.Context(), agora)
+	if err != nil || n != 2 {
+		t.Fatalf("apagadas = %d (%v), esperado 2 (ociosa há 1 h e vencida há 11 h)", n, err)
+	}
+	var vivas int
+	_ = e.pool.QueryRow(t.Context(), `SELECT count(*) FROM sessions`).Scan(&vivas)
+	if vivas != 1 {
+		t.Fatalf("sessões vivas = %d, esperado 1", vivas)
+	}
+}

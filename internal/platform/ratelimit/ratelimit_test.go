@@ -36,7 +36,8 @@ func TestAllowMaxTetoProprio(t *testing.T) {
 	if l.AllowMax("largo", 5) {
 		t.Fatal("sexta tentativa deveria passar do teto 5")
 	}
-	if !l.Allow("estreito") || !l.Allow("estreito") || l.Allow("estreito") {
+	primeira, segunda, terceira := l.Allow("estreito"), l.Allow("estreito"), l.Allow("estreito")
+	if !primeira || !segunda || terceira {
 		t.Fatal("Allow continua com o teto do limitador (2)")
 	}
 }
