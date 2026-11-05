@@ -15,6 +15,12 @@ Atualizado em 05/11/2026. Branch: `feat/fase-1-saneamento` (base: `origin/feat/a
   - Lint com golangci-lint v2.5.0 no job `go`.
   - Passo `scripts/check-links.sh` no job `go` (05/11/2026): o CI não verificava referências da documentação.
     Teste negativo local: referência inexistente → status 1; sem ela → status 0.
+  - trivy e SBOM no job `docker` do CI (05/11/2026), sobre a imagem `painel:ci` já construída ali.
+    SHAs consultados com `git ls-remote` (o `gh` deste ambiente só faz busca) e conferidos em clone dos repositórios:
+    cada tag aponta para commit do histórico do branch principal. `aquasecurity/trivy-action` v0.36.0 → `ed142fd0673e97e23eac54620cfb913e5ce36c25`
+    (22/04/2026); `anchore/sbom-action` v0.24.3 → `66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c` (02/10/2026);
+    `golangci/golangci-lint-action` v9.3.0 → `ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a` (consultado, não usado: o lint segue por `go install`).
+    YAML validado com PyYAML. Achado: `release.yml` usa o SHA do objeto da tag do trivy, não o commit (registrado em PENDENCIAS.md).
 
 - Lint (05/11/2026): CI run 35 (`fe1e205`) falhou no job `go`, passo golangci-lint, com 6 ocorrências.
   Causa de o lint falhar em lotes: o golangci-lint corta a saída por padrão (`max-same-issues`),
@@ -49,7 +55,7 @@ Atualizado em 05/11/2026. Branch: `feat/fase-1-saneamento` (base: `origin/feat/a
 - govulncheck v1.9.0: não rodou; `vuln.go.dev` bloqueado pela política de rede (403).
 - gitleaks: não instalado neste ambiente; não rodou. O CI tem o passo "Segredos no Git".
 - Testes locais usam Postgres 16; o CI usa 17.
-- SBOM e trivy: pendentes. As actions precisam de SHA fixado, e não consegui consultar.
+- trivy e SBOM: adicionados ao CI, ainda sem execução (não há trivy nem acesso à base dele neste ambiente).
 
 ## Ponto de parada
 Prova local completa feita; esta atualização do PROGRESSO está sem commit e sem push, por instrução do advogado.

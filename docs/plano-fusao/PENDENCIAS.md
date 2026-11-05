@@ -122,8 +122,9 @@ Levantamento feito por subagente de leitura e conferido por amostra. **Nenhuma p
 ## Fundação (M1) — migrado do PLANO-IMPLEMENTACAO.md em 04/11/2026
 | Item | Quem decide | Risco |
 |---|---|---|
-| Lint com golangci-lint v2.5.0 no job `go`: implementado, sem execução de CI ainda (Go não baixa módulos no ambiente de edição) | desenvolvedor | médio |
-| Job `migracoes` (ciclo up→down→up): implementado, sem execução de CI ainda | desenvolvedor | médio |
-| SBOM (SPDX/CycloneDX) no CI: pendente; ação precisa estar fixada por SHA, não verificada | desenvolvedor | baixo |
-| trivy (vulnerabilidades) no CI: pendente; mesma condição do SBOM | desenvolvedor | médio |
+| Lint com golangci-lint v2.5.0 no job `go`: **verificado** no CI run 36 (`df1f679`, 05/11/2026), "0 issues" | desenvolvedor | resolvido |
+| Job `migracoes` (ciclo up→down→up): **verificado** no CI run 36 (`df1f679`, 05/11/2026) | desenvolvedor | resolvido |
+| SBOM (SPDX) no CI: implementado no job `docker` (05/11/2026) com `anchore/sbom-action` v0.24.3 fixada pelo commit `66cbf4b…` (verificado: tag → commit no histórico de `main`); sem execução de CI ainda | desenvolvedor | baixo |
+| trivy (vulnerabilidades) no CI: implementado no job `docker` (05/11/2026) com `aquasecurity/trivy-action` v0.36.0 fixada pelo commit `ed142fd…` (verificado: tag → commit no histórico de `master`); sem execução de CI ainda. Se a imagem tiver CRÍTICA/ALTA com correção, o CI falha — é o comportamento pretendido | desenvolvedor | médio |
+| `release.yml` fixa o trivy em `a9c7b0f…`, que é o objeto da tag anotada v0.36.0, não o commit (`ed142fd…`). Não verificado se o Actions aceita SHA de objeto de tag; padronizar para o commit, como as demais ações | desenvolvedor | médio |
 

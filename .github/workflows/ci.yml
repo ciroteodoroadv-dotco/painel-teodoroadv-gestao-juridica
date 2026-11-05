@@ -75,6 +75,19 @@ jobs:
         run: docker compose -f deploy/docker-compose.yml config -q
       - name: Construir a imagem (sem publicar)
         run: docker build -f deploy/Dockerfile -t painel:ci .
+      - name: Varredura de vulnerabilidades da imagem (falha em CRÍTICA/ALTA com correção disponível)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: painel:ci
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: SBOM da imagem (SPDX)
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: painel:ci
+          format: spdx-json
+          output-file: sbom.spdx.json
 
   scripts:
     runs-on: ubuntu-latest
