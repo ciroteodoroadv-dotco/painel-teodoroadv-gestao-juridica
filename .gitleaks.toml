@@ -1,0 +1,16 @@
+# Configuração do gitleaks para o painel.
+# Mantém as regras padrão e libera apenas a documentação de uma skill de terceiros
+# que cita a chave de exemplo oficial da AWS (AKIAIOSFODNN7EXAMPLE). Não é credencial.
+# As skills saíram do repositório em 05/11/2026 (ferramenta do advisor, não código do painel),
+# mas o arquivo continua no histórico, que o gitleaks varre em pull_request: a exceção fica.
+
+title = "gitleaks do painel Teodoro"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Exemplos de documentação da skill golang-security (chave de exemplo da AWS)"
+paths = [
+  '''\.claude/skills/golang-security/references/secrets\.md''',
+]

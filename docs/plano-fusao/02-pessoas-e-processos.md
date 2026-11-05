@@ -1,6 +1,6 @@
 # Fusão — Plano 2: Pessoas e Processos idênticos ao painel B
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. **Antes de escrever qualquer template, leia por inteiro, linha por linha, no B (somente leitura):** `web/js/14-pessoas.js`, `web/js/09-processos.js`, `web/js/06-helpers-vinculos.js`, `web/js/03-api-mapa.js`, `web/js/05-dominio.js`, `web/js/07-app-core.js`, `web/js/15-drawers.js` e `web/css/painel.css`. **O B vale na forma; o v2 vale na regra.** Rótulos, ordem dos campos, dicas (`hint`), `placeholder`, textos de subtítulo/toast, opções de select, valores padrão e ordem das colunas são **copiados literalmente**.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. **Antes de escrever qualquer template, leia por inteiro, linha por linha, no B (somente leitura):** `referencia/painel-b/js/14-pessoas.js`, `referencia/painel-b/js/09-processos.js`, `referencia/painel-b/js/06-helpers-vinculos.js`, `referencia/painel-b/js/03-api-mapa.js`, `referencia/painel-b/js/05-dominio.js`, `referencia/painel-b/js/07-app-core.js`, `referencia/painel-b/js/15-drawers.js` e `referencia/painel-b/css/painel.css`. **O B vale na forma; o v2 vale na regra.** Rótulos, ordem dos campos, dicas (`hint`), `placeholder`, textos de subtítulo/toast, opções de select, valores padrão e ordem das colunas são **copiados literalmente**.
 
 **Goal:** As telas **Pessoas** e **Processos** do v2 passam a ter os mesmos campos, ordem, rótulos, drawers, acordeões e ações do B, sobre PostgreSQL, com a segurança do v2 (RBAC, auditoria, CSRF, cifra de documentos, exclusão lógica).
 
@@ -24,7 +24,7 @@
 
 | Tema | Decisão |
 |---|---|
-| Campo "Nome do arquivo da ficha" (existe no B só porque a ficha é um `.md`) | **Omitido**: não tem função no v2. Anotado em `NOTAS-PLANO-2.md` para o advogado aprovar a única omissão de campo. |
+| Campo "Nome do arquivo da ficha" (existe no B só porque a ficha é um `.md`) | **Omitido**: não tem função no v2. Anotado em `docs/arquivo/plano-fusao/NOTAS-PLANO-2.md` para o advogado aprovar a única omissão de campo. |
 | Responsáveis (do processo e, depois, da tarefa) | **Pessoas** (selects de pessoa), como no B; não usuários do sistema. |
 | Quem pode salvar | `PermPessoaWrite`/`PermProcessoWrite` existentes; leitura `…Read`; botões de escrita só aparecem a quem pode. |
 | "Pendências (N)" do processo | O B deriva de marcadores `[VERIFICAR]/[FALTA]` na ficha. No v2 é **calculado**: lista fixa de campos que ainda não foram preenchidos — Número do processo (CNJ), Sistema, Instância, Classe processual, Matéria / ramo do direito, Comarca, Juízo, Distribuição, Valor da causa, "Pelo menos uma parte marcada como cliente". Badge `badge-warn` com `title` listando os faltantes (igual ao B). |
@@ -109,7 +109,7 @@ func (s *Service) Opcoes(ctx context.Context) ([]Opcao, error) // para o Plano 3
 - [ ] **Step 2:** estender `internal/app/instantaneos_test.go` e `tools/refb/fixtures.py` (**mesmos dados fictícios nos dois lados**) para Pessoas e Processos, com o drawer "Nova pessoa" e o "Novo processo" abertos.
 - [ ] **Step 3:** rodar `tools/refb/paridade.js` no B (porta 18787) e nos instantâneos do v2 para: acordeão aberto/fechado, tabelas de Pessoas e de Processos, `.badge-warn` das pendências, `fieldset`/`legend`, `.row2/.row3`, `.radio-row`, `.field label/input/select/textarea`, `.hint`, botões `.btn-text`/`.btn-danger-text`/`.btn-ghost`. **Zero diferença não justificada.** Capturas em 1440 e 400 de largura se o Chrome permitir (senão, dizer que não foi possível).
 - [ ] **Step 4:** comparar **texto a texto** os rótulos/placeholders/hints/toasts do B (extraídos por `grep` dos módulos 14 e 09) com os do v2 (extraídos dos templates): script `tools/refb/textos.py` imprime as diferenças; zerar as não justificadas.
-- [ ] **Step 5:** `docs/plano-fusao/paridade/RELATORIO-2.md`, `NOTAS-PLANO-2.md`, `ACEITE-VISUAL.md`, ficha no acervo.
+- [ ] **Step 5:** `docs/arquivo/plano-fusao/paridade/RELATORIO-2.md`, `docs/arquivo/plano-fusao/NOTAS-PLANO-2.md`, `ACEITE-VISUAL.md`, ficha no acervo.
 - [ ] **Step 6: commit.**
 
 ## Task 5: Verificação final

@@ -150,8 +150,8 @@ func TestPrazosUrgenciaEValidacao(t *testing.T) {
 	}
 	_, lista := adv.get("/prazos")
 	// Ordem: do mais urgente ao menos urgente.
-	if !(strings.Index(lista, "Vencido ontem") < strings.Index(lista, "Vence hoje") &&
-		strings.Index(lista, "Vence hoje") < strings.Index(lista, "Daqui a um mês")) {
+	if strings.Index(lista, "Vencido ontem") >= strings.Index(lista, "Vence hoje") ||
+		strings.Index(lista, "Vence hoje") >= strings.Index(lista, "Daqui a um mês") {
 		t.Error("a lista deveria vir ordenada pela data fatal")
 	}
 	for _, c := range casos {

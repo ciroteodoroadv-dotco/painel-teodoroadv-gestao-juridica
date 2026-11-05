@@ -34,7 +34,7 @@ func (h *Handler) documento(w http.ResponseWriter, r *http.Request, s *auth.Sess
 		http.Error(w, "Escolha um arquivo.", http.StatusBadRequest)
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	err = h.S.AnexarDocumento(r.Context(), webx.ActorOf(w, s.UserID), r.PathValue("id"), hdr.Filename, f)
 	if webx.Falha(w, err, "Tarefa não encontrada.", "Erro ao guardar o documento.") {
 		return

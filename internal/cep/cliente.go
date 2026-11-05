@@ -56,7 +56,7 @@ func NovoCliente(cfg Config) (*Cliente, error) {
 		cfg.BaseURL = BaseOficial
 	}
 	u, err := url.Parse(cfg.BaseURL)
-	if err != nil || u.Host == "" || (u.Scheme != "https" && !(cfg.PermitirHTTP && u.Scheme == "http")) {
+	if err != nil || u.Host == "" || (u.Scheme != "https" && (!cfg.PermitirHTTP || u.Scheme != "http")) {
 		return nil, errors.New("cep: a URL base precisa ser https")
 	}
 	if cfg.Timeout <= 0 {
@@ -123,7 +123,7 @@ func (c *Cliente) Buscar(ctx context.Context, cep string) (Endereco, error) {
 	if err != nil {
 		return Endereco{}, ErrIndisponivel
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return Endereco{}, ErrIndisponivel
 	}

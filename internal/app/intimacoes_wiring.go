@@ -116,7 +116,7 @@ func (a agendaIntimacoes) Lista(ctx context.Context) ([]agenda.IntimacaoLinha, b
 // montarIntimacoes cria o serviço de Intimações. O cliente do DJEN é construído sempre (valida o endereço https), mas só
 // é chamado com a coleta ATIVA: desligada, o serviço registra "bloqueado" e não faz nenhuma requisição.
 func montarIntimacoes(a *auth.Auth, pool *pgxpool.Pool, proc *processos.Service, tar *tarefas.Service, o *options) (*intimacoes.Service, error) {
-	var col intimacoes.Coletor = o.coletor
+	col := o.coletor
 	if col == nil {
 		base := o.djen.BaseURL
 		if base == "" {

@@ -1,0 +1,25 @@
+# Exceções conhecidas de scripts/check-links.sh (formato: arquivo|alvo|motivo).
+# Cada linha é uma referência que aponta para algo fora do repositório, gerado em tempo de execução ou
+# que não existe mais no commit atual. Remover a exceção quando a referência for corrigida.
+
+docs/adr/0008-porta-de-escopo-f13.md|internal/acesso|arquivo de teste ou template citado em etapa histórica; não existe neste commit
+docs/auditoria/AUDITORIA-2026-11-02.md|internal/auth/mfa.go:72|referência com número de linha; arquivo existe com outro conteúdo
+docs/operacao/COMECAR-USO-REAL.md|deploy/secrets/|gerado em tempo de execução (gitignored)
+docs/operacao/RUNBOOK.md|deploy/secrets/|gerado em tempo de execução (gitignored)
+docs/operacao/RUNBOOK.md|deploy/secrets/field_key|gerado em tempo de execução (gitignored)
+docs/plano-fusao/01-casca-visual.md|web/static/app.css|arquivo do painel B ou protótipo que não está no repositório
+docs/plano-fusao/01-casca-visual.md|internal/agenda/templates/lista.html|arquivo de teste ou template citado em etapa histórica; não existe neste commit
+docs/plano-fusao/01b-casca-identica-ao-b.md|web/static/teste-js.html|arquivo do painel B ou protótipo que não está no repositório
+docs/plano-fusao/03-atendimentos-e-tarefas.md|internal/tarefas/handler_test.go|arquivo de teste ou template citado em etapa histórica; não existe neste commit
+docs/plano-fusao/03-atendimentos-e-tarefas.md|internal/app/tarefas_tela_test.go|arquivo de teste ou template citado em etapa histórica; não existe neste commit
+docs/plano-fusao/04-agenda-audiencias-diligencias.md|internal/agenda/pagina_test.go|arquivo de teste ou template citado em etapa histórica; não existe neste commit
+docs/plano-fusao/05-intimacoes-djen.md|docs/INVENTARIO-B|inventário do B não versionado
+docs/plano-fusao/05-intimacoes-djen.md|internal/intimacoes/handler_test.go|arquivo de teste ou template citado em etapa histórica; não existe neste commit
+docs/plano-fusao/06-monitor-datajud.md|internal/agenda/templates/tabelas.html|arquivo de teste ou template citado em etapa histórica; não existe neste commit
+docs/plano-fusao/06-monitor-datajud.md|internal/intimacoes/handler_test.go|arquivo de teste ou template citado em etapa histórica; não existe neste commit
+docs/plano-fusao/07-calculadora-e-calendario-forense.md|internal/prazos/calculadora_test.go|arquivo de teste ou template citado em etapa histórica; não existe neste commit
+docs/plano-fusao/08-indices-cep-e-fechamento.md|deploy/secrets/|gerado em tempo de execução (gitignored)
+docs/plano-fusao/ACEITE-FINAL.md|deploy/secrets/|gerado em tempo de execução (gitignored)
+docs/plano-fusao/painel-B-inventario.md|referencia/painel-b/js/00..99|padrão ou número de linha, não caminho
+docs/plano-fusao/painel-B-inventario.md|web/shared/client.js|arquivo do painel B ou protótipo que não está no repositório
+docs/plano-fusao/painel-B-inventario.md|referencia/painel-b/js/12-prazo.js:78|padrão ou número de linha, não caminho

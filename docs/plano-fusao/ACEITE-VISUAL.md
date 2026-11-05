@@ -12,7 +12,7 @@
 | Item | Estado |
 |---|---|
 | Esqueleto do B (`#app`, sidebar, topbar, stats, content, syncStatus, idxTicker, drawer, toast) em toda tela logada | feito, coberto por `internal/app/shell_test.go` |
-| Paridade de estilo computado com o B (35 seletores x 20 propriedades) | feito: só restam diferenças de conteúdo (ver `paridade/RELATORIO-1B.md`) |
+| Paridade de estilo computado com o B (35 seletores x 20 propriedades) | feito: só restam diferenças de conteúdo (ver `docs/arquivo/plano-fusao/paridade/RELATORIO-1B.md`) |
 | Drawer (pilha, sem tecla, sem clique fora), acordeão, máscaras, linhas repetíveis, toast | conferido no Chrome em `componentes.html` |
 | Capturas 1440x900 e 400x800; Processos/Pessoas/Atendimentos/Audiências do B | **não feito** (janela não redimensiona) |
 | Envio de formulário em drawer (`data-drawer-form`) | código pronto, não exercitado (Plano 2) |
@@ -21,7 +21,7 @@
 ## Plano 2 — Pessoas e Processos (03/11/2026)
 | Item | Estado |
 |---|---|
-| Estilo computado B x v2 (páginas e 7 drawers) | feito: zero diferença além das justificadas (`paridade/RELATORIO-2.md`) |
+| Estilo computado B x v2 (páginas e 7 drawers) | feito: zero diferença além das justificadas (`docs/arquivo/plano-fusao/paridade/RELATORIO-2.md`) |
 | Comparação texto a texto | feito: 19 ausências, todas justificadas |
 | Envio de formulário em drawer (`data-drawer-form`) | exercitado por testes HTTP; **não exercitado por clique no Chrome** |
 | Capturas 1440/400 e do B | **não feito** |
@@ -30,7 +30,7 @@
 ## Plano 3 — Atendimentos e Tarefas (03/11/2026)
 | Item | Estado |
 |---|---|
-| Estilo computado B x v2 (2 páginas e 5 drawers) | feito: zero diferença além das justificadas (`paridade/RELATORIO-3.md`) |
+| Estilo computado B x v2 (2 páginas e 5 drawers) | feito: zero diferença além das justificadas (`docs/arquivo/plano-fusao/paridade/RELATORIO-3.md`) |
 | Comparação texto a texto | feito: 19 ausências, todas justificadas |
 | Envio de formulários, upload de PDF, exclusão com senha | exercitados por testes HTTP; **não por clique no Chrome** |
 | "Novo cliente" dentro do atendimento (volta ao rascunho) | código pronto (`atendimento.js`); **não exercitado no Chrome** |
@@ -40,7 +40,7 @@
 ## Plano 4 — Agenda, Audiências, Diligências (03/11/2026)
 | Item | Estado |
 |---|---|
-| Estilo computado B x v2 (Agenda com 7 categorias, aba Audiências, 7 variantes de drawer) | feito: zero diferença além das justificadas (`paridade/RELATORIO-4.md`) |
+| Estilo computado B x v2 (Agenda com 7 categorias, aba Audiências, 7 variantes de drawer) | feito: zero diferença além das justificadas (`docs/arquivo/plano-fusao/paridade/RELATORIO-4.md`) |
 | Comparação texto a texto | feito: 10 ausências, todas justificadas |
 | JS novo no Chrome (acordeão, busca, mostra/oculta, filtro de opções, toast, decodificação do cabeçalho) | executado nos instantâneos |
 | Envio real de formulário por clique, capturas 1440/400 | **não feito** (testes HTTP cobrem o servidor) |
@@ -49,7 +49,7 @@
 ## Plano 5 — Intimações (DJEN) (03-04/11/2026)
 | Item | Estado |
 |---|---|
-| Estilo computado B x v2 (categoria Intimações da Agenda: 23 seletores x 30 propriedades + rodapé Estado das coletas) | feito: zero diferença além da justificada (`paridade/RELATORIO-5.md`) |
+| Estilo computado B x v2 (categoria Intimações da Agenda: 23 seletores x 30 propriedades + rodapé Estado das coletas) | feito: zero diferença além da justificada (`docs/arquivo/plano-fusao/paridade/RELATORIO-5.md`) |
 | Comparação texto a texto (11-agenda.js e 16-sync-status.js) | feito: zero ausência do Plano 5 (restam as 8 do Plano 4) |
 | JS novo no Chrome (`data-refresh` do rodapé: recarrega, mostra "indisponível" na falha) | executado nos instantâneos |
 | Página Coleta DJEN e drawers da OAB | sem equivalente no B (só vocabulário visual); testes HTTP; **não comparados no Chrome** |
@@ -59,7 +59,7 @@
 ## Plano 4C — Cancelar em vez de excluir; processo duplicado (04/11/2026)
 | Item | Estado |
 |---|---|
-| Estilo computado B x v2 dos drawers "Cancelar …" e do bloco "PROCESSO DUPLICADO" (13 seletores) | feito: 3 diferenças, todas justificadas (`paridade/RELATORIO-4C.md`) |
+| Estilo computado B x v2 dos drawers "Cancelar …" e do bloco "PROCESSO DUPLICADO" (13 seletores) | feito: 3 diferenças, todas justificadas (`docs/arquivo/plano-fusao/paridade/RELATORIO-4C.md`) |
 | Cancelar compromisso/diligência/intimação, sem Excluir; tarefa sem exclusão | testes HTTP e enumeração de rotas |
 | Verificação ao sair do campo do número (JS), clique real nos botões, capturas 1440/400 | **não feito no Chrome** |
 | Conferência do advogado na tela real | pendente |
@@ -67,7 +67,7 @@
 ## Plano 6 — Monitor DataJud, emenda E1–E3 (04/11/2026)
 | Item | Estado |
 |---|---|
-| Intimações com origens DataJud/DJEN (linhas e ordem) x B | feito no Chrome: idênticas (`paridade/RELATORIO-6.md`) |
+| Intimações com origens DataJud/DJEN (linhas e ordem) x B | feito no Chrome: idênticas (`docs/arquivo/plano-fusao/paridade/RELATORIO-6.md`) |
 | Rodapé com 3 linhas x B | feito: texto idêntico |
 | Botão "Ver" + drawer "Intimação" (JS executado) | feito: abre, mostra os campos e fecha |
 | Página Coleta DJEN (monitor e sigilosos), drawer do sigiloso | testes HTTP; texto lido no Chrome; **sem comparação de estilo** |
@@ -78,7 +78,7 @@
 ## Plano 7 — Calculadora de prazo e Calendário forense (04/11/2026)
 | Item | Estado |
 |---|---|
-| Drawer da calculadora x B (rótulos, ordem, estilo computado de 10 elementos) | feito no Chrome: idêntico (ajuste do input numérico); ver paridade/RELATORIO-7.md |
+| Drawer da calculadora x B (rótulos, ordem, estilo computado de 10 elementos) | feito no Chrome: idêntico (ajuste do input numérico); ver docs/arquivo/plano-fusao/paridade/RELATORIO-7.md |
 | htmx do resultado, erro 400 no bloco vermelho, botão Criar prazo (JS executado) | feito |
 | Calendário forense: Novo dia, Inativar (JS executado) | feito |
 | Capturas 1440/400 | **não feito** |
@@ -91,5 +91,5 @@
 | Botão "Buscar CEP": campos vazios, UF em maiúsculas, botão desabilitado durante a consulta, confirmação sobreposta (Cancelar/Substituir) | feito; executado no Chrome (pilha de teste, ViaCEP falso) |
 | Página "Índices" do administrador e rodapé "Estado das coletas" com o módulo `indices` | coberto por testes HTTP; **não** comparada visualmente (não existe no B) |
 | Capturas 1440/400 e comparação de estilo computado B x v2 do ticker | **não feito**: a classe `.idx-ticker` é a do B (hash idêntico); só `.idxt-velho` é novo (`compat.css`) |
-| Teste ponta a ponta por clique (Tarefa 5 do plano 8) | **não executado** (ver `paridade/E2E-8.md`) |
+| Teste ponta a ponta por clique (Tarefa 5 do plano 8) | **não executado** (ver `docs/arquivo/plano-fusao/paridade/E2E-8.md`) |
 | Conferência do advogado na tela real | pendente (`ACEITE-FINAL.md`) |

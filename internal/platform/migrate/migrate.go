@@ -26,7 +26,7 @@ func Up(ctx context.Context, pool *pgxpool.Pool) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	return goose.UpContext(ctx, db, ".")
 }
 
@@ -36,7 +36,7 @@ func Reset(ctx context.Context, pool *pgxpool.Pool) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	return goose.DownToContext(ctx, db, ".", 0)
 }
 
@@ -46,6 +46,6 @@ func Down(ctx context.Context, pool *pgxpool.Pool) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	return goose.DownContext(ctx, db, ".")
 }

@@ -57,7 +57,7 @@ func (s *Service) decideDuplicidade(ctx context.Context, n *normalized, in Input
 		return false, webx.Invalidf(msgJustificativa)
 	}
 	n.duplicado, n.dupJust, n.dupDe = true, just, dup.id
-	return !(mesmoNumero && atualDup && just == atualJust), nil
+	return !mesmoNumero || !atualDup || just != atualJust, nil
 }
 
 // duplicadoView monta o bloco para um processo já marcado (mostra o original e a justificativa gravada).

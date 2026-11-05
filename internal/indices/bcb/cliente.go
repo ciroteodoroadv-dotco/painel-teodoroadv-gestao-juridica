@@ -40,7 +40,7 @@ func Novo(cfg Config) (*Cliente, error) {
 		cfg.BaseURL = BaseOficial
 	}
 	u, err := url.Parse(cfg.BaseURL)
-	if err != nil || u.Host == "" || (u.Scheme != "https" && !(cfg.PermitirHTTP && u.Scheme == "http")) {
+	if err != nil || u.Host == "" || (u.Scheme != "https" && (!cfg.PermitirHTTP || u.Scheme != "http")) {
 		return nil, errors.New("bcb: a URL base precisa ser https")
 	}
 	if cfg.Timeout <= 0 {
@@ -97,7 +97,7 @@ func (c *Cliente) Ultimo(ctx context.Context, codigo int) (Ponto, error) {
 	if err != nil {
 		return Ponto{}, fmt.Errorf("bcb: falha de rede (%s)", classe(err))
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	b, rerr := io.ReadAll(io.LimitReader(resp.Body, c.cfg.MaxBytes+1))
 	switch {
 	case resp.StatusCode != http.StatusOK:

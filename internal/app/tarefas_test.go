@@ -51,7 +51,7 @@ func (b *browser) enviarDocTarefa(id, nome string, conteudo []byte) (*http.Respo
 	if err != nil {
 		b.e.t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	var out bytes.Buffer
 	_, _ = out.ReadFrom(resp.Body)
 	return resp, out.String()

@@ -48,7 +48,7 @@ Cada novo domínio segue `handler→service→repo`, migração goose, permissã
 - Calendário forense por tribunal com **fonte citada por feriado/suspensão** (Fase E); até lá, aviso explícito de que feriados locais, dobro e termo inicial por juntada/citação/carga não são tratados.
 - Intimação detectada → **sugere** prazo → advogado confirma (decisão de 02/11).
 
-## 7. Portas de qualidade (G0–G5, do handoff)
+## 7. Portas de qualidade (G0–G5, do handoff — documento externo, não versionado)
 - **G0** decisões fechadas (arquitetura = B, aprovada; destino dos dados reais = **pendente**).
 - **G1** inventário do B — **concluído** (`01-referencias/painel-B-inventario.md`).
 - **G2** auditoria do que for reaproveitado (coletores DJEN/DataJud, lógica de dedupe) antes de portar.

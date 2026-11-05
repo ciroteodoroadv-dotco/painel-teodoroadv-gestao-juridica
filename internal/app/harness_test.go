@@ -132,7 +132,7 @@ func (b *browser) do(method, path string, form url.Values, hdr map[string]string
 	if err != nil {
 		b.e.t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	out, _ := io.ReadAll(resp.Body)
 	return resp, string(out)
 }

@@ -33,7 +33,7 @@ func TestBuscarSoEnviaOsOitoDigitos(t *testing.T) {
 				t.Errorf("cabeçalho inesperado %s", k)
 			}
 		}
-		io.WriteString(w, `{"cep":"01001-000","logradouro":"Praça da Sé","complemento":"lado ímpar","bairro":"Sé","localidade":"São Paulo","uf":"sp"}`)
+		_, _ = io.WriteString(w, `{"cep":"01001-000","logradouro":"Praça da Sé","complemento":"lado ímpar","bairro":"Sé","localidade":"São Paulo","uf":"sp"}`)
 	})
 	e, err := c.Buscar(context.Background(), "01001000")
 	if err != nil || e.Logradouro != "Praça da Sé" || e.Bairro != "Sé" || e.Municipio != "São Paulo" || e.UF != "SP" {
@@ -43,7 +43,7 @@ func TestBuscarSoEnviaOsOitoDigitos(t *testing.T) {
 
 func TestBuscarCEPInexistente(t *testing.T) {
 	for _, corpo := range []string{`{"erro": true}`, `{"erro": "true"}`} {
-		c := novoTeste(t, func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, corpo) })
+		c := novoTeste(t, func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, corpo) })
 		if _, err := c.Buscar(context.Background(), "99999999"); !errors.Is(err, ErrNaoEncontrado) {
 			t.Errorf("%s: err = %v", corpo, err)
 		}
@@ -55,10 +55,10 @@ func TestBuscarFalhasNaoPreenchemNada(t *testing.T) {
 		"500":       func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) },
 		"400":       func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(400) },
 		"429":       func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(429) },
-		"json ruim": func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, `<html>`) },
-		"vazio":     func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, `{}`) },
+		"json ruim": func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, `<html>`) },
+		"vazio":     func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, `{}`) },
 		"gigante": func(w http.ResponseWriter, r *http.Request) {
-			io.WriteString(w, `{"logradouro":"`+strings.Repeat("a", 100000)+`"}`)
+			_, _ = io.WriteString(w, `{"logradouro":"`+strings.Repeat("a", 100000)+`"}`)
 		},
 		"outro host": func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "http://outro-host.invalid/x", http.StatusFound)
