@@ -77,7 +77,7 @@ Senha: 12+ caracteres, sem ser comum, sem conter o e-mail.
 ```bash
 cd ~/projetos/painel-teodoro-v2/deploy
 C="docker compose -f docker-compose.yml -f docker-compose.dev.yml"
-read -rs SENHA; echo "$SENHA" | $C run --rm -T app user create fulano@exemplo.com advogado; unset SENHA
+read -rs SENHA; echo "$SENHA" | $C run --rm -T migrate user create fulano@exemplo.com advogado; unset SENHA
 ```
 
 No primeiro acesso a pessoa entra com e-mail e senha e cadastra o aplicativo autenticador (QR code).
@@ -85,9 +85,9 @@ No primeiro acesso a pessoa entra com e-mail e senha e cadastra o aplicativo aut
 
 | Situação | Comando |
 |---|---|
-| Esqueceu a senha | `read -rs S; echo "$S" \| $C run --rm -T app user reset-password EMAIL; unset S` |
-| Conta bloqueada por tentativas | `$C run --rm app user unlock EMAIL` |
-| Conferir se a auditoria foi adulterada | `$C run --rm app audit verify` (deve dizer "Cadeia íntegra") |
+| Esqueceu a senha | `read -rs S; echo "$S" \| $C run --rm -T migrate user reset-password EMAIL; unset S` |
+| Conta bloqueada por tentativas | `$C run --rm migrate user unlock EMAIL` (comandos de administração usam o serviço `migrate`, o único com a senha do dono) |
+| Conferir se a auditoria foi adulterada | `$C run --rm migrate audit verify` (deve dizer "Cadeia íntegra") |
 
 Bloqueio por senha ou código errado: 5 erros = 1 min, 10 = 5 min, 15 = 30 min, 20 = só o administrador libera.
 O administrador vê os últimos eventos em **Auditoria** (menu superior).
@@ -123,7 +123,7 @@ O guia do servidor real está em `RUNBOOK-ORACLE.md`.
 ```bash
 cd ~/projetos/painel-teodoro-v2/deploy
 C="docker compose -f docker-compose.yml -f docker-compose.dev.yml"
-$C run --rm -T app seed-demo EMAIL_DE_UM_USUARIO   # cria 4 pessoas, 2 processos e 4 tarefas "Exemplo"
+$C run --rm -T migrate seed-demo EMAIL_DE_UM_USUARIO   # cria 4 pessoas, 2 processos e 4 tarefas "Exemplo"
 ```
 
 O comando **recusa rodar em produção**. Só funciona em banco sem pessoas cadastradas.

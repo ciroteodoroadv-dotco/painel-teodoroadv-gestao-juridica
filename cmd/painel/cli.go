@@ -33,6 +33,9 @@ func runCLI(args []string) error {
 	if err != nil {
 		return fmt.Errorf("configuração incompleta:\n%w", err)
 	}
+	if !cfg.TemDono() {
+		return errors.New("este comando precisa da senha do dono do banco (PAINEL_DB_PASSWORD ou PAINEL_DB_PASSWORD_FILE): rode-o pelo serviço migrate, ex.: docker compose run --rm migrate user unlock EMAIL")
+	}
 	ctx := context.Background()
 	owner, pool, err := openDBs(ctx, cfg)
 	if err != nil {

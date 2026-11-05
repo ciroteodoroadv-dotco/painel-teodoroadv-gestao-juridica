@@ -112,7 +112,7 @@ set -a; source oracle/ambiente; set +a
 Crie o primeiro administrador (senha lida da entrada; ele troca no primeiro acesso):
 
 ```bash
-read -rs S; echo "$S" | PAINEL_IMAGE=$(cat .estado-deploy.atual) docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm -T app user create seu@email.com administrador; unset S
+read -rs S; echo "$S" | PAINEL_IMAGE=$(cat .estado-deploy.atual) docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm -T migrate user create seu@email.com administrador; unset S
 ```
 
 ## 5. Aceite — confira tudo antes de usar dado real
@@ -139,7 +139,7 @@ read -rs S; echo "$S" | PAINEL_IMAGE=$(cat .estado-deploy.atual) docker compose 
   versão, espera ficar saudável e **volta sozinho para a anterior se falhar**. Atenção: o retorno troca só o programa;
   se uma migração do banco já rodou e foi destrutiva, é preciso restaurar o backup feito pelo próprio deploy.
 - **Aparelho do 2º fator perdido (usuário):** administrador → Usuários → "Redefinir 2º fator" (ou
-  `painel user reset-2fa EMAIL`); a pessoa cadastra de novo.
+  `docker compose ... run --rm migrate user reset-2fa EMAIL`); a pessoa cadastra de novo.
 
 ## 7. Desastre: restaurar de um backup
 

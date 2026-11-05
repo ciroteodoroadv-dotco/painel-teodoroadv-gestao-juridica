@@ -27,6 +27,8 @@ const (
 var allowedMeta = map[string]bool{
 	"motivo": true, "de": true, "para": true, "papel": true, "email_hash": true, "etapa": true, "rota": true, "metodo": true, "suprimidos": true,
 	"regra": true, "modo": true, "dias": true, "calendario": true, "tipo": true, "data": true,
+	// Contagens (nunca dado pessoal): antes eram descartadas em silêncio (auditoria 05/11, item 3.4).
+	"partes": true, "abertos_vinculados": true, "quantidade": true,
 }
 
 // Event é um fato auditável.

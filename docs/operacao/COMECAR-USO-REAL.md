@@ -56,7 +56,7 @@ O arquivo `C:\Users\User\.painel-chaves\recuperacao.txt` é a **única** forma d
 ## 6. O que fazer se algo parecer errado
 
 Painel não abre → Docker Desktop está rodando? (`docker ps`). Esqueceu a senha ou perdeu o aparelho do 2º fator → outro
-administrador usa "Usuários"; se for o único, rode no WSL `painel user reset-password EMAIL` / `reset-2fa EMAIL`
+administrador usa "Usuários"; se for o único, rode no WSL `docker compose run --rm migrate user reset-password EMAIL` / `... reset-2fa EMAIL` (serviço `migrate`)
 (ver `RUNBOOK.md`).
 
 ## 7. Ligar as integrações (depois que o painel estiver em uso)

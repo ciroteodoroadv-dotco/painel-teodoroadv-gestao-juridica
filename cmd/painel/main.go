@@ -15,6 +15,7 @@ import (
 	_ "time/tzdata" // fuso America/Sao_Paulo embutido (a imagem distroless não tem tzdata)
 
 	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"painelteodoro/internal/app"
 	"painelteodoro/internal/auth"
@@ -56,11 +57,10 @@ func serve() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	owner, pool, err := openDBs(ctx, cfg)
+	pool, err := abrirBancoDoServidor(ctx, cfg, log)
 	if err != nil {
 		return err
 	}
-	owner.Close() // o app roda só com o papel restrito
 	defer pool.Close()
 
 	mux := http.NewServeMux()
@@ -138,6 +138,23 @@ func serve() error {
 	}
 	log.Info("servidor encerrado")
 	return nil
+}
+
+// abrirBancoDoServidor devolve o pool do papel restrito. Sem a senha do dono (o normal em produção), não migra: o
+// serviço "migrate" já fez isso. Com ela (desenvolvimento ou instalação antiga), migra como antes e avisa.
+func abrirBancoDoServidor(ctx context.Context, cfg config.Config, log *slog.Logger) (*pgxpool.Pool, error) {
+	if !cfg.TemDono() {
+		return openApp(ctx, cfg)
+	}
+	if !cfg.Dev {
+		log.Warn("o servidor recebeu a senha do DONO do banco: em produção ela deve ficar só no serviço migrate (auditoria 05/11, item 2.1)")
+	}
+	owner, pool, err := openDBs(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	owner.Close() // o app roda só com o papel restrito
+	return pool, nil
 }
 
 // newWebAuthn configura a chave de segurança: o domínio (RP ID) vem da URL pública.

@@ -1,10 +1,12 @@
 package auth
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
 	"painelteodoro/internal/audit"
+	"painelteodoro/internal/platform/webx"
 )
 
 var avisosAdmin = map[string]string{
@@ -93,6 +95,19 @@ func (a *Auth) mexer(w http.ResponseWriter, r *http.Request, s *Session, action 
 		a.usuariosPage(w, r, s, http.StatusConflict, "", "Por segurança, você não altera a si mesmo por aqui (use Minha conta).")
 		return
 	}
+	// 404 só quando o usuário de fato não existe; falha de banco ou de auditoria é 500 (auditoria 05/11, item 3.5).
+	if !webx.UUID(id) {
+		http.Error(w, "Usuário não encontrado.", http.StatusNotFound)
+		return
+	}
+	if _, err := a.Store.UserByID(ctx, id); errors.Is(err, ErrNotFound) {
+		http.Error(w, "Usuário não encontrado.", http.StatusNotFound)
+		return
+	} else if err != nil {
+		a.Log.Error("gestão de usuários: falha ao ler o usuário", "acao", action)
+		http.Error(w, "Erro interno.", http.StatusInternalServerError)
+		return
+	}
 	tx, err := a.Pool.Begin(ctx)
 	if err != nil {
 		http.Error(w, "Erro interno.", http.StatusInternalServerError)
@@ -106,8 +121,13 @@ func (a *Auth) mexer(w http.ResponseWriter, r *http.Request, s *Session, action 
 	if err == nil {
 		err = tx.Commit(ctx)
 	}
-	if err != nil {
+	switch {
+	case errors.Is(err, ErrNotFound):
 		http.Error(w, "Usuário não encontrado.", http.StatusNotFound)
+		return
+	case err != nil:
+		a.Log.Error("gestão de usuários: falha ao gravar", "acao", action)
+		http.Error(w, "Erro interno.", http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, "/admin/usuarios?aviso=alterado", http.StatusSeeOther)

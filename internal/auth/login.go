@@ -56,6 +56,7 @@ func (a *Auth) loginPost(w http.ResponseWriter, r *http.Request, _ *Session) {
 	}
 	now := a.now()
 	if u.IsLocked(now) {
+		burnPassword(pw) // mesmo tempo de uma verificação real: não revela que a conta existe e está bloqueada (auditoria 05/11, 2.5)
 		fail(u.ID, "conta_bloqueada", http.StatusUnauthorized)
 		return
 	}

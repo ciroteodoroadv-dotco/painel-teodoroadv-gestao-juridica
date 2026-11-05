@@ -98,3 +98,13 @@ func TestPrazoDaTarefaSoConfirmaPorAtoExplicito(t *testing.T) {
 		t.Fatalf("eventos prazo.confirmado = %d, esperado 1", n)
 	}
 }
+
+// Item 3.4: a contagem de partes do processo chega à auditoria (antes, meta = {}).
+func TestMetaDoProcessoNaAuditoria(t *testing.T) {
+	c := novoCenario(t)
+	var meta string
+	_ = c.e.pool.QueryRow(context.Background(), `SELECT meta->>'partes' FROM audit_events WHERE action='processo.criado' ORDER BY seq DESC LIMIT 1`).Scan(&meta)
+	if meta != "1" {
+		t.Fatalf("meta partes = %q, esperado 1", meta)
+	}
+}

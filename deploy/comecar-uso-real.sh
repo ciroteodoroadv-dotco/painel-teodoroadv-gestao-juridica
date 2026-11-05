@@ -37,7 +37,7 @@ while true; do
   read -rsp "Repita a senha: " s2; echo
   [[ "$s1" == "$s2" ]] && break; echo "As senhas não conferem. Tente de novo."
 done
-printf '%s\n' "$s1" | $C run --rm -T app user create "$email" administrador
+printf '%s\n' "$s1" | $C run --rm -T migrate user create "$email" administrador
 unset s1 s2
 
 echo

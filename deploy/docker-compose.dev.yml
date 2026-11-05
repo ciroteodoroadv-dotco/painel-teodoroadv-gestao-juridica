@@ -2,6 +2,10 @@
 # e liga o modo dev (sem Cloudflare Access). Nunca use em servidor.
 # Uso: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 services:
+  migrate:
+    environment:
+      PAINEL_ENV: dev
+      PAINEL_PUBLIC_URL: http://localhost:${PAINEL_DEV_PORT:-18080}
   app:
     environment:
       PAINEL_ENV: dev

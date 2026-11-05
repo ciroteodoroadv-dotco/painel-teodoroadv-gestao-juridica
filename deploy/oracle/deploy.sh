@@ -44,6 +44,10 @@ esperar() {
 
 subir() { PAINEL_IMAGE="$1" $COMPOSE up -d --no-build --no-deps app; }
 
+# Migração pelo serviço migrate (único com a senha do dono do banco; auditoria 05/11, item 2.1).
+log "migrando o banco com a nova versão"
+PAINEL_IMAGE="$NOVA" $COMPOSE run --rm --no-deps migrate || { log "ERRO: a migração falhou; deploy cancelado (a versão em uso continua no ar)"; exit 1; }
+
 log "subindo a nova versão"
 subir "$NOVA"
 if esperar "$NOVA"; then
