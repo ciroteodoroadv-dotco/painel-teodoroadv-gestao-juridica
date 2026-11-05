@@ -5,6 +5,7 @@
 docs/adr/0008-porta-de-escopo-f13.md|internal/acesso|arquivo de teste ou template citado em etapa histórica; não existe neste commit
 docs/auditoria/AUDITORIA-2026-11-02.md|internal/auth/mfa.go:72|referência com número de linha; arquivo existe com outro conteúdo
 docs/operacao/COMECAR-USO-REAL.md|deploy/secrets/|gerado em tempo de execução (gitignored)
+docs/operacao/RUNBOOK-ORACLE.md|deploy/secrets/alerta_webhook|segredo criado manualmente no servidor e ignorado pelo Git
 docs/operacao/RUNBOOK.md|deploy/secrets/|gerado em tempo de execução (gitignored)
 docs/operacao/RUNBOOK.md|deploy/secrets/field_key|gerado em tempo de execução (gitignored)
 docs/plano-fusao/01-casca-visual.md|web/static/app.css|arquivo do painel B ou protótipo que não está no repositório
