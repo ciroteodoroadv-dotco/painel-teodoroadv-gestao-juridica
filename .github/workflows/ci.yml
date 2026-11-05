@@ -36,6 +36,8 @@ jobs:
         run: go test -race -count=1 -p 1 ./... # -p 1: os testes de integração recriam o banco
       - name: Limite de 300 linhas
         run: ./scripts/check-lines.sh
+      - name: Referências internas da documentação
+        run: ./scripts/check-links.sh
       - name: Análise estática de segurança (gosec, staticcheck e govulncheck)
         run: ./scripts/analise-estatica.sh # mesmas ferramentas e versões do relatório docs/plano-fusao/ANALISE-ESTATICA.md
       - name: Segredos no Git

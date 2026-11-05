@@ -13,6 +13,8 @@ Atualizado em 05/11/2026. Branch: `feat/fase-1-saneamento` (base: `origin/feat/a
 - Etapa M1-CI:
   - Job `migracoes` com o ciclo up→down→up (`internal/platform/migrate/ciclo_test.go`).
   - Lint com golangci-lint v2.5.0 no job `go`.
+  - Passo `scripts/check-links.sh` no job `go` (05/11/2026): o CI não verificava referências da documentação.
+    Teste negativo local: referência inexistente → status 1; sem ela → status 0.
 
 - Lint (05/11/2026): CI run 35 (`fe1e205`) falhou no job `go`, passo golangci-lint, com 6 ocorrências.
   Causa de o lint falhar em lotes: o golangci-lint corta a saída por padrão (`max-same-issues`),
