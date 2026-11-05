@@ -60,12 +60,15 @@ Atualizado em 05/11/2026. Branch: `feat/fase-1-saneamento` (base: `origin/feat/a
 - govulncheck v1.9.0: não rodou; `vuln.go.dev` bloqueado pela política de rede (403).
 - gitleaks: não instalado neste ambiente; não rodou. O CI tem o passo "Segredos no Git".
 - Testes locais usam Postgres 16; o CI usa 17.
-- trivy e SBOM: provados localmente (acima); execução no CI pendente até o push.
 
 ## Ponto de parada
 Prova local completa feita; esta atualização do PROGRESSO está sem commit e sem push, por instrução do advogado.
 Próximo passo: decidir o push desta atualização.
 
 ## Último commit verificado
-Anterior: `fe1e205` (CI run 35) falhou no lint do job `go` (1 de 4 jobs com falha).
-`df1f679` (CI run 36) e `3a0b525` (CI run 37): CI verde, conclusão `success`, conferido em 05/11/2026 03:14 UTC.
+`c3b34ac` (CI run 40, 05/11/2026): conclusão `success` nos 4 jobs. Log conferido:
+- job `docker`: trivy → `painel:ci (debian 12.15)` 0 e `painel` (gobinary) 0, igual à prova local;
+  SBOM com syft v1.54.0 → artefato `painel_ci.spdx.json` publicado.
+- job `go`: lint "0 issues"; `internal/app` 176 s (integração rodou); 300 linhas OK; referências 0 quebradas;
+  gosec alta=0 média=0, staticcheck=0, govulncheck rc=0; gitleaks "no leaks found".
+Anteriores: run 39 (`25dca67`) e run 36 (`df1f679`) verdes com log conferido; run 35 (`fe1e205`) falhou no lint.
