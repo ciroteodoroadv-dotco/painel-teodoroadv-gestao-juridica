@@ -62,8 +62,13 @@ Atualizado em 05/11/2026. Branch: `feat/fase-1-saneamento` (base: `origin/feat/a
 - Testes locais usam Postgres 16; o CI usa 17.
 
 ## Ponto de parada
-Prova local completa feita; esta atualização do PROGRESSO está sem commit e sem push, por instrução do advogado.
-Próximo passo: decidir o push desta atualização.
+**Pronto para revisão** (05/11/2026): etapas 0 e M1-CI completas.
+- Etapa 0: 22 arquivos de `referencia/painel-b/` conferidos de novo por `sha256sum -c` contra `HASHES-B.txt`
+  (22 OK, nenhum a mais nem a menos); `check-lines` OK; `check-links` 0 quebradas.
+- M1-CI: CI verde com os jobs novos (run 40, `c3b34ac`, log conferido); PENDENCIAS.md "Fundação (M1)": 5 de 5 resolvidos.
+- Ressalva: o run 41 (`a65f904`, só documentação) estava em andamento na conferência; o PR só deve ser aberto com ele verde.
+- O branch inclui os 7 commits de `feat/advisor-command`, que ainda não estão em `main`.
+Próximo passo: autorização do advogado para push e abertura do PR para revisão.
 
 ## Último commit verificado
 `c3b34ac` (CI run 40, 05/11/2026): conclusão `success` nos 4 jobs. Log conferido:
