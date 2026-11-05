@@ -25,10 +25,19 @@ type Verifier struct {
 	fetch       Fetcher
 	now         func() time.Time
 
-	mu      sync.Mutex
-	keys    map[string]*rsa.PublicKey
-	fetched time.Time
+	mu        sync.Mutex
+	keys      map[string]*rsa.PublicKey
+	fetched   time.Time // última busca BEM-SUCEDIDA
+	tentativa time.Time // última tentativa de busca (sucesso ou falha)
+	buscando  bool      // uma busca em andamento: as outras requisições não esperam por ela
 }
+
+// Prazos das chaves do Access (auditoria 05/11, item 3.1).
+const (
+	renovarApos    = time.Hour      // depois disso tenta renovar (sem descartar as atuais)
+	intervaloBusca = time.Minute    // no máximo uma tentativa por minuto
+	validadeMaxima = 24 * time.Hour // chave antiga continua valendo se a renovação falhar, até este limite
+)
 
 // New cria o verificador para o domínio do time (ex.: "escritorio.cloudflareaccess.com") e a audiência (AUD).
 func New(teamDomain, aud string, fetch Fetcher) *Verifier {
@@ -109,16 +118,49 @@ func decodeJSON(seg string, out any) error {
 	return json.Unmarshal(b, out)
 }
 
-// key devolve a chave pelo kid; relê o JWKS se o kid for desconhecido (no máximo 1x por minuto).
+// key devolve a chave pelo kid. Renova o JWKS a cada hora (ou quando o kid é desconhecido), no máximo uma tentativa por
+// minuto e SEM travar as demais requisições durante a rede. Se a renovação falhar, as chaves já conhecidas continuam
+// valendo por até 24 h: uma instabilidade do Cloudflare não derruba o painel (auditoria 05/11, item 3.1).
 func (v *Verifier) key(ctx context.Context, kid string) (*rsa.PublicKey, error) {
+	now := v.now()
 	v.mu.Lock()
-	defer v.mu.Unlock()
-	if k, ok := v.keys[kid]; ok && v.now().Sub(v.fetched) < time.Hour {
+	k, conhecida := v.keys[kid]
+	if conhecida && now.Sub(v.fetched) < renovarApos {
+		v.mu.Unlock()
 		return k, nil
 	}
-	if v.keys != nil && v.now().Sub(v.fetched) < time.Minute {
+	// Sem nenhuma chave ainda (início): toda requisição pode buscar. Depois, uma busca por vez e por minuto.
+	podeBuscar := v.keys == nil || (!v.buscando && now.Sub(v.tentativa) >= intervaloBusca)
+	if !podeBuscar {
+		valida := conhecida && now.Sub(v.fetched) < validadeMaxima
+		v.mu.Unlock()
+		if valida {
+			return k, nil
+		}
 		return nil, errors.New("chave desconhecida")
 	}
+	v.buscando, v.tentativa = true, now
+	v.mu.Unlock()
+
+	novas, err := v.load(ctx)
+
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	v.buscando = false
+	if err == nil {
+		v.keys, v.fetched = novas, v.now()
+	}
+	if k, ok := v.keys[kid]; ok && v.now().Sub(v.fetched) < validadeMaxima {
+		return k, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return nil, errors.New("chave desconhecida")
+}
+
+// load busca e interpreta o JWKS (sem segurar o mutex).
+func (v *Verifier) load(ctx context.Context) (map[string]*rsa.PublicKey, error) {
 	raw, err := v.fetch(ctx)
 	if err != nil {
 		return nil, errors.New("não consegui obter as chaves do Access")
@@ -136,11 +178,10 @@ func (v *Verifier) key(ctx context.Context, kid string) (*rsa.PublicKey, error) 
 			keys[k.Kid] = &rsa.PublicKey{N: n, E: int(e.Int64())}
 		}
 	}
-	v.keys, v.fetched = keys, v.now()
-	if k, ok := keys[kid]; ok {
-		return k, nil
+	if len(keys) == 0 {
+		return nil, errors.New("chaves do Access vazias")
 	}
-	return nil, errors.New("chave desconhecida")
+	return keys, nil
 }
 
 func b64Int(s string) *big.Int {

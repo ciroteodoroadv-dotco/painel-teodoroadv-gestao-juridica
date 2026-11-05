@@ -20,9 +20,9 @@ leitura inequívoca), **FI** fortemente indicado, **H** hipótese.
 | 3.4 | Metadados de auditoria descartados em silêncio (`partes`, `abertos_vinculados`, `quantidade`) | P3 | C (teste) | **Fase 2** (feito) |
 | 3.5 | Gestão de usuários traduz qualquer erro em 404 | P3 | C | **Fase 2** (feito) |
 | 2.5 | Login de conta bloqueada responde mais rápido (oráculo de tempo) | P3 | C | **Fase 2** (feito) |
-| 3.1 | JWKS do Access: falha na renovação horária derruba tudo; busca com mutex travado | P2 | C | Fase 3 |
-| 3.2 | Coletas em segundo plano sem `recover` | P2 | H | Fase 3 |
-| 1.5 | "Executar coleta agora" síncrono na requisição | P2 | FI | Fase 3 |
+| 3.1 | JWKS do Access: falha na renovação horária derruba tudo; busca com mutex travado | P2 | C | **Fase 3** (feito) |
+| 3.2 | Coletas em segundo plano sem `recover` | P2 | H | **Fase 3** (feito) |
+| 1.5 | "Executar coleta agora" síncrono na requisição | P2 | FI | **Fase 3** (feito) |
 | 4.1 | Backup monta tudo num tmpfs de 2 GiB | P2 | FI | Fase 4 |
 | 3.3 | Falha de backup sem alerta | P2 | C | Fase 4 |
 | 5.1 | Imagem de backup por tag mutável, fora do release | P3 | C | Fase 4 |
@@ -62,3 +62,13 @@ mantém a situação; mudar a data volta a "A CONFERIR" e apaga quem/quando. Iss
   chave usada em auditoria estiver fora da lista (verificado: sem a correção, acusa 4 usos).
 - **3.5**: 404 só para usuário inexistente ou id inválido; demais falhas = 500 com log (teste vermelho→verde).
 - **2.5**: conta bloqueada gasta o mesmo tempo de Argon2 que uma verificação real.
+
+## Fase 3 (feita)
+
+- **3.1**: `cfaccess.key` renova o JWKS fora do mutex, no máximo uma tentativa por minuto, sem bloquear as demais
+  requisições; se a renovação falhar, a chave conhecida vale por até 24 h. Teste vermelho no código antigo
+  ("não consegui obter as chaves do Access") e verde no novo.
+- **3.2**: `coletas.Protegida` converte pânico em erro nas rodadas do DJEN, DataJud e BCB (o valor do pânico não vai
+  para o log, só o tipo de erro de execução).
+- **1.5**: "Executar coleta agora" (DJEN e DataJud) roda desacoplado da requisição (`coletas.EmSegundoPlano`): se
+  terminar em 20 s responde como antes; senão responde "em andamento" e a rodada segue até o fim.

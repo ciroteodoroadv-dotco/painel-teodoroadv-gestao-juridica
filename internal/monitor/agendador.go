@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"painelteodoro/internal/platform/coletas"
 	"painelteodoro/internal/platform/webx"
 )
 
@@ -29,7 +30,7 @@ func (s *Service) Iniciar(ctx context.Context, log *slog.Logger, primeira time.D
 				return
 			case <-t.C:
 			}
-			if r, err := s.Rodada(ctx); err != nil {
+			if r, err := coletas.Protegida(func() (Resumo, error) { return s.Rodada(ctx) }); err != nil {
 				if log != nil && ctx.Err() == nil {
 					log.Error("monitor DataJud não executado", "motivo", err.Error())
 				}
