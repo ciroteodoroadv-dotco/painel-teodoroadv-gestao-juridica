@@ -48,7 +48,7 @@ func TestRotaComumMantemLimiteDe1MiB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != 413 {
 		t.Fatalf("multipart de 2 MiB numa rota comum = %d, esperado 413", resp.StatusCode)
 	}
