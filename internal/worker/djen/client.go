@@ -92,7 +92,7 @@ func (c *Client) BuscarIntimacoes(ctx context.Context, params QueryParams) (*Com
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("falha ao criar requisiÃ§Ã£o DJEN: %w", err)
+		return nil, fmt.Errorf("falha ao criar requisicao DJEN: %w", err)
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -100,12 +100,12 @@ func (c *Client) BuscarIntimacoes(ctx context.Context, params QueryParams) (*Com
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("erro de conexÃ£o com DJEN: %w", err)
+		return nil, fmt.Errorf("erro de conexao com DJEN: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("resposta invÃ¡lida do DJEN: status %d", resp.StatusCode)
+		return nil, fmt.Errorf("resposta invalida do DJEN: status %d", resp.StatusCode)
 	}
 
 	var djenResp ComunicacaoResponse

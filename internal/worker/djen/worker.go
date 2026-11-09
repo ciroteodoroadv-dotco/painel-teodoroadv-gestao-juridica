@@ -50,14 +50,14 @@ func (w *Worker) Start(ctx context.Context) {
 
 func (w *Worker) sincronizar(ctx context.Context) {
 	if w.numeroOAB == "" || w.ufOAB == "" {
-		w.logger.Warn("SincronizaÃ§Ã£o DJEN ignorada: OAB ou UF nÃ£o configurados")
+		w.logger.Warn("Sincronizacao DJEN ignorada: OAB ou UF nao configurados")
 		return
 	}
 
 	hoje := time.Now().Format("2006-01-02")
-	inicio := time.Now().AddDate(0, 0, -5).Format("2006-01-02") // Varre os Ãºltimos 5 dias por seguranÃ§a
+	inicio := time.Now().AddDate(0, 0, -5).Format("2006-01-02") // Varre os ultimos 5 dias por seguranca
 
-	w.logger.Info("Buscando publicaÃ§Ãµes no DJEN", "inicio", inicio, "fim", hoje)
+	w.logger.Info("Buscando publicacoes no DJEN", "inicio", inicio, "fim", hoje)
 
 	params := QueryParams{
 		NumeroOAB:  w.numeroOAB,
@@ -73,7 +73,7 @@ func (w *Worker) sincronizar(ctx context.Context) {
 		return
 	}
 
-	w.logger.Info("PublicaÃ§Ãµes retornadas pelo DJEN", "total", resp.Count)
+	w.logger.Info("Publicacoes retornadas pelo DJEN", "total", resp.Count)
 
 	for _, item := range resp.Items {
 		w.salvarIntimacao(ctx, item)
@@ -87,24 +87,24 @@ func (w *Worker) salvarIntimacao(ctx context.Context, item ComunicacaoItem) {
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// Tenta associar a intimaÃ§Ã£o a um processo existente no banco pelo nÃºmero CNJ
+	// Tenta associar a intimacao a um processo existente no banco pelo numero CNJ
 	var processoID sql.NullInt64
 	_ = tx.QueryRowContext(ctx, `SELECT id FROM processos WHERE numero_cnj = $1`, item.NumeroProcesso).Scan(&processoID)
 
 	_, err = tx.ExecContext(ctx, `
 INSERT INTO intimacoes (
-djen_id, processo_id, numero_processo, tribunal, orgao_julgador, 
+djen_id, processo_id, numero_processo, tribunal, orgao_julgador,
 conteudo, tipo, data_disponibilizacao, lida
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE)
 ON CONFLICT (djen_id) DO NOTHING
 `, item.ID, processoID, item.NumeroProcesso, item.SiglaTribunal, item.OrgaoJulgador, item.TextoComunicacao, item.TipoComunicacao, item.DataDisponibilizacao)
 
 	if err != nil {
-		w.logger.Error("Erro ao salvar intimaÃ§Ã£o do DJEN no banco", "djen_id", item.ID, "erro", err)
+		w.logger.Error("Erro ao salvar intimacao do DJEN no banco", "djen_id", item.ID, "erro", err)
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		w.logger.Error("Erro ao efetivar transaÃ§Ã£o de intimaÃ§Ã£o", "djen_id", item.ID, "erro", err)
+		w.logger.Error("Erro ao efetivar transacao de intimacao", "djen_id", item.ID, "erro", err)
 	}
 }
