@@ -1,22 +1,22 @@
 package api
 
 import (
-"encoding/json"
-"net/http"
+	"encoding/json"
+	"net/http"
 )
 
 type ErrorResponse struct {
-Error string `json:"error"`
+	Error string `json:"error"`
 }
 
 func JSON(w http.ResponseWriter, status int, data any) {
-w.Header().Set("Content-Type", "application/json; charset=utf-8")
-w.WriteHeader(status)
-if data != nil {
-_ = json.NewEncoder(w).Encode(data)
-}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	if data != nil {
+		_ = json.NewEncoder(w).Encode(data)
+	}
 }
 
 func Error(w http.ResponseWriter, status int, message string) {
-JSON(w, status, ErrorResponse{Error: message})
+	JSON(w, status, ErrorResponse{Error: message})
 }

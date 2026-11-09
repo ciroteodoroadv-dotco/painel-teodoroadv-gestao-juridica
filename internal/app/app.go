@@ -3,8 +3,8 @@
 package app
 
 import (
-	"painelteodoro/internal/api"
 	"context"
+	"painelteodoro/internal/api"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
