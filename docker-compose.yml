@@ -1,0 +1,33 @@
+﻿services:
+  db:
+    image: postgres:16-alpine
+    container_name: painel-db
+    environment:
+      POSTGRES_DB: painel_db
+      POSTGRES_USER: painel_user
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U painel_user -d painel_db"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build: .
+    container_name: painel-app
+    ports:
+      - "8081:8080"
+    environment:
+      - PAINEL_ENV=dev
+      - PAINEL_PUBLIC_URL=http://localhost:8081
+      - PAINEL_DB_HOST=db
+      - PAINEL_DB_NAME=painel_db
+      - PAINEL_DB_USER=painel_user
+      - PAINEL_DB_APP_PASSWORD=devpassword
+      - PAINEL_SESSION_KEY=MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
+      - PAINEL_FIELD_KEY=MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
+    depends_on:
+      db:
+        condition: service_healthy
