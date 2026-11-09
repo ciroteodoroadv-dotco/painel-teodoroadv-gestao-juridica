@@ -6,13 +6,25 @@ import (
 	"time"
 )
 
-type Worker struct {
-	interval time.Duration
+type ProcessoSyncService interface {
+	SincronizarProcessos(ctx context.Context) error
 }
 
-func NewWorker(interval time.Duration) *Worker {
+type IntimacaoSyncService interface {
+	SincronizarIntimacoes(ctx context.Context) error
+}
+
+type Worker struct {
+	interval         time.Duration
+	processoService  ProcessoSyncService
+	intimacaoService IntimacaoSyncService
+}
+
+func NewWorker(interval time.Duration, procSvc ProcessoSyncService, intimSvc IntimacaoSyncService) *Worker {
 	return &Worker{
-		interval: interval,
+		interval:         interval,
+		processoService:  procSvc,
+		intimacaoService: intimSvc,
 	}
 }
 
@@ -34,6 +46,17 @@ func (w *Worker) Start(ctx context.Context) {
 }
 
 func (w *Worker) RunSync(ctx context.Context) {
-	log.Println("[worker] Executando rotina de verificação de processos e intimações...")
-	// Lógica de consulta de publicações e atualização de prazos
+	log.Println("[worker] Iniciando ciclo de sincronização...")
+
+	if w.processoService != nil {
+		if err := w.processoService.SincronizarProcessos(ctx); err != nil {
+			log.Printf("[worker] Erro ao sincronizar processos: %v\n", err)
+		}
+	}
+
+	if w.intimacaoService != nil {
+		if err := w.intimacaoService.SincronizarIntimacoes(ctx); err != nil {
+			log.Printf("[worker] Erro ao sincronizar intimações: %v\n", err)
+		}
+	}
 }
