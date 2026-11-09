@@ -45,7 +45,7 @@ func (w *Worker) Start(ctx context.Context) {
 }
 
 func (w *Worker) sincronizar(ctx context.Context) {
-	w.logger.Info("Iniciando atualizaÃ§Ã£o de Ã­ndices econÃ´micos no BCB")
+	w.logger.Info("Iniciando atualizacao de indices economicos no BCB")
 
 	hoje := time.Now().Format("02/01/2006")
 	inicio := time.Now().AddDate(0, -2, 0).Format("02/01/2006") // Ãšltimos 2 meses
@@ -92,8 +92,8 @@ DO UPDATE SET valor = EXCLUDED.valor
 	}
 
 	if err := tx.Commit(); err != nil {
-		w.logger.Error("Erro ao efetivar Ã­ndices econÃ´micos", "indice", nome, "erro", err)
+		w.logger.Error("Erro ao efetivar indices economicos", "indice", nome, "erro", err)
 	} else {
-		w.logger.Info("Ãndices econÃ´micos atualizados", "indice", nome, "registros", inseridos)
+		w.logger.Info("Indices economicos atualizados", "indice", nome, "registros", inseridos)
 	}
 }
