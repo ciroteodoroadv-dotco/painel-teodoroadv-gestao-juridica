@@ -91,7 +91,7 @@ jobs:
           image: painel:ci
           format: spdx-json
           output-file: sbom.spdx.json
-          syft-version: latest
+          syft-version: v1.18.0
 
   scripts:
     runs-on: ubuntu-latest
