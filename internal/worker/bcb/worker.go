@@ -45,10 +45,10 @@ func (w *Worker) Start(ctx context.Context) {
 }
 
 func (w *Worker) sincronizar(ctx context.Context) {
-	w.logger.Info("Iniciando atualização de índices econômicos no BCB")
+	w.logger.Info("Iniciando atualizaÃ§Ã£o de Ã­ndices econÃ´micos no BCB")
 
 	hoje := time.Now().Format("02/01/2006")
-	inicio := time.Now().AddDate(0, -2, 0).Format("02/01/2006") // Últimos 2 meses
+	inicio := time.Now().AddDate(0, -2, 0).Format("02/01/2006") // Ãšltimos 2 meses
 
 	series := map[string]int{
 		"SELIC": SerieSelic,
@@ -59,7 +59,7 @@ func (w *Worker) sincronizar(ctx context.Context) {
 	for nome, codigo := range series {
 		dados, err := w.client.BuscarSerie(ctx, codigo, inicio, hoje)
 		if err != nil {
-			w.logger.Error("Erro ao buscar série no BCB", "indice", nome, "codigo", codigo, "erro", err)
+			w.logger.Error("Erro ao buscar sÃ©rie no BCB", "indice", nome, "codigo", codigo, "erro", err)
 			continue
 		}
 
@@ -72,7 +72,7 @@ func (w *Worker) salvarIndices(ctx context.Context, nome string, dados []DadoSer
 	if err != nil {
 		return
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	inseridos := 0
 	for _, d := range dados {
@@ -92,8 +92,8 @@ DO UPDATE SET valor = EXCLUDED.valor
 	}
 
 	if err := tx.Commit(); err != nil {
-		w.logger.Error("Erro ao efetivar índices econômicos", "indice", nome, "erro", err)
+		w.logger.Error("Erro ao efetivar Ã­ndices econÃ´micos", "indice", nome, "erro", err)
 	} else {
-		w.logger.Info("Índices econômicos atualizados", "indice", nome, "registros", inseridos)
+		w.logger.Info("Ãndices econÃ´micos atualizados", "indice", nome, "registros", inseridos)
 	}
 }

@@ -115,7 +115,7 @@ func (c *Client) BuscarProcesso(ctx context.Context, tribunal string, numeroCNJ 
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		return nil, fmt.Errorf("falha ao criar requisição DataJud: %w", err)
+		return nil, fmt.Errorf("falha ao criar requisiÃ§Ã£o DataJud: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -123,12 +123,12 @@ func (c *Client) BuscarProcesso(ctx context.Context, tribunal string, numeroCNJ 
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("erro de conexão com DataJud [%s]: %w", tribunalClean, err)
+		return nil, fmt.Errorf("erro de conexÃ£o com DataJud [%s]: %w", tribunalClean, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("resposta inválida do DataJud [%s]: status %d", tribunalClean, resp.StatusCode)
+		return nil, fmt.Errorf("resposta invÃ¡lida do DataJud [%s]: status %d", tribunalClean, resp.StatusCode)
 	}
 
 	var dataJudResp Response
@@ -137,7 +137,7 @@ func (c *Client) BuscarProcesso(ctx context.Context, tribunal string, numeroCNJ 
 	}
 
 	if len(dataJudResp.Hits.Hits) == 0 {
-		return nil, fmt.Errorf("processo %s não encontrado no DataJud [%s]", numeroCNJ, tribunalClean)
+		return nil, fmt.Errorf("processo %s nÃ£o encontrado no DataJud [%s]", numeroCNJ, tribunalClean)
 	}
 
 	return &dataJudResp.Hits.Hits[0].Source, nil

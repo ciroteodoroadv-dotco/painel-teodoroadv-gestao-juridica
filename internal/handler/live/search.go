@@ -40,7 +40,7 @@ ORDER BY id DESC LIMIT 20
 		http.Error(w, "Erro na consulta de processos", http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var lista []ProcessoItem
 	for rows.Next() {
@@ -52,12 +52,12 @@ ORDER BY id DESC LIMIT 20
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if len(lista) == 0 {
-		fmt.Fprintf(w, `<tr><td colspan="4" class="text-center py-4 text-gray-500">Nenhum processo encontrado para "%s".</td></tr>`, html.EscapeString(query))
+		_, _ = fmt.Fprintf(w, `<tr><td colspan="4" class="text-center py-4 text-gray-500">Nenhum processo encontrado para "%s".</td></tr>`, html.EscapeString(query))
 		return
 	}
 
 	for _, p := range lista {
-		fmt.Fprintf(w, `
+		_, _ = fmt.Fprintf(w, `
 <tr class="hover:bg-gray-50 transition-colors border-b">
 <td class="py-3 px-4 font-mono font-medium text-blue-900">%s</td>
 <td class="py-3 px-4 text-sm text-gray-700">%s</td>

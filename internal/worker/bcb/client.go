@@ -13,7 +13,7 @@ const (
 	BaseURL        = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.%d/dados"
 	DefaultTimeout = 15 * time.Second
 
-	SerieSelic = 11  // Taxa Selic diária (%)
+	SerieSelic = 11  // Taxa Selic diÃ¡ria (%)
 	SerieINPC  = 188 // INPC mensal
 	SerieIPCA  = 433 // IPCA mensal
 )
@@ -46,7 +46,7 @@ func (c *Client) BuscarSerie(ctx context.Context, codigoSerie int, dataInicio, d
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlStr, nil)
 	if err != nil {
-		return nil, fmt.Errorf("falha ao criar requisição para BCB [série %d]: %w", codigoSerie, err)
+		return nil, fmt.Errorf("falha ao criar requisiÃ§Ã£o para BCB [sÃ©rie %d]: %w", codigoSerie, err)
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -54,12 +54,12 @@ func (c *Client) BuscarSerie(ctx context.Context, codigoSerie int, dataInicio, d
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("erro de conexão com BCB: %w", err)
+		return nil, fmt.Errorf("erro de conexÃ£o com BCB: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("resposta inválida do BCB [série %d]: status %d", codigoSerie, resp.StatusCode)
+		return nil, fmt.Errorf("resposta invÃ¡lida do BCB [sÃ©rie %d]: status %d", codigoSerie, resp.StatusCode)
 	}
 
 	var raws []DadoSerieRaw

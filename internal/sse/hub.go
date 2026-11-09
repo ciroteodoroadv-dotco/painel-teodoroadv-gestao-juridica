@@ -74,7 +74,7 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		http.Error(w, "Streaming HTTP não suportado", http.StatusInternalServerError)
+		http.Error(w, "Streaming HTTP nÃ£o suportado", http.StatusInternalServerError)
 		return
 	}
 
@@ -93,7 +93,7 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event.Name, event.Data)
+			_, _ = fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event.Name, event.Data)
 			flusher.Flush()
 		}
 	}

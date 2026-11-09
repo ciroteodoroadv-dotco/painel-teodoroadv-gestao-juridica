@@ -45,7 +45,7 @@ func (w *Worker) Start(ctx context.Context) {
 }
 
 func (w *Worker) sincronizar(ctx context.Context) {
-	w.logger.Info("Iniciando varredura de processos para atualização no DataJud")
+	w.logger.Info("Iniciando varredura de processos para atualizaÃ§Ã£o no DataJud")
 
 	rows, err := w.db.QueryContext(ctx, `
 SELECT id, numero_cnj, tribunal 
@@ -54,10 +54,10 @@ WHERE status != 'arquivado' AND tribunal IS NOT NULL AND tribunal != ''
 LIMIT 50
 `)
 	if err != nil {
-		w.logger.Error("Erro ao buscar processos para sincronização DataJud", "erro", err)
+		w.logger.Error("Erro ao buscar processos para sincronizaÃ§Ã£o DataJud", "erro", err)
 		return
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var id int64
@@ -81,7 +81,7 @@ func (w *Worker) salvarAtualizacao(ctx context.Context, processoID int64, source
 	if err != nil {
 		return
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	_, err = tx.ExecContext(ctx, `
 UPDATE processos 
@@ -102,7 +102,7 @@ ON CONFLICT (processo_id, data_hora, codigo_cnj) DO NOTHING
 	}
 
 	if err := tx.Commit(); err != nil {
-		w.logger.Error("Erro ao efetivar transação de sincronização", "id", processoID, "erro", err)
+		w.logger.Error("Erro ao efetivar transaÃ§Ã£o de sincronizaÃ§Ã£o", "id", processoID, "erro", err)
 	} else {
 		w.logger.Info("Processo sincronizado via DataJud", "id", processoID, "movimentos", len(source.Movimentos))
 	}
