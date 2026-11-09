@@ -22,9 +22,9 @@ func isCommonPassword(pw string) bool {
 		lines := strings.Split(senhasComuns, "\n")
 		commonSet = make(map[string]struct{}, len(lines))
 		for _, l := range lines {
-			commonSet[l] = struct{}{}
+			commonSet[strings.TrimSpace(l)] = struct{}{}
 		}
 	})
-	_, ok := commonSet[strings.ToLower(pw)]
+	_, ok := commonSet[strings.TrimSpace(strings.ToLower(pw))]
 	return ok
 }
