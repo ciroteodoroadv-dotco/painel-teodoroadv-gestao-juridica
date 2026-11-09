@@ -3,6 +3,7 @@
 package app
 
 import (
+	"painelteodoro/internal/api"
 	"context"
 	"time"
 
@@ -111,5 +112,6 @@ func RegisterDomains(a *auth.Auth, rt *auth.Router, pool *pgxpool.Pool, fieldKey
 	(&audiencias.Handler{A: a, S: aud}).Register(rt)
 	(&diligencias.Handler{A: a, S: dil}).Register(rt)
 	(&documentos.Handler{A: a, S: doc}).Register(rt)
+	(&api.Handler{A: a, Pool: pool}).Register(rt)
 	return nil
 }
