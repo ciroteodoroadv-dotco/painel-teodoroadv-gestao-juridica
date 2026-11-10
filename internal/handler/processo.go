@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -11,6 +12,10 @@ import (
 
 type ProcessoLister interface {
 	Listar(ctx context.Context, limit, offset int) ([]repository.Processo, error)
+}
+
+type ProcessoFinder interface {
+	BuscarPorID(ctx context.Context, id int64) (*repository.Processo, error)
 }
 
 func ListarProcessos(lister ProcessoLister) http.HandlerFunc {
@@ -52,5 +57,45 @@ func ListarProcessos(lister ProcessoLister) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(lista)
+	}
+}
+
+func BuscarProcessoPorID(finder ProcessoFinder) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Metodo nao permitido", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if finder == nil {
+			http.Error(w, "Servico indisponivel", http.StatusServiceUnavailable)
+			return
+		}
+
+		idStr := r.URL.Query().Get("id")
+		if idStr == "" {
+			http.Error(w, "ID nao informado", http.StatusBadRequest)
+			return
+		}
+
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil || id <= 0 {
+			http.Error(w, "ID invalido", http.StatusBadRequest)
+			return
+		}
+
+		processo, err := finder.BuscarPorID(r.Context(), id)
+		if err != nil {
+			if errors.Is(err, repository.ErrProcessoNaoEncontrado) {
+				http.Error(w, "Processo nao encontrado", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "Erro ao buscar processo", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(processo)
 	}
 }
