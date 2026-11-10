@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"painelteodoro/internal/handler"
 	"painelteodoro/internal/worker"
 )
 
@@ -20,13 +21,17 @@ func main() {
 	syncWorker := worker.NewWorker(15*time.Minute, nil, nil)
 	go syncWorker.Start(ctx)
 
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", handler.HealthCheck)
+
 	server := &http.Server{
-		Addr:              ":8080",
+		Addr:              ":8081",
+		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	go func() {
-		log.Println("[server] Servidor HTTP rodando na porta 8080...")
+		log.Println("[server] Servidor HTTP rodando na porta 8081...")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("[server] Erro fatal no servidor HTTP: %v\n", err)
 		}
