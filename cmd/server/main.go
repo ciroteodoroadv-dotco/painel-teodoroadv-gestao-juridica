@@ -43,6 +43,7 @@ func main() {
 	mux.HandleFunc("/healthz", handler.HealthCheck)
 	mux.HandleFunc("/readyz", handler.ReadyCheck(dbPool))
 	mux.HandleFunc("/api/processos", handler.ListarProcessos(processoRepo))
+	mux.HandleFunc("/api/processos/detalhe", handler.BuscarProcessoPorID(processoRepo))
 
 	server := &http.Server{
 		Addr:         ":" + port,
