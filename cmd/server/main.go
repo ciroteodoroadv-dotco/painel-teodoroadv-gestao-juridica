@@ -21,7 +21,8 @@ func main() {
 	go syncWorker.Start(ctx)
 
 	server := &http.Server{
-		Addr: ":8080",
+		Addr:              ":8080",
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	go func() {
