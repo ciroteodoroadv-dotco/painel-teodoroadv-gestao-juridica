@@ -23,6 +23,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", handler.HealthCheck)
+	mux.HandleFunc("/readyz", handler.ReadyCheck(nil))
 
 	server := &http.Server{
 		Addr:              ":8081",
