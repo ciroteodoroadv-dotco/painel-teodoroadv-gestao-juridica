@@ -2,11 +2,15 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+var ErrProcessoNaoEncontrado = errors.New("processo nao encontrado")
 
 type Processo struct {
 	ID        int64     `json:"id"`
@@ -63,4 +67,23 @@ func (r *ProcessoRepository) Listar(ctx context.Context, limit, offset int) ([]P
 	}
 
 	return lista, nil
+}
+
+func (r *ProcessoRepository) BuscarPorID(ctx context.Context, id int64) (*Processo, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("pool de conexao nao inicializado")
+	}
+
+	var p Processo
+	err := r.db.QueryRow(ctx, "SELECT id, numero, cliente, status, created_at FROM processos WHERE id = $1", id).Scan(
+		&p.ID, &p.Numero, &p.Cliente, &p.Status, &p.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrProcessoNaoEncontrado
+		}
+		return nil, fmt.Errorf("erro ao buscar processo por id: %w", err)
+	}
+
+	return &p, nil
 }
