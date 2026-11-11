@@ -50,6 +50,14 @@ func (m *mockCreator) Criar(ctx context.Context, p *repository.Processo) error {
 	return nil
 }
 
+type mockUpdater struct {
+	err error
+}
+
+func (m *mockUpdater) Atualizar(ctx context.Context, p *repository.Processo) error {
+	return m.err
+}
+
 func TestListarProcessos_Sucesso(t *testing.T) {
 	mock := &mockLister{
 		processos: []repository.Processo{
@@ -261,6 +269,103 @@ func TestCriarProcesso_ErroRepository(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	h := handler.CriarProcesso(&mockCreator{err: errors.New("erro no banco")})
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("esperava status 500, obteve %d", rec.Code)
+	}
+}
+
+func TestAtualizarProcesso_Sucesso(t *testing.T) {
+	proc := repository.Processo{
+		ID:      1,
+		Numero:  "0000001-00.2026.8.26.0344",
+		Cliente: "Ciro Gouveia Atualizado",
+		Status:  "Encerrado",
+	}
+	body, _ := json.Marshal(proc)
+	req := httptest.NewRequest(http.MethodPut, "/api/processos/atualizar", bytes.NewBuffer(body))
+	rec := httptest.NewRecorder()
+
+	h := handler.AtualizarProcesso(&mockUpdater{})
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("esperava status 200, obteve %d", rec.Code)
+	}
+}
+
+func TestAtualizarProcesso_MetodoInvalido(t *testing.T) {
+	h := handler.AtualizarProcesso(&mockUpdater{})
+	req := httptest.NewRequest(http.MethodGet, "/api/processos/atualizar", nil)
+	rec := httptest.NewRecorder()
+
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("esperava status 405, obteve %d", rec.Code)
+	}
+}
+
+func TestAtualizarProcesso_UpdaterNil(t *testing.T) {
+	h := handler.AtualizarProcesso(nil)
+	req := httptest.NewRequest(http.MethodPut, "/api/processos/atualizar", nil)
+	rec := httptest.NewRecorder()
+
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("esperava status 503, obteve %d", rec.Code)
+	}
+}
+
+func TestAtualizarProcesso_JSONInvalido(t *testing.T) {
+	h := handler.AtualizarProcesso(&mockUpdater{})
+	req := httptest.NewRequest(http.MethodPut, "/api/processos/atualizar", bytes.NewBufferString("{invalid-json"))
+	rec := httptest.NewRecorder()
+
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("esperava status 400, obteve %d", rec.Code)
+	}
+}
+
+func TestAtualizarProcesso_IDInvalido(t *testing.T) {
+	proc := repository.Processo{ID: 0, Numero: "0000001-00.2026.8.26.0344"}
+	body, _ := json.Marshal(proc)
+	req := httptest.NewRequest(http.MethodPut, "/api/processos/atualizar", bytes.NewBuffer(body))
+	rec := httptest.NewRecorder()
+
+	h := handler.AtualizarProcesso(&mockUpdater{})
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("esperava status 400, obteve %d", rec.Code)
+	}
+}
+
+func TestAtualizarProcesso_NaoEncontrado(t *testing.T) {
+	proc := repository.Processo{ID: 999, Numero: "0000001-00.2026.8.26.0344"}
+	body, _ := json.Marshal(proc)
+	req := httptest.NewRequest(http.MethodPut, "/api/processos/atualizar", bytes.NewBuffer(body))
+	rec := httptest.NewRecorder()
+
+	h := handler.AtualizarProcesso(&mockUpdater{err: repository.ErrProcessoNaoEncontrado})
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("esperava status 404, obteve %d", rec.Code)
+	}
+}
+
+func TestAtualizarProcesso_ErroRepository(t *testing.T) {
+	proc := repository.Processo{ID: 1, Numero: "0000001-00.2026.8.26.0344"}
+	body, _ := json.Marshal(proc)
+	req := httptest.NewRequest(http.MethodPut, "/api/processos/atualizar", bytes.NewBuffer(body))
+	rec := httptest.NewRecorder()
+
+	h := handler.AtualizarProcesso(&mockUpdater{err: errors.New("erro interno no banco")})
 	h.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusInternalServerError {

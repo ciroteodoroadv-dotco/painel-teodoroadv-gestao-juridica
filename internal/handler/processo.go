@@ -22,6 +22,10 @@ type ProcessoCreator interface {
 	Criar(ctx context.Context, p *repository.Processo) error
 }
 
+type ProcessoUpdater interface {
+	Atualizar(ctx context.Context, p *repository.Processo) error
+}
+
 func ListarProcessos(lister ProcessoLister) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -129,6 +133,44 @@ func CriarProcesso(creator ProcessoCreator) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(p)
+	}
+}
+
+func AtualizarProcesso(updater ProcessoUpdater) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut && r.Method != http.MethodPatch {
+			http.Error(w, "Metodo nao permitido", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if updater == nil {
+			http.Error(w, "Servico indisponivel", http.StatusServiceUnavailable)
+			return
+		}
+
+		var p repository.Processo
+		if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+			http.Error(w, "Payload JSON invalido", http.StatusBadRequest)
+			return
+		}
+
+		if p.ID <= 0 {
+			http.Error(w, "ID invalido", http.StatusBadRequest)
+			return
+		}
+
+		if err := updater.Atualizar(r.Context(), &p); err != nil {
+			if errors.Is(err, repository.ErrProcessoNaoEncontrado) {
+				http.Error(w, "Processo nao encontrado", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "Erro ao atualizar processo", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(p)
 	}
 }
