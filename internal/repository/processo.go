@@ -87,3 +87,33 @@ func (r *ProcessoRepository) BuscarPorID(ctx context.Context, id int64) (*Proces
 
 	return &p, nil
 }
+
+func (r *ProcessoRepository) Criar(ctx context.Context, p *Processo) error {
+	if r.db == nil {
+		return fmt.Errorf("pool de conexao nao inicializado")
+	}
+
+	err := r.db.QueryRow(ctx, "INSERT INTO processos (numero, cliente, status) VALUES ($1, $2, $3) RETURNING id, created_at", p.Numero, p.Cliente, p.Status).Scan(&p.ID, &p.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("erro ao criar processo: %w", err)
+	}
+
+	return nil
+}
+
+func (r *ProcessoRepository) Atualizar(ctx context.Context, p *Processo) error {
+	if r.db == nil {
+		return fmt.Errorf("pool de conexao nao inicializado")
+	}
+
+	cmd, err := r.db.Exec(ctx, "UPDATE processos SET numero = $1, cliente = $2, status = $3 WHERE id = $4", p.Numero, p.Cliente, p.Status, p.ID)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar processo: %w", err)
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return ErrProcessoNaoEncontrado
+	}
+
+	return nil
+}

@@ -31,6 +31,22 @@ func TestProcessoRepository_NilPool(t *testing.T) {
 			t.Error("esperava erro para pool nil em BuscarPorID, obteve nil")
 		}
 	})
+
+	t.Run("Criar com pool nil", func(t *testing.T) {
+		p := &repository.Processo{Numero: "123", Cliente: "Teste", Status: "Ativo"}
+		err := repo.Criar(ctx, p)
+		if err == nil {
+			t.Error("esperava erro para pool nil em Criar, obteve nil")
+		}
+	})
+
+	t.Run("Atualizar com pool nil", func(t *testing.T) {
+		p := &repository.Processo{ID: 1, Numero: "123", Cliente: "Teste", Status: "Ativo"}
+		err := repo.Atualizar(ctx, p)
+		if err == nil {
+			t.Error("esperava erro para pool nil em Atualizar, obteve nil")
+		}
+	})
 }
 
 func TestErrProcessoNaoEncontrado(t *testing.T) {
