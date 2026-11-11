@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Análise estática de segurança (Plano 8): gosec, staticcheck e govulncheck, no contêiner de teste.
-# As ferramentas são instaladas SÓ no contêiner (versões fixas); nada entra no projeto nem no binário.
-# Grava o relatório em docs/plano-fusao/ANALISE-ESTATICA.md. Sai com erro se houver achado alto/médio do gosec,
-# qualquer achado do staticcheck ou vulnerabilidade alcançável pelo código (govulncheck).
-# Uso: scripts/analise-estatica.sh          (na raiz do repositório; precisa do Docker e do python3)
+# AnÃ¡lise estÃ¡tica de seguranÃ§a (Plano 8): gosec, staticcheck e govulncheck, no contÃªiner de teste.
+# As ferramentas sÃ£o instaladas SÃ“ no contÃªiner (versÃµes fixas); nada entra no projeto nem no binÃ¡rio.
+# Grava o relatÃ³rio em docs/plano-fusao/ANALISE-ESTATICA.md. Sai com erro se houver achado alto/mÃ©dio do gosec,
+# qualquer achado do staticcheck ou vulnerabilidade alcanÃ§Ã¡vel pelo cÃ³digo (govulncheck).
+# Uso: scripts/analise-estatica.sh          (na raiz do repositÃ³rio; precisa do Docker e do python3)
 set -uo pipefail
 cd "$(dirname "$0")/.."
-IMG="${IMAGEM_GO:-golang:1.26.10-bookworm}"
+IMG="${IMAGEM_GO:-golang:1.26.11-bookworm}"
 GOSEC=v2.30.0            # github.com/securego/gosec/v2
 STATICCHECK=v0.8.2       # honnef.co/go/tools (staticcheck)
 GOVULN=v1.9.0            # golang.org/x/vuln (govulncheck)
@@ -21,9 +21,9 @@ docker run --rm -v "$PWD":/src:ro -v "$tmp":/saida -w /src -e GOFLAGS=-buildvcs=
   gosec -quiet -exclude-generated -track-suppressions -fmt=json -out=/saida/gosec.json ./... >/dev/null 2>&1; echo \$? > /saida/gosec.rc
   staticcheck ./... > /saida/staticcheck.txt 2>&1; echo \$? > /saida/staticcheck.rc
   govulncheck ./... > /saida/govulncheck.txt 2>&1; echo \$? > /saida/govulncheck.rc
-" || { echo "falha ao instalar as ferramentas no contêiner"; exit 2; }
+" || { echo "falha ao instalar as ferramentas no contÃªiner"; exit 2; }
 
-# Contagem do gosec: achado ABERTO = sem supressão; suprimido = com #nosec justificado.
+# Contagem do gosec: achado ABERTO = sem supressÃ£o; suprimido = com #nosec justificado.
 cat > "$tmp/gosec.py" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
@@ -46,21 +46,21 @@ sc="$(grep -c '(' "$tmp/staticcheck.txt" || true)"; [[ "$(cat "$tmp/staticcheck.
 vc="$(cat "$tmp/govulncheck.rc")"
 
 {
-  echo "# Análise estática de segurança"
+  echo "# AnÃ¡lise estÃ¡tica de seguranÃ§a"
   echo
-  echo "Gerado por \`scripts/analise-estatica.sh\` em $(date +%F) (contêiner \`$IMG\`; gosec $GOSEC, staticcheck $STATICCHECK, govulncheck $GOVULN)."
+  echo "Gerado por \`scripts/analise-estatica.sh\` em $(date +%F) (contÃªiner \`$IMG\`; gosec $GOSEC, staticcheck $STATICCHECK, govulncheck $GOVULN)."
   echo
   echo "| Ferramenta | Resultado |"
   echo "|---|---|"
-  echo "| gosec | alta: $alto · média: $medio · baixa: $baixo (achados abertos); suprimidos com \`#nosec\` justificado: $nosec |"
+  echo "| gosec | alta: $alto Â· mÃ©dia: $medio Â· baixa: $baixo (achados abertos); suprimidos com \`#nosec\` justificado: $nosec |"
   echo "| staticcheck | $sc achado(s) |"
-  echo "| govulncheck | $([[ "$vc" == 0 ]] && echo "nenhuma vulnerabilidade alcançável pelo código" || echo "VULNERABILIDADE ENCONTRADA (código $vc)") |"
+  echo "| govulncheck | $([[ "$vc" == 0 ]] && echo "nenhuma vulnerabilidade alcanÃ§Ã¡vel pelo cÃ³digo" || echo "VULNERABILIDADE ENCONTRADA (cÃ³digo $vc)") |"
   echo
   echo "## staticcheck"; echo '```'; cat "$tmp/staticcheck.txt"; echo '```'
   echo "## govulncheck"; echo '```'; cat "$tmp/govulncheck.txt"; echo '```'
   echo "## gosec (achados abertos e suprimidos)"; echo '```'; conta LISTA; echo '```'
 } > "$saida"
 
-echo "gosec: alta=$alto média=$medio baixa=$baixo (suprimidos=$nosec) · staticcheck=$sc · govulncheck rc=$vc"
-echo "relatório: $saida"
+echo "gosec: alta=$alto mÃ©dia=$medio baixa=$baixo (suprimidos=$nosec) Â· staticcheck=$sc Â· govulncheck rc=$vc"
+echo "relatÃ³rio: $saida"
 [[ "$alto" == 0 && "$medio" == 0 && "$sc" == 0 && "$vc" == 0 ]]
